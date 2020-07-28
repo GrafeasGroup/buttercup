@@ -10,7 +10,7 @@ from discord.guild import Guild
 class ButtercupBot(Bot):
     def __init__(self, command_prefix: str, **kwargs: Any) -> None:
         """
-        Initialize the BubblesBot.
+        Initialize the ButtercupBot.
 
         Along the arguments which can be provided to discord.py's Bot class,
         one can provide:
@@ -25,7 +25,7 @@ class ButtercupBot(Bot):
 
         for extension in kwargs.get("extensions", list()):
             print(f"Loading extension {extension}...")
-            self.load_extension(f"{self.cog_path}{extension}")
+            self.load(extension)
 
     async def on_ready(self) -> None:
         """Log a starting message when the bot is ready."""
@@ -41,6 +41,17 @@ class ButtercupBot(Bot):
         """Retrieve the guild corresponding to the set name."""
         return discord.utils.get(self.guilds, name=self.guild_name)
 
-    async def reload_extension(self, name: str) -> None:
+    def load(self, name: str) -> None:
+        """Load the extension with the specified name."""
+        if name:
+            super().load_extension(f"{self.cog_path}{name}")
+
+    def reload(self, name: str) -> None:
         """Reload the extension with the specified name."""
-        super().reload_extension(f"{self.cog_path}{name}")
+        if name:
+            super().reload_extension(f"{self.cog_path}{name}")
+
+    def unload(self, name: str) -> None:
+        """Unload the extension with the specified name."""
+        if name:
+            super().unload_extension(f"{self.cog_path}{name}")

@@ -105,3 +105,8 @@ def setup(bot: ButtercupBot) -> None:
     restrict_name = cog_config.get("restrict_role", "New User")
     accepted_name = cog_config.get("accepted_role", "Visitor (0)")
     bot.add_cog(NewMember(bot, restrict_name, accepted_name))
+
+
+def teardown(bot: ButtercupBot) -> None:
+    """Unload the NewMember cog."""
+    bot.remove_cog("NewMember")

@@ -25,27 +25,34 @@ class AdminCommands(Cog):
         """Handle the command error, specifically that of being unauthorized."""
         if isinstance(error, CheckFailure):
             await ctx.send("You are not authorized to use this command.")
+        else:
+            await ctx.send("Something went wrong, please contact a moderator.")
 
     @command()
     async def reload(self, ctx: Context, cog_name: str) -> None:
         """Allow for the provided cog to be reloaded."""
-        await self.bot.reload_extension(cog_name)
+        self.bot.reload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully reloaded :+1:')
 
     @command()
     async def load(self, ctx: Context, cog_name: str) -> None:
         """Allow for the provided cog to be loaded."""
-        await self.bot.load_extension(cog_name)
+        self.bot.load(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully loaded :+1:')
 
     @command()
     async def unload(self, ctx: Context, cog_name: str) -> None:
         """Allow for the provided cog to be unloaded."""
-        await self.bot.unload_extension(cog_name)
+        self.bot.unload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully unloaded :+1:')
 
 
 def setup(bot: ButtercupBot) -> None:
-    """Set up the NewMember cog."""
+    """Set up the Admin cog."""
     role_name = bot.config["Admin"]["role"]
     bot.add_cog(AdminCommands(bot, role_name))
+
+
+def teardown(bot: ButtercupBot) -> None:
+    """Unload the Admin cog."""
+    bot.remove_cog("AdminCommands")
