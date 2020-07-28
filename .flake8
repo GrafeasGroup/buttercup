@@ -1,0 +1,8 @@
+[flake8]
+application-import-names = buttercup
+ignore = ANN101, D100, D101, D105, D106, W503,
+import-order-style = pycharm
+max-complexity = 10
+max-line-length = 90
+use-varnames-strict-mode = true
+exclude =  .git,__pycache__,build,dist,.venv
