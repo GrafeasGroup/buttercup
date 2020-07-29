@@ -2,7 +2,7 @@ import sys
 
 from buttercup.bot import ButtercupBot
 
-EXTENSIONS = ["admin", "new_member"]
+EXTENSIONS = ["admin", "restrictor"]
 
 
 config_path = sys.argv[1] if len(sys.argv) > 1 else "config.toml"
