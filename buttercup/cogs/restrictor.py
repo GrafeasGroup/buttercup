@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 import discord.utils
 from discord.channel import TextChannel
@@ -44,6 +44,46 @@ class ObservableDict:
         self.observers.append(observer)
 
 
+class Record:
+    def __init__(
+        self, nickname: str = None, coc: bool = False, restricted: bool = True
+    ) -> None:
+        """
+        Initialize the user record.
+
+        The record contains the following fields:
+        - nickname: The nickname of the member
+        - coc: Whether the member has accepted the Code of Conduct
+        - restricted: Whether the member has restricted access to Discord
+        - compliant: Whether the member complies with all set constraints
+        - new_user: Whether the member is a new user
+        - correct_nickname: Whether the member's nickname is correct
+        """
+        self.nickname = nickname
+        self.coc = coc
+        self.restricted = restricted
+
+    @property
+    def compliant(self) -> bool:
+        """Whether the member complies with all set constraints."""
+        return self.coc and self.correct_nickname
+
+    @property
+    def new_user(self) -> bool:
+        """Whether the member is a new user."""
+        return all([not self.coc, self.nickname is None])
+
+    @property
+    def correct_nickname(self) -> bool:
+        """
+        Whether a nickname is correct.
+
+        This check is currently only based on whether the username starts with
+        "/u/", but can be extended.
+        """
+        return self.nickname is not None and self.nickname.startswith("/u/")
+
+
 class Restrictor(Cog):
     def __init__(
         self,
@@ -60,7 +100,7 @@ class Restrictor(Cog):
         self.restrict_channel_name = restrict_channel
         self.welcome_channel_name = welcome_channel
         self.members = ObservableDict()
-        self.members.subscribe(self._set_access)
+        self.members.subscribe(self._handle_update)
 
     @property
     def restrict_role(self) -> Role:
@@ -88,87 +128,89 @@ class Restrictor(Cog):
 
     @Cog.listener()
     async def on_member_join(self, member: Member) -> None:
-        """Restrict the new member and send them a welcome message."""
+        """Create a member record when they join the server."""
         await self._create_record(member)
 
     @Cog.listener()
     async def on_member_update(self, before: Member, after: Member) -> None:
-        """
-        Perform validation when a member is updated.
-
-        This validation consists of checking whether the changed nickname is
-        compliant with the set nickname constraints.
-        """
+        """Update the member record whenever their Discord profile changes."""
         record = await self._get_record(after)
-        if before.nick != after.nick:
-            # The member's nickname is changed, validate it.
-            record["nickname"] = self._correct_nickname(after.nick)
+        record.nickname = after.nick
+        record.restricted = self.restrict_role in after.roles
         await self.members.update(after, record)
 
     @command()
     async def accept(self, ctx: Context) -> None:
-        """Allow the user to accept the Code of Conduct."""
+        """Allow the member to accept the Code of Conduct."""
         member = ctx.author
         record = await self._get_record(member)
-        record["coc"] = True
+        record.coc = True
         await self.members.update(member, record)
-        await self._send_message(self.restrict_channel, "coc_accepted", member)
 
-    @staticmethod
-    def _correct_nickname(nickname: str) -> bool:
+    async def _handle_update(self, member: Member, old: Record, new: Record) -> None:
         """
-        Whether a nickname is correct.
+        Handle the update of the member record.
 
-        This check is currently only based on whether the username starts with
-        "/u/", but can be extended.
+        This method checks what actions have to be taken according to the update that
+        has occurred. These actions include:
+        - Restricting a non-compliant member
+        - Unrestricting a compliant member
+        - Notifying the member of a CoC acceptance update
+        - Notifying the member of a nickname update, sending a message depending on
+          the correctness of its format
         """
-        return nickname is not None and nickname.startswith("/u/")
-
-    async def _set_access(
-        self, member: Member, old: Dict[str, bool], new: Dict[str, bool]
-    ) -> None:
-        """
-        Set the access of the provided member.
-
-        Whether the user is allowed access or is restricted is determined by the
-        saved values of the specific user. If they have met all constraints, they
-        are allowed access. If this is not the case, they are restricted.
-        """
-        record = new
-        if all(record.values()) and self.restrict_role in member.roles:
-            await member.remove_roles(self.restrict_role)
-            # This set difference is used since the roles sometimes still include
-            # the previously removed role.
-            if len(set(member.roles).difference({self.restrict_role})) <= 1:
-                # Note that each user has the "@everyone" role.
-                await member.add_roles(self.accepted_role)
-                await self._send_message(
-                    self.welcome_channel, "restriction_lifted", member
-                )
-        elif not record["nickname"]:
+        channel = self.welcome_channel if new.compliant else self.restrict_channel
+        first_time_user = len(set(member.roles).difference({self.restrict_role})) == 1
+        if old is None and new.new_user:
             await member.add_roles(self.restrict_role)
-            if record["coc"]:
-                await self._send_message(
-                    self.restrict_channel, "wrong_username", member
-                )
-            else:
-                await self._send_message(self.restrict_channel, "new_member", member)
+            await self._send_message(channel, "new_member", member)
+            return
 
-    async def _get_record(self, member: Member) -> Dict[str, bool]:
+        if new.restricted and new.compliant:
+            # Remove restriction
+            await member.remove_roles(self.restrict_role)
+            if first_time_user:
+                # They are unrestricted first time, welcome in channel.
+                await self._send_message(channel, "new_lifted", member)
+                await member.add_roles(self.accepted_role)
+        if not new.restricted and not new.compliant:
+            # Add restriction
+            await member.add_roles(self.restrict_role)
+            # await self._send_message(channel, "restricted", member)
+
+        if old and old.coc != new.coc:
+            # The member has accepted the CoC, send him a confirmation.
+            await self._send_message(channel, "coc_accepted", member)
+            pass
+
+        if new.nickname and old is not None and old.nickname != new.nickname:
+            # The nickname has changed from what we knew before.
+            if new.correct_nickname:
+                # Send confirmation that new nickname is correct.
+                await self._send_message(channel, "correct_nick", member)
+            elif new.nickname.startswith("u/"):
+                # Send message explaining the common wrong prefix.
+                await self._send_message(channel, "wrong_prefix", member)
+            else:
+                # Repeat the wrong nickname instructions.
+                await self._send_message(channel, "wrong_nick", member)
+
+    async def _get_record(self, member: Member) -> Record:
         """Retrieve the record of the member, creating one if not yet available."""
         if member not in self.members.dictionary:
             await self._create_record(member)
         return self.members.get(member)
 
-    async def _create_record(self, member: Member) -> Dict[str, bool]:
+    async def _create_record(self, member: Member) -> Record:
         """Create a record for the specified member."""
-        nickname_check = self._correct_nickname(member.nick)
-        # Assume the member has accepted the CoC if they have a role other than
-        # the restriction role or the member has another role than the
+        # Assume the member has accepted the CoC if they do not have the
+        # restriction role or the member has another role than the
         # restriction role and "@everyone"
-        coc_check = self.restrict_role not in member.roles or len(member.roles) > 2
+        restricted_check = self.restrict_role in member.roles
+        coc_check = not restricted_check or len(member.roles) > 2
         return await self.members.update(
-            member, {"nickname": nickname_check, "coc": coc_check}
+            member,
+            Record(nickname=member.nick, coc=coc_check, restricted=restricted_check),
         )
 
     @staticmethod
