@@ -49,14 +49,14 @@ class Record:
         self, nickname: str = None, coc: bool = False, restricted: bool = True
     ) -> None:
         """
-        Initialize the user record.
+        Initialize the member record.
 
         The record contains the following fields:
         - nickname: The nickname of the member
         - coc: Whether the member has accepted the Code of Conduct
         - restricted: Whether the member has restricted access to Discord
         - compliant: Whether the member complies with all set constraints
-        - new_user: Whether the member is a new user
+        - new_member: Whether the member is new
         - correct_nickname: Whether the member's nickname is correct
         """
         self.nickname = nickname
@@ -69,8 +69,8 @@ class Record:
         return self.coc and self.correct_nickname
 
     @property
-    def new_user(self) -> bool:
-        """Whether the member is a new user."""
+    def new_member(self) -> bool:
+        """Whether the member is new."""
         return all([not self.coc, self.nickname is None])
 
     @property
@@ -78,7 +78,7 @@ class Record:
         """
         Whether a nickname is correct.
 
-        This check is currently only based on whether the username starts with
+        This check is currently only based on whether the nickname starts with
         "/u/", but can be extended.
         """
         return self.nickname is not None and self.nickname.startswith("/u/")
@@ -93,7 +93,7 @@ class Restrictor(Cog):
         restrict_channel: str,
         welcome_channel: str,
     ) -> None:
-        """Initialize the user dictionary and retrieve the relevant roles and channels."""
+        """Initialize the member's records and retrieve the roles and channels."""
         self.bot = bot
         self.restrict_name = restrict_role
         self.accepted_name = accepted_role
@@ -160,8 +160,8 @@ class Restrictor(Cog):
           the correctness of its format
         """
         channel = self.welcome_channel if new.compliant else self.restrict_channel
-        first_time_user = len(set(member.roles).difference({self.restrict_role})) == 1
-        if old is None and new.new_user:
+        first_time_member = len(set(member.roles).difference({self.restrict_role})) == 1
+        if old is None and new.new_member:
             await member.add_roles(self.restrict_role)
             await self._send_message(channel, "new_member", member)
             return
@@ -169,7 +169,7 @@ class Restrictor(Cog):
         if new.restricted and new.compliant:
             # Remove restriction
             await member.remove_roles(self.restrict_role)
-            if first_time_user:
+            if first_time_member:
                 # They are unrestricted first time, welcome in channel.
                 await self._send_message(channel, "new_lifted", member)
                 await member.add_roles(self.accepted_role)
