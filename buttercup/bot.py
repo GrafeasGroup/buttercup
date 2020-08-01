@@ -1,9 +1,10 @@
+import sys
 from collections import defaultdict
 from typing import Any, Dict
 
 import discord.utils
 import toml
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, Context, CommandError, CommandNotFound
 from discord.guild import Guild
 
 
@@ -31,6 +32,14 @@ class ButtercupBot(Bot):
         """Log a starting message when the bot is ready."""
         print(f"Connected as {self.user} to '{self.guild}'")
 
+    async def on_command_error(self, ctx: Context, error: CommandError) -> None:
+        """Default command error handling, which replies to a nonexistent command."""
+        if isinstance(error, CommandNotFound):
+            await ctx.send(str(error))
+        else:
+            # TODO: Logging
+            print(error, file=sys.stderr)
+            await ctx.send("Something went wrong. Please contact a moderator.")
     @property
     def config(self) -> Dict[str, Any]:
         """Provide the configuration loaded from the specified file."""

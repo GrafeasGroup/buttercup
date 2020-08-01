@@ -1,6 +1,6 @@
 import discord.utils
 from discord.ext.commands import Cog, Context, command
-from discord.ext.commands.errors import CheckFailure, CommandError
+from discord.ext.commands.errors import CheckFailure, CommandError, CommandInvokeError
 from discord.role import Role
 
 from buttercup.bot import ButtercupBot
@@ -24,25 +24,30 @@ class AdminCommands(Cog):
     async def cog_command_error(self, ctx: Context, error: CommandError) -> None:
         """Handle the command error, specifically that of being unauthorized."""
         if isinstance(error, CheckFailure):
+            # Member is not an admin.
             await ctx.send("You are not authorized to use this command.")
+        elif isinstance(error, CommandInvokeError):
+            # Something went wrong whilst executing an admin command, reply with
+            # the original exception's message.
+            await ctx.send(error.original.args[0])
         else:
             await ctx.send("Something went wrong, please contact a moderator.")
 
     @command()
     async def reload(self, ctx: Context, cog_name: str) -> None:
-        """Allow for the provided cog to be reloaded."""
+        """Reload the cog with the provided name."""
         self.bot.reload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully reloaded :+1:')
 
     @command()
     async def load(self, ctx: Context, cog_name: str) -> None:
-        """Allow for the provided cog to be loaded."""
+        """Load the cog with the provided name."""
         self.bot.load(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully loaded :+1:')
 
     @command()
     async def unload(self, ctx: Context, cog_name: str) -> None:
-        """Allow for the provided cog to be unloaded."""
+        """Unload the cog with the provided name."""
         self.bot.unload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully unloaded :+1:')
 
