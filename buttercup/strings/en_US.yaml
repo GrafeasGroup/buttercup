@@ -15,13 +15,15 @@ restrictor:
     If you have any questions or remarks, feel free to send a message in this channel and one of our moderators will be with you shortly! Cheers!
   coc_accepted: |
     Hey <@{0}>, we're glad you have read and accepted our Code of Conduct. This has been noted! :+1:
-  wrong_username: |
-    Hey <@{0}>, it appears that you have changed your username back to something that is not compliant with our guidelines.
+  correct_nick: |
+    Hey <@{0}>, thank you for changing your nickname to the specified format!
+  wrong_nick: |
+    Hey <@{0}>, it appears that you have changed your nickname to something that is not compliant with our guidelines.
 
     Make sure to use your Reddit name in Discord by typing `/nick /u/REDDIT_USERNAME`, replacing "REDDIT_USERNAME" with your actual Reddit username.
 
-    If you have changed your username back to a correct one, the restriction will be lifted.
-
     If you have any questions or remarks, feel free to send a message in this channel and one of our moderators will be with you shortly! Cheers!
-  restriction_lifted: |
-    Welcome once again <@{0}> to the Transcribers of Reddit Discord! Since you have accepted our Code of Conduct and changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
+  wrong_prefix: |
+    Hey <@{0}>, it appears that you have attempted to change your nickname, but forgot the initial `/` in your nickname. Make sure that your nickname starts with `/u/` and not `u/`!
+  new_lifted: |
+    Welcome <@{0}> to the Transcribers of Reddit Discord! Since you have accepted our Code of Conduct and changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
