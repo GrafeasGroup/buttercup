@@ -10,6 +10,35 @@ Discord keeper extraordinaire!
 
 Responsible for display name enforcement and whatever else comes her way, Buttercup is a python bot running on Discord.py. 
 
+### Running Buttercup
+
+In order to run buttercup, [poetry](https://python-poetry.org/) is used to manage and install dependencies.
+
+Apart from this, a `.toml` configuration file is expected. Below is a default `config.toml`:
+```
+[secrets]
+discord = "YOUR DISCORD BOT SECRET HERE"
+
+[guild]
+name = "Test Bubbles"
+
+[Admin]
+role = "ToR Mods"
+
+[Restrictor]
+accepted_role = "Visitor (0)"
+restrict_role = "New User"
+restrict_channel = "new-user"
+welcome_channel = "off-topic"
+```
+The `secrets` section contains all secrets required to run Buttercup:
+- `discord` is Discord's bot secret
+
+The `guild` section currently contains only the Discord server's name, to make sure the bot connects to the correct server.
+The other sections are related to the identically named cogs. The documentation of these options can be found within the source code.
+
+`main.py` can then be ran to initialize Buttercup.
+
 ### Development
 
 [*coming soon*]
