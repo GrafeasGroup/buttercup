@@ -1,6 +1,5 @@
 import discord.utils
 from discord.ext.commands import Cog, Context, command
-from discord.ext.commands.errors import CheckFailure, CommandError
 from discord.role import Role
 
 from buttercup.bot import ButtercupBot
@@ -20,13 +19,6 @@ class AdminCommands(Cog):
     def cog_check(self, ctx: Context) -> bool:
         """Check whether the user invoking the command is the correct role."""
         return self.role in ctx.author.roles
-
-    async def cog_command_error(self, ctx: Context, error: CommandError) -> None:
-        """Handle the command error, specifically that of being unauthorized."""
-        if isinstance(error, CheckFailure):
-            await ctx.send("You are not authorized to use this command.")
-        else:
-            await ctx.send("Something went wrong, please contact a moderator.")
 
     @command()
     async def reload(self, ctx: Context, cog_name: str) -> None:

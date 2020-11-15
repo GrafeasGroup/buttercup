@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Any, Dict
 
@@ -24,12 +25,12 @@ class ButtercupBot(Bot):
         self.guild_name = self.config["guild"]["name"]
 
         for extension in kwargs.get("extensions", list()):
-            print(f"Loading extension {extension}...")
+            logging.info(f"Loading extension {extension}...")
             self.load(extension)
 
     async def on_ready(self) -> None:
         """Log a starting message when the bot is ready."""
-        print(f"Connected as {self.user} to '{self.guild}'")
+        logging.info(f"Connected as {self.user} to '{self.guild}'")
 
     @property
     def config(self) -> Dict[str, Any]:
