@@ -23,9 +23,6 @@ jobs:
     - uses: knowsuchagency/poetry-install@v2
       env:
         POETRY_VIRTUALENVS_CREATE: true
-    - name: Install Dependencies
-      run: |
-        poetry install
     - name: Clone pyflakes repository
       uses: actions/checkout@v2
       with:
