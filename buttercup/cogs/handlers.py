@@ -9,7 +9,7 @@ class Handlers(commands.Cog):
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context) -> None:
         """Log when a command is ran."""
-        logger.info(f"Command Invoked: \"{ctx.message.content}\"", ctx)
+        logger.info(f'Command Invoked: "{ctx.message.content}"', ctx)
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: commands.Context) -> None:
@@ -18,7 +18,7 @@ class Handlers(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(
-            self, ctx: commands.Context, error: DiscordException
+        self, ctx: commands.Context, error: DiscordException
     ) -> None:
         """Log that a command has errored and provide the user with feedback."""
         logger.warning(f"{type(error).__name__}: {str(error)}", ctx)
