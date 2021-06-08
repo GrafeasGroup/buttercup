@@ -25,7 +25,7 @@ name = "Test Bubbles"
 [Admin]
 role = "ToR Mods"
 
-[Restrictor]
+[NameValidator]
 accepted_role = "Visitor (0)"
 restrict_role = "New User"
 restrict_channel = "new-user"
