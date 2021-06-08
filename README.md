@@ -30,6 +30,11 @@ accepted_role = "Visitor (0)"
 restrict_role = "New User"
 restrict_channel = "new-user"
 welcome_channel = "off-topic"
+
+[Blossom]
+username = ""
+password = ""
+api_key = ""
 ```
 The `secrets` section contains all secrets required to run Buttercup:
 - `discord` is Discord's bot secret
