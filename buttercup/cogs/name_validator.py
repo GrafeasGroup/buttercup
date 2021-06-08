@@ -45,9 +45,7 @@ class ObservableDict:
 
 
 class Record:
-    def __init__(
-        self, nickname: str = None, restricted: bool = True
-    ) -> None:
+    def __init__(self, nickname: str = None, restricted: bool = True) -> None:
         """
         Initialize the member record.
 
@@ -193,8 +191,7 @@ class NameValidator(Cog):
         # restriction role and "@everyone"
         restricted_check = self.restrict_role in member.roles
         return await self.members.update(
-            member,
-            Record(nickname=member.nick, restricted=restricted_check),
+            member, Record(nickname=member.nick, restricted=restricted_check),
         )
 
     @staticmethod
@@ -213,7 +210,9 @@ def setup(bot: ButtercupBot) -> None:
     restrict_channel = cog_config.get("restrict_channel", "new-user")
     welcome_channel = cog_config.get("welcome_channel", "off-topic")
     bot.add_cog(
-        NameValidator(bot, restrict_name, accepted_name, restrict_channel, welcome_channel)
+        NameValidator(
+            bot, restrict_name, accepted_name, restrict_channel, welcome_channel
+        )
     )
 
 
