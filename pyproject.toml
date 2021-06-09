@@ -6,6 +6,7 @@ authors = ["Grafeas Group Ltd. <devs@grafeas.org>"]
 
 [tool.poetry.dependencies]
 "discord.py" = "^1.7.2"
+discord-py-slash-command = "^1.2.2"
 python = "^3.8"
 toml = "^0.10.1"
 blossom-wrapper = { git = "https://github.com/GrafeasGroup/blossom-wrapper.git", branch = "master" }

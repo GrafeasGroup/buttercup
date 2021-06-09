@@ -5,7 +5,6 @@ import discord.utils
 from discord.channel import TextChannel
 from discord.ext.commands import Cog
 from discord.member import Member
-from discord.role import Role
 
 from buttercup.bot import ButtercupBot
 from buttercup.strings import translation
@@ -97,39 +96,35 @@ class NameValidator(Cog):
         self.welcome_channel_name = welcome_channel
         self.members = ObservableDict()
         self.members.subscribe(self._handle_update)
+        self.restrict_role = None
+        self.accepted_role = None
+        self.restrict_channel = None
+        self.welcome_channel = None
 
-    @property
-    def restrict_role(self) -> Role:
-        """Provide the restriction role based on the guild's roles."""
-        return discord.utils.get(self.bot.guild.roles, name=self.restrict_name)
-
-    @property
-    def accepted_role(self) -> Role:
-        """Provide the accepted role based on the guild's roles."""
-        return discord.utils.get(self.bot.guild.roles, name=self.accepted_name)
-
-    @property
-    def restrict_channel(self) -> TextChannel:
-        """Provide the restricted channel based on the guild's text channels."""
-        return discord.utils.get(
+    async def _initialize_state_variables(self) -> None:
+        self.restrict_role = self.restrict_role or discord.utils.get(
+            self.bot.guild.roles, name=self.restrict_name
+        )
+        self.accepted_role = self.accepted_role or discord.utils.get(
+            self.bot.guild.roles, name=self.accepted_name
+        )
+        self.restrict_channel = self.restrict_channel or discord.utils.get(
             self.bot.guild.text_channels, name=self.restrict_channel_name
         )
-
-    @property
-    def welcome_channel(self) -> TextChannel:
-        """Provide the welcome channel based on the guild's text channels."""
-        return discord.utils.get(
+        self.welcome_channel = self.welcome_channel or discord.utils.get(
             self.bot.guild.text_channels, name=self.welcome_channel_name
         )
 
     @Cog.listener()
     async def on_member_join(self, member: Member) -> None:
         """Create a member record when they join the server."""
+        await self._initialize_state_variables()
         await self._create_record(member)
 
     @Cog.listener()
     async def on_member_update(self, before: Member, after: Member) -> None:
         """Update the member record whenever their Discord profile changes."""
+        await self._initialize_state_variables()
         record = await self._get_record(after)
         record.nickname = after.nick
         record.restricted = self.restrict_role in after.roles
@@ -163,10 +158,12 @@ class NameValidator(Cog):
                 # They are unrestricted first time, welcome in channel.
                 await self._send_message(channel, "new_lifted", member)
                 await member.add_roles(self.accepted_role)
+                return
         if not new.restricted and not new.compliant:
             # Add restriction
             await member.add_roles(self.restrict_role)
-            await self._send_message(channel, "restricted", member)
+            await self._send_message(channel, "wrong_nick", member)
+            return
 
         if new.nickname and old is not None and old.nickname != new.nickname:
             # The nickname has changed from what we knew before.

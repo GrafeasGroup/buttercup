@@ -1,6 +1,7 @@
-import discord.utils
-from discord.ext.commands import Cog, Context, command
-from discord.role import Role
+from discord import Member
+from discord.ext.commands import CheckFailure, Cog
+from discord_slash import SlashContext, cog_ext
+from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 
@@ -11,30 +12,64 @@ class AdminCommands(Cog):
         self.bot = bot
         self.role_name = role_name
 
-    @property
-    def role(self) -> Role:
-        """Provide the role corresponding to that of the ToR Moderators."""
-        return discord.utils.get(self.bot.guild.roles, name=self.role_name)
-
-    def cog_check(self, ctx: Context) -> bool:
+    def _is_authorized(self, member: Member) -> bool:
         """Check whether the user invoking the command is the correct role."""
-        return self.role in ctx.author.roles
+        return self.role_name in {role.name for role in member.roles}
 
-    @command()
-    async def reload(self, ctx: Context, cog_name: str) -> None:
+    @cog_ext.cog_slash(
+        name="reload",
+        description="Reloads the Cog with the provided name.",
+        options=[
+            create_option(
+                name="cog_name",
+                description="Name of the Cog.",
+                option_type=3,
+                required=True,
+            )
+        ],
+    )
+    async def _reload(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be reloaded."""
+        if not self._is_authorized(ctx.author):
+            raise CheckFailure()
         self.bot.reload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully reloaded :+1:')
 
-    @command()
-    async def load(self, ctx: Context, cog_name: str) -> None:
+    @cog_ext.cog_slash(
+        name="load",
+        description="Loads the Cog with the provided name.",
+        options=[
+            create_option(
+                name="cog_name",
+                description="Name of the Cog.",
+                option_type=3,
+                required=True,
+            )
+        ],
+    )
+    async def _load(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be loaded."""
+        if not self._is_authorized(ctx.author):
+            raise CheckFailure()
         self.bot.load(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully loaded :+1:')
 
-    @command()
-    async def unload(self, ctx: Context, cog_name: str) -> None:
+    @cog_ext.cog_slash(
+        name="unload",
+        description="Unloads the Cog with the provided name.",
+        options=[
+            create_option(
+                name="cog_name",
+                description="Name of the Cog.",
+                option_type=3,
+                required=True,
+            )
+        ],
+    )
+    async def _unload(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be unloaded."""
+        if not self._is_authorized(ctx.author):
+            raise CheckFailure()
         self.bot.unload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully unloaded :+1:')
 
