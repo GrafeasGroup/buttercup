@@ -19,7 +19,9 @@ class ButtercupBot(Bot):
         - cog_path (default: buttercup.cogs): The path to the application cogs
         - extensions (default: list): list of extensions to load
         """
-        super().__init__(command_prefix, **kwargs)
+        intents = discord.Intents.default()
+        intents.members = True
+        super().__init__(command_prefix, intents=intents, **kwargs)
         self.config_path = kwargs.get("config_path", "config.toml")
         self.cog_path = kwargs.get("cog_path", "buttercup.cogs.")
         self.guild_name = self.config["guild"]["name"]

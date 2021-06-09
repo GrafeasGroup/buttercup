@@ -143,10 +143,12 @@ class NameValidator(Cog):
         has occurred. These actions include:
         - Restricting a non-compliant member
         - Unrestricting a compliant member
-        - Notifying the member of a CoC acceptance update
         - Notifying the member of a nickname update, sending a message depending on
           the correctness of its format
         """
+        if member == self.bot.user:
+            return
+
         channel = self.welcome_channel if new.compliant else self.restrict_channel
         first_time_member = len(set(member.roles).difference({self.restrict_role})) == 1
         if old is None and new.new_member:
