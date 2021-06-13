@@ -1,20 +1,12 @@
-restrictor:
+name_validator:
   new_member: |
     Hello, <@{0}>! Welcome to the Transcribers of Reddit chill room! Thanks for helping make somebody's day better!
 
-    You might have noticed that you can only view this Text Channel. We use this channel to make sure your username is equal to your Reddit username and to make sure you know and accept our Code of Conduct for this Discord. If you have completed both of these tasks, you are given full access to the Discord.
+    You might have noticed that you can only view this Text Channel. We use this channel to make sure your username is equal to your Reddit username. If you have completed this task, you are given full access to the Discord.
 
     To use your Reddit name in Discord you can simply type `/nick /u/REDDIT_USERNAME`, replacing "REDDIT_USERNAME" with your actual Reddit username.
 
-    We would also like you to take note of our Code of Conduct for this Discord:
-
-    - TODO: Write a Code of Conduct
-
-    If you have read our Code of Conduct and you accept this, please send a message starting with `!accept` to notify us of this.
-
     If you have any questions or remarks, feel free to send a message in this channel and one of our moderators will be with you shortly! Cheers!
-  coc_accepted: |
-    Hey <@{0}>, we're glad you have read and accepted our Code of Conduct. This has been noted! :+1:
   correct_nick: |
     Hey <@{0}>, thank you for changing your nickname to the specified format!
   wrong_nick: |
@@ -26,4 +18,4 @@ restrictor:
   wrong_prefix: |
     Hey <@{0}>, it appears that you have attempted to change your nickname, but forgot the initial `/` in your nickname. Make sure that your nickname starts with `/u/` and not `u/`!
   new_lifted: |
-    Welcome <@{0}> to the Transcribers of Reddit Discord! Since you have accepted our Code of Conduct and changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
+    Welcome <@{0}> to the Transcribers of Reddit Discord! Since you have changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
