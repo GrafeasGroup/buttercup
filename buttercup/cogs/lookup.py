@@ -77,7 +77,26 @@ class Lookup(Cog):
                            "either a post on a r/TranscribersOfReddit, on a partner sub or a transcription.")
             return
 
-        response = self.blossom.get_submission(url=normalized_url)
+        if "/r/TranscribersOfReddit" in normalized_url:
+            # It's a link to the ToR submission
+            response = self.blossom.get_submission(tor_url=normalized_url)
+        elif len(normalized_url.split("/")) >= 8:
+            # It's a comment on a partner sub, i.e. a transcription
+            tr_response = self.blossom.get_transcription(url=normalized_url)
+            tr_data = tr_response.data
+
+            if tr_response.status != BlossomStatus.ok or tr_data is None or len(tr_data) == 0:
+                response = None
+            else:
+                transcription = tr_data[0]
+                # We don't have direct access to the submission ID, so we need to extract it from the submission URL
+                submission_url = transcription["submission"]
+                submission_id = submission_url.split("/")[-2]
+                response = self.blossom.get_submission(id=submission_id)
+        else:
+            # It's a link to the submission on a partner sub
+            response = self.blossom.get_submission(url=normalized_url)
+
         data = response.data
 
         if response.status != BlossomStatus.ok or data is None or len(data) == 0:
