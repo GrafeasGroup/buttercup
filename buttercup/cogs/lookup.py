@@ -1,9 +1,10 @@
 from discord.ext.commands import Cog
+from discord import Embed, Color
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 from urllib.parse import urlparse
 
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from buttercup.bot import ButtercupBot
 from blossom_wrapper import BlossomAPI, BlossomStatus
@@ -35,6 +36,25 @@ class Lookup(Cog):
         # Reformat URL in the format that Blossom uses
         return f"https://reddit.com{path}"
 
+    @staticmethod
+    def _submission_to_embed(submission: Dict[str, Any]) -> Embed:
+        print(submission)
+
+        status = "Unclaimed"
+        color = Color.from_rgb(255, 176, 0)  # Orange
+        if submission["completed_by"] is not None:
+            status = "Completed"
+            color = Color.from_rgb(148, 224, 68)  # Green
+        elif submission["claimed_by"] is not None:
+            status = "In Progress"
+            color = Color.from_rgb(13, 211, 187)  # Cyan
+
+        return Embed(color=color)\
+            .set_image(url=submission["content_url"])\
+            .add_field(name="ToR Post", value=submission["tor_url"], inline=False)\
+            .add_field(name="Partner Post", value=submission["url"], inline=False)\
+            .add_field(name="Status", value=status)
+
     @cog_ext.cog_slash(
         name="lookup",
         description="Find a post given a Reddit URL.",
@@ -65,8 +85,9 @@ class Lookup(Cog):
             return
 
         submission = data[0]
+        embed = Lookup._submission_to_embed(submission)
 
-        await ctx.send(f'I found your post!\n{submission["url"]}\n{submission["tor_url"]}')
+        await ctx.send("I found your post!", embed=embed)
 
 
 def setup(bot: ButtercupBot) -> None:
