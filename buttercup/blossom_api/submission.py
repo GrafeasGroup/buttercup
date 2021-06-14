@@ -70,17 +70,17 @@ class Submission:
         return self._data["source"]
 
     @property
-    def url(self) -> str:
+    def url(self) -> Optional[str]:
         """The URL of the submission."""
         return self._data["url"]
 
     @property
-    def tor_url(self) -> str:
+    def tor_url(self) -> Optional[str]:
         """The URL of the submission on ToR."""
         return self._data["tor_url"]
 
     @property
-    def content_url(self) -> str:
+    def content_url(self) -> Optional[str]:
         """The URL of the content of the submission, i.e. the media to transcribe."""
         return self._data["content_url"]
 
@@ -110,12 +110,12 @@ class Submission:
         return self._data["redis_id"]
 
     @property
-    def subreddit(self) -> str:
+    def subreddit(self) -> Optional[str]:
         """The subreddit that the submission was posted to.
 
         The Blossom API doesn't provide this directly, so we need to get it from the URL instead.
         """
-        return self.url.split("/")[4]
+        return self.url.split("/")[4] if self.url is not None else None
 
     def to_embed(self) -> Embed:
         """Converts the submission to a Discord embed."""
@@ -128,22 +128,28 @@ class Submission:
             status = "In Progress"
             color = Color.from_rgb(13, 211, 187)  # Cyan
 
-        tor_post = f"[Link]({self.tor_url})"
-        partner_post = f"[Link]({self.url})"
-
-        return Embed(color=color) \
-            .set_image(url=self.content_url) \
-            .set_author(name=f"r/{self.subreddit}", url=f"https://reddit.com/r/{self.subreddit}") \
-            .add_field(name="ToR Post", value=tor_post) \
-            .add_field(name="Partner Post", value=partner_post) \
+        embed = Embed(color=color) \
             .add_field(name="Status", value=status) \
             .add_field(name="Archived", value="Yes" if self.archived else "No") \
             .add_field(name="OCR", value="Yes" if self.has_ocr_transcription else "No")
 
+        if self.content_url is not None:
+            embed.set_image(url=self.content_url)
+        if self.tor_url is not None:
+            tor_post = f"[Link]({self.tor_url})"
+            embed.add_field(name="ToR Post", value=tor_post)
+        if self.url is not None:
+            partner_post = f"[Link]({self.url})"
+            embed.add_field(name="Partner Post", value=partner_post)
+        if self.subreddit is not None:
+            embed.set_author(name=f"r/{self.subreddit}", url=f"https://reddit.com/r/{self.subreddit}")
+
+        return embed
+
 
 def try_get_submission(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Submission]:
     """Tries to get the submission with the given arguments."""
-    data = try_get_first(blossom_api.get_submission(kwargs=kwargs))
+    data = try_get_first(blossom_api.get_submission(**kwargs))
 
     if data is None:
         return None
@@ -152,7 +158,7 @@ def try_get_submission(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Submi
 
 
 def try_get_submission_from_url(blossom_api: BlossomAPI, reddit_url_str: str) -> Optional[Submission]:
-    """Tries to get the submission correspoding to the given Reddit URL.
+    """Tries to get the submission corresponding to the given Reddit URL.
 
     The URL can be a link to either a post on the partner sub or r/ToR, or it can be a transcription link.
     """
@@ -174,23 +180,20 @@ def try_get_submission_from_url(blossom_api: BlossomAPI, reddit_url_str: str) ->
     # Determine what kind of link we're dealing with:
     if "/r/TranscribersOfReddit" in path:
         # It's a link to the ToR submission
-        return try_get_submission(tor_url=normalized_url)
+        return try_get_submission(blossom_api, tor_url=normalized_url)
     elif len(path.split("/")) >= 8:
         # It's a comment on a partner sub, i.e. a transcription
         # This means that the path is longer, because of the added comment ID
         tr_response = blossom_api.get_transcription(url=normalized_url)
-        tr_data = tr_response.data
+        tr_data = try_get_first(tr_response)
 
-        if tr_response.status != BlossomStatus.ok or tr_data is None or len(tr_data) == 0:
+        if tr_data is None:
             return None
-        else:
-            transcription = tr_data[0]
-            # We don't have direct access to the submission ID, so we need to extract it from the submission URL
-            submission_url = transcription["submission"]
-            submission_id = submission_url.split("/")[-2]
-            return try_get_submission(id=submission_id)
+
+        # We don't have direct access to the submission ID, so we need to extract it from the submission URL
+        submission_url = tr_data["submission"]
+        submission_id = submission_url.split("/")[-2]
+        return try_get_submission(blossom_api, id=submission_id)
     else:
         # It's a link to the submission on a partner sub
-        return try_get_submission(url=normalized_url)
-
-
+        return try_get_submission(blossom_api, url=normalized_url)

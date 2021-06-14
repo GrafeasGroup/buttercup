@@ -54,7 +54,7 @@ def setup(bot: ButtercupBot) -> None:
     password = cog_config.get("password")
     api_key = cog_config.get("api_key")
     blossom_api = BlossomAPI(email=email, password=password, api_key=api_key)
-    bot.add_cog(Lookup(bot, blossom_api))
+    bot.add_cog(Lookup(bot=bot, blossom_api=blossom_api))
 
 
 def teardown(bot: ButtercupBot) -> None:
