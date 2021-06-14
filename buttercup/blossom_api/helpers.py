@@ -29,3 +29,11 @@ def get_id_from_url(grafeas_url: str) -> int:
 def get_url_from_id(grafeas_type: str, grafeas_id: int) -> str:
     """Gets the full Grafeas URL from the ID and type."""
     return f"https://grafeas.org/api/{grafeas_type}/{grafeas_id}/"
+
+
+def limit_str(text: str, limit: Optional[int] = None) -> str:
+    """Limits the string to the given length"""
+    if limit is None or len(text) <= limit:
+        return text
+
+    return f"{text[:(limit - 3)]}..."

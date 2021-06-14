@@ -4,7 +4,7 @@ from datetime import datetime
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
 
-from buttercup.blossom_api.helpers import try_get_all
+from buttercup.blossom_api.helpers import try_get_all, get_url_from_id
 
 
 class Transcription:
@@ -69,7 +69,16 @@ class Transcription:
     @property
     def content(self) -> str:
         """The content of the transcription, without header and footer."""
-        return self.text
+        if self.author_link == get_url_from_id("volunteer", 3):
+            # The author is the OCR bot and doesn't use our format
+            return self.text
+
+        parts = self.text.split("---")
+        if len(parts) < 3:
+            return self.text
+
+        # Discard header and footer
+        return "---".join(parts[1:-1]).strip()
 
     @property
     def removed_from_reddit(self) -> bool:

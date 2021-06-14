@@ -6,7 +6,7 @@ from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from discord import Color, Embed
 
-from buttercup.blossom_api.helpers import try_get_first, get_id_from_url, get_url_from_id
+from buttercup.blossom_api.helpers import try_get_first, get_id_from_url, get_url_from_id, limit_str
 from buttercup.blossom_api.transcription import Transcription, try_get_transcriptions
 from buttercup.blossom_api.volunteer import Volunteer, try_get_volunteer
 
@@ -202,7 +202,7 @@ class Submission:
             .add_field(name="OCR", value="Yes" if self.has_ocr_transcription else "No")
 
         if self.content is not None:
-            embed.description = self.content[:200]
+            embed.description = limit_str(self.content, 200)
         if self.content_url is not None:
             embed.set_image(url=self.content_url)
         if self.tor_url is not None:
