@@ -96,6 +96,14 @@ class Submission:
         """The Redis ID of the submission."""
         return self._data["redis_id"]
 
+    @property
+    def subreddit(self) -> str:
+        """The subreddit that the submission was posted to.
+
+        The Blossom API doesn't provide this directly, so we need to get it from the URL instead.
+        """
+        return self.url.split("/")[4]
+
     def __str__(self) -> str:
         return str(self._data)
 

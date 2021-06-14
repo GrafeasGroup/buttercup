@@ -50,6 +50,7 @@ class Lookup(Cog):
 
         return Embed(color=color)\
             .set_image(url=submission.content_url)\
+            .set_author(name=f"r/{submission.subreddit}", url=f"https://reddit.com/r/{submission.subreddit}")\
             .add_field(name="ToR Post", value=submission.tor_url, inline=False)\
             .add_field(name="Partner Post", value=submission.url, inline=False)\
             .add_field(name="Status", value=status)
@@ -82,6 +83,7 @@ class Lookup(Cog):
             response = self.blossom.get_submission(tor_url=normalized_url)
         elif len(path.split("/")) >= 8:
             # It's a comment on a partner sub, i.e. a transcription
+            # This means that the path is longer, because of the added comment ID
             tr_response = self.blossom.get_transcription(url=normalized_url)
             tr_data = tr_response.data
 
