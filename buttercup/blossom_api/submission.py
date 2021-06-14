@@ -6,7 +6,12 @@ from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from discord import Color, Embed
 
-from buttercup.blossom_api.helpers import try_get_first, get_id_from_url, get_url_from_id, limit_str
+from buttercup.blossom_api.helpers import (
+    try_get_first,
+    get_id_from_url,
+    get_url_from_id,
+    limit_str,
+)
 from buttercup.blossom_api.transcription import Transcription, try_get_transcriptions
 from buttercup.blossom_api.volunteer import Volunteer, try_get_volunteer
 
@@ -54,7 +59,11 @@ class Submission:
     @property
     def claim_time(self) -> Optional[datetime]:
         """The time when the submission was claimed."""
-        return parser.parse(self._data["claim_time"]) if self._data["claim_time"] is not None else None
+        return (
+            parser.parse(self._data["claim_time"])
+            if self._data["claim_time"] is not None
+            else None
+        )
 
     @property
     def completed_by(self) -> Optional[str]:
@@ -64,7 +73,11 @@ class Submission:
     @property
     def complete_time(self) -> Optional[datetime]:
         """The time when the submission was completed."""
-        return parser.parse(self._data["complete_time"]) if self._data["complete_time"] is not None else None
+        return (
+            parser.parse(self._data["complete_time"])
+            if self._data["complete_time"] is not None
+            else None
+        )
 
     @property
     def source(self) -> str:
@@ -148,7 +161,9 @@ class Submission:
         """The transcriptions for this post."""
         return self._transcriptions
 
-    def fetch_transcriptions(self, blossom_api: BlossomAPI) -> Optional[List[Transcription]]:
+    def fetch_transcriptions(
+        self, blossom_api: BlossomAPI
+    ) -> Optional[List[Transcription]]:
         """Retrieves the transcriptions for this submission from Blossom."""
         if self._transcriptions is not None:
             return self._transcriptions
@@ -158,28 +173,37 @@ class Submission:
         return transcriptions
 
     @property
-    def content(self) -> Optional[str]:
-        """The transcribed content of the submission."""
+    def main_transcription(self) -> Optional[Transcription]:
+        """The main transcription that completed the submission"""
         if self.transcriptions is None or len(self.transcriptions) == 0:
             return None
 
         if self.completed_by is not None:
             # Try find the user transcription
             # Kinda ugly, but Python doesn't seem to have a List.find function
-            user_transcription = next(iter(
-                [tr for tr in self.transcriptions if tr.author_link == self.completed_by]),
-                None
+            user_transcription = next(
+                iter(
+                    [
+                        tr
+                        for tr in self.transcriptions
+                        if tr.author_link == self.completed_by
+                    ]
+                ),
+                None,
             )
             if user_transcription is not None:
-                return user_transcription.content
+                return user_transcription
 
         # Use the last one as fallback, probably OCR
-        return self.transcriptions[-1].content
+        return self.transcriptions[-1]
 
     def to_embed(self) -> Embed:
         """Converts the submission to a Discord embed."""
         color = Color.from_rgb(255, 176, 0)  # Orange
         status = "Unclaimed"
+
+        main_tr = self.main_transcription
+        tr_link = f"[Link]({main_tr.url})" if main_tr is not None else None
 
         if self.completed_by is not None:
             color = Color.from_rgb(148, 224, 68)  # Green
@@ -196,13 +220,15 @@ class Submission:
             else:
                 status = "Claimed"
 
-        embed = Embed(color=color) \
-            .add_field(name="Status", value=status) \
-            .add_field(name="Archived", value="Yes" if self.archived else "No") \
+        embed = (
+            Embed(color=color)
+            .add_field(name="Status", value=status)
             .add_field(name="OCR", value="Yes" if self.has_ocr_transcription else "No")
+            .add_field(name="Archived", value="Yes" if self.archived else "No")
+        )
 
-        if self.content is not None:
-            embed.description = limit_str(self.content, 200)
+        if main_tr is not None:
+            embed.description = limit_str(main_tr.content, 200)
         if self.content_url is not None:
             embed.set_image(url=self.content_url)
         if self.tor_url is not None:
@@ -211,8 +237,12 @@ class Submission:
         if self.url is not None:
             partner_post = f"[Link]({self.url})"
             embed.add_field(name="Partner Post", value=partner_post)
+        if tr_link is not None:
+            embed.add_field(name="Transcription", value=tr_link)
         if self.subreddit is not None:
-            embed.set_author(name=f"r/{self.subreddit}", url=f"https://reddit.com/r/{self.subreddit}")
+            embed.set_author(
+                name=f"r/{self.subreddit}", url=f"https://reddit.com/r/{self.subreddit}"
+            )
 
         return embed
 
@@ -227,7 +257,9 @@ def try_get_submission(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Submi
     return Submission(data)
 
 
-def try_get_submission_from_url(blossom_api: BlossomAPI, reddit_url_str: str) -> Optional[Submission]:
+def try_get_submission_from_url(
+    blossom_api: BlossomAPI, reddit_url_str: str
+) -> Optional[Submission]:
     """Tries to get the submission corresponding to the given Reddit URL.
 
     The URL can be a link to either a post on the partner sub or r/ToR, or it can be a transcription link.

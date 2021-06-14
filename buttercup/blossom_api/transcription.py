@@ -86,7 +86,9 @@ class Transcription:
         return self._data["removed_from_reddit"]
 
 
-def try_get_transcriptions(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[List[Transcription]]:
+def try_get_transcriptions(
+    blossom_api: BlossomAPI, **kwargs: Any
+) -> Optional[List[Transcription]]:
     """Tries to get the transcriptions with the given arguments."""
     data = try_get_all(blossom_api.get_transcription(**kwargs))
 

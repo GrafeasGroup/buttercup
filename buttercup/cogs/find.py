@@ -39,9 +39,11 @@ class Find(Cog):
         submission = try_get_submission_from_url(self.blossom_api, reddit_url)
 
         if submission is None:
-            await msg.edit(content=f"Sorry, I couldn't find a post with the URL <{reddit_url}>. "
-                           "Please check that your link is correct, it should lead to either a post "
-                           "on r/TranscribersOfReddit, a post on a partner sub or to a transcription.")
+            await msg.edit(
+                content=f"Sorry, I couldn't find a post with the URL <{reddit_url}>. "
+                "Please check that your link is correct, it should lead to either a post "
+                "on r/TranscribersOfReddit, a post on a partner sub or to a transcription."
+            )
             return
 
         await msg.edit(content="I found the post!", embed=submission.to_embed())
