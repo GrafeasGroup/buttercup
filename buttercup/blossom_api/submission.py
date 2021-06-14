@@ -6,8 +6,8 @@ from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from discord import Color, Embed
 
-from buttercup.blossom_api.helpers import try_get_first
-from buttercup.blossom_api.volunteer import Volunteer
+from buttercup.blossom_api.helpers import try_get_first, get_id_from_url
+from buttercup.blossom_api.volunteer import Volunteer, try_get_volunteer
 
 
 class Submission:
@@ -117,16 +117,49 @@ class Submission:
         """
         return self.url.split("/")[4] if self.url is not None else None
 
+    @property
+    def volunteer(self) -> Optional[Volunteer]:
+        """The volunteer working on this submission."""
+        return self._volunteer
+
+    def fetch_volunteer(self, blossom_api: BlossomAPI) -> Optional[Volunteer]:
+        """Retrieves the volunteer working on this submission from Blossom."""
+        if self._volunteer is not None:
+            return self._volunteer
+
+        if self.completed_by is not None:
+            volunteer_id = get_id_from_url(self.completed_by)
+            volunteer = try_get_volunteer(blossom_api, id=volunteer_id)
+            self._volunteer = volunteer
+            return volunteer
+
+        if self.claimed_by is not None:
+            volunteer_id = get_id_from_url(self.claimed_by)
+            volunteer = try_get_volunteer(blossom_api, id=volunteer_id)
+            self._volunteer = volunteer
+            return volunteer
+
+        return None
+
     def to_embed(self) -> Embed:
         """Converts the submission to a Discord embed."""
-        status = "Unclaimed"
         color = Color.from_rgb(255, 176, 0)  # Orange
+        status = "Unclaimed"
+
         if self.completed_by is not None:
-            status = "Completed"
             color = Color.from_rgb(148, 224, 68)  # Green
+
+            if self.volunteer is not None:
+                status = f"Completed by {self.volunteer.formatted_link}"
+            else:
+                status = "Completed"
         elif self.claimed_by is not None:
-            status = "In Progress"
             color = Color.from_rgb(13, 211, 187)  # Cyan
+
+            if self.volunteer is not None:
+                status = f"Claimed by {self.volunteer.formatted_link}"
+            else:
+                status = "Claimed"
 
         embed = Embed(color=color) \
             .add_field(name="Status", value=status) \
@@ -192,7 +225,7 @@ def try_get_submission_from_url(blossom_api: BlossomAPI, reddit_url_str: str) ->
 
         # We don't have direct access to the submission ID, so we need to extract it from the submission URL
         submission_url = tr_data["submission"]
-        submission_id = submission_url.split("/")[-2]
+        submission_id = get_id_from_url(submission_url)
         return try_get_submission(blossom_api, id=submission_id)
     else:
         # It's a link to the submission on a partner sub

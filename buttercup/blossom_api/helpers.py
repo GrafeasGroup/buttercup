@@ -9,3 +9,8 @@ def try_get_first(response: BlossomResponse) -> Optional[Dict[str, Any]]:
         return None
 
     return response.data[0]
+
+
+def get_id_from_url(grafeas_url: str) -> int:
+    """Extracts the API from a Grafeas URL."""
+    return int(grafeas_url.split("/")[-2])

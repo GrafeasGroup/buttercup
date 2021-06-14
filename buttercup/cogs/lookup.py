@@ -46,6 +46,10 @@ class Lookup(Cog):
 
         await msg.edit(content="I found your post!", embed=submission.to_embed())
 
+        # Also get the volunteer who is working on the post
+        submission.fetch_volunteer(self.blossom_api)
+        await msg.edit(content="I found your post!", embed=submission.to_embed())
+
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the Lookup cog."""

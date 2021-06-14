@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
+from blossom_wrapper import BlossomAPI, BlossomResponse
 from dateutil import parser
+
+from buttercup.blossom_api.helpers import try_get_first
 
 
 class Volunteer:
@@ -53,3 +56,25 @@ class Volunteer:
         this volunteer.
         """
         return self._data["accepted_coc"]
+
+    @property
+    def formatted_link(self) -> str:
+        """A link in the Discord format pointing to the volunteer on Reddit."""
+        return f"[{self.username}](https://reddit.com/u/{self.username})"
+
+
+def try_get_volunteer(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Volunteer]:
+    """Tries to get the volunteer with the given arguments."""
+
+    response = blossom_api.get("volunteer/", params=kwargs)
+    response.raise_for_status()
+    results = response.json()["results"]
+    if not results:
+        return None
+
+    data = try_get_first(BlossomResponse(data=results))
+
+    if data is None:
+        return None
+
+    return Volunteer(data)
