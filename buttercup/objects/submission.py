@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from dateutil import parser
+from discord import Color, Embed
 
 
 class Submission:
@@ -103,6 +104,29 @@ class Submission:
         The Blossom API doesn't provide this directly, so we need to get it from the URL instead.
         """
         return self.url.split("/")[4]
+
+    def to_embed(self) -> Embed:
+        """Converts the submission to a Discord embed."""
+        status = "Unclaimed"
+        color = Color.from_rgb(255, 176, 0)  # Orange
+        if self.completed_by is not None:
+            status = "Completed"
+            color = Color.from_rgb(148, 224, 68)  # Green
+        elif self.claimed_by is not None:
+            status = "In Progress"
+            color = Color.from_rgb(13, 211, 187)  # Cyan
+
+        tor_post = f"[Link]({self.tor_url})"
+        partner_post = f"[Link]({self.url})"
+
+        return Embed(color=color) \
+            .set_image(url=self.content_url) \
+            .set_author(name=f"r/{self.subreddit}", url=f"https://reddit.com/r/{self.subreddit}") \
+            .add_field(name="ToR Post", value=tor_post) \
+            .add_field(name="Partner Post", value=partner_post) \
+            .add_field(name="Status", value=status) \
+            .add_field(name="Archived", value="Yes" if self.archived else "No") \
+            .add_field(name="OCR", value="Yes" if self.has_ocr_transcription else "No")
 
     def __str__(self) -> str:
         return str(self._data)

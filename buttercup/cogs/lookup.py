@@ -37,24 +37,6 @@ class Lookup(Cog):
 
         return path
 
-    @staticmethod
-    def _submission_to_embed(submission: Submission) -> Embed:
-        status = "Unclaimed"
-        color = Color.from_rgb(255, 176, 0)  # Orange
-        if submission.completed_by is not None:
-            status = "Completed"
-            color = Color.from_rgb(148, 224, 68)  # Green
-        elif submission.claimed_by is not None:
-            status = "In Progress"
-            color = Color.from_rgb(13, 211, 187)  # Cyan
-
-        return Embed(color=color)\
-            .set_image(url=submission.content_url)\
-            .set_author(name=f"r/{submission.subreddit}", url=f"https://reddit.com/r/{submission.subreddit}")\
-            .add_field(name="ToR Post", value=submission.tor_url, inline=False)\
-            .add_field(name="Partner Post", value=submission.url, inline=False)\
-            .add_field(name="Status", value=status)
-
     @cog_ext.cog_slash(
         name="lookup",
         description="Find a post given a Reddit URL.",
@@ -73,9 +55,13 @@ class Lookup(Cog):
         path = Lookup._parse_reddit_url(reddit_url)
         normalized_url = f"https://reddit.com{path}"
 
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(f"Looking for post <{normalized_url}>...")
+
         if normalized_url is None:
-            await ctx.send(f"I don't recognize '{reddit_url}' as valid Reddit URL. Please provide a link to "
-                           "either a post on a r/TranscribersOfReddit, on a partner sub or a transcription.")
+            await msg.edit(content=f"I don't recognize <{reddit_url}> as valid Reddit URL. Please provide a link to "
+                           "either a post on a r/TranscribersOfReddit, on a partner sub or to a transcription.")
             return
 
         if "/r/TranscribersOfReddit" in path:
@@ -100,13 +86,11 @@ class Lookup(Cog):
             response = self.blossom.get_submission(url=normalized_url)
 
         if response is None or response.status != BlossomStatus.ok or response.data is None or len(response.data) == 0:
-            await ctx.send(f"""I couldn't find a post with URL "{normalized_url}", sorry.""")
+            await msg.edit(content=f"Sorry, I couldn't find a post with the URL <{normalized_url}>.")
             return
 
         submission = Submission(response.data[0])
-        embed = Lookup._submission_to_embed(submission)
-
-        await ctx.send("I found your post!", embed=embed)
+        await msg.edit(content="I found your post!", embed=submission.to_embed())
 
 
 def setup(bot: ButtercupBot) -> None:
