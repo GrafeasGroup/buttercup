@@ -1,15 +1,10 @@
+from blossom_wrapper import BlossomAPI
 from discord.ext.commands import Cog
-from discord import Embed, Color
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
-from urllib.parse import urlparse
-
-from typing import Optional, Dict, Any
-
-from buttercup.bot import ButtercupBot
-from blossom_wrapper import BlossomAPI, BlossomStatus
 
 from buttercup.blossom_api.submission import try_get_submission_from_url
+from buttercup.bot import ButtercupBot
 
 
 class Find(Cog):
@@ -24,7 +19,8 @@ class Find(Cog):
         options=[
             create_option(
                 name="reddit_url",
-                description="A Reddit URL, either to the submission on ToR, the partner sub or the transcription.",
+                description="A Reddit URL, either to the submission on ToR, the "
+                "partner sub or the transcription.",
                 option_type=3,
                 required=True,
             )
@@ -42,7 +38,8 @@ class Find(Cog):
             await msg.edit(
                 content=f"Sorry, I couldn't find a post with the URL <{reddit_url}>. "
                 "Please check that your link is correct, it should lead to either a post "
-                "on r/TranscribersOfReddit, a post on a partner sub or to a transcription."
+                "on r/TranscribersOfReddit, a post on a partner sub or to a "
+                "transcription."
             )
             return
 

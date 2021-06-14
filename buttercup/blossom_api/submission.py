@@ -1,26 +1,23 @@
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil import parser
 from discord import Color, Embed
 
 from buttercup.blossom_api.helpers import (
-    try_get_first,
     get_id_from_url,
-    get_url_from_id,
     limit_str,
+    try_get_first,
 )
 from buttercup.blossom_api.transcription import Transcription, try_get_transcriptions
 from buttercup.blossom_api.volunteer import Volunteer, try_get_volunteer
 
 
 class Submission:
-    def __init__(self, submission_data: Dict[str, Any]):
-        """
-        Creates a new submission based on the submission data.
-        """
+    def __init__(self, submission_data: Dict[str, Any]) -> None:
+        """Create a new submission based on the submission data."""
         self._data = submission_data
         self._volunteer = None
         self._transcriptions = None
@@ -33,32 +30,32 @@ class Submission:
 
     @property
     def id(self) -> int:
-        """The ID of the submission."""
+        """Get the ID of the submission."""
         return self._data["id"]
 
     @property
     def original_id(self) -> str:
-        """The original submission ID on the source."""
+        """Get the original submission ID on the source."""
         return self._data["original_id"]
 
     @property
     def create_time(self) -> datetime:
-        """The time when the submission was created."""
+        """Get the time when the submission was created."""
         return parser.parse(self._data["create_time"])
 
     @property
     def last_update_time(self) -> datetime:
-        """The last time the submission was updated."""
+        """Get the last time the submission was updated."""
         return parser.parse(self._data["last_update_time"])
 
     @property
     def claimed_by(self) -> Optional[str]:
-        """The user who claimed the submission."""
+        """Get the user who claimed the submission."""
         return self._data["claimed_by"]
 
     @property
     def claim_time(self) -> Optional[datetime]:
-        """The time when the submission was claimed."""
+        """Get the time when the submission was claimed."""
         return (
             parser.parse(self._data["claim_time"])
             if self._data["claim_time"] is not None
@@ -67,12 +64,12 @@ class Submission:
 
     @property
     def completed_by(self) -> Optional[str]:
-        """The user who completed the submission."""
+        """Get the user who completed the submission."""
         return self._data["completed_by"]
 
     @property
     def complete_time(self) -> Optional[datetime]:
-        """The time when the submission was completed."""
+        """Get the time when the submission was completed."""
         return (
             parser.parse(self._data["complete_time"])
             if self._data["complete_time"] is not None
@@ -81,64 +78,65 @@ class Submission:
 
     @property
     def source(self) -> str:
-        """The source of the submission."""
+        """Get the source of the submission."""
         return self._data["source"]
 
     @property
     def url(self) -> Optional[str]:
-        """The URL of the submission."""
+        """Get the URL of the submission."""
         return self._data["url"]
 
     @property
     def tor_url(self) -> Optional[str]:
-        """The URL of the submission on ToR."""
+        """Get the URL of the submission on ToR."""
         return self._data["tor_url"]
 
     @property
     def content_url(self) -> Optional[str]:
-        """The URL of the content of the submission, i.e. the media to transcribe."""
+        """Get the URL of the content of the submission, i.e. the media to transcribe."""
         return self._data["content_url"]
 
     @property
     def has_ocr_transcription(self) -> bool:
-        """Whether the submission has an OCR transcription."""
+        """Determine whether the submission has an OCR transcription."""
         return self._data["has_ocr_transcription"]
 
     @property
     def transcription_set(self) -> List[str]:
-        """The set of transcriptions for this submission."""
+        """Get the set of transcriptions for this submission."""
         return self._data["transcription_set"]
 
     @property
     def archived(self) -> bool:
-        """Whether this transcription has been archived."""
+        """Determine whether this transcription has been archived."""
         return self._data["archived"]
 
     @property
     def cannot_ocr(self) -> bool:
-        """Whether the submission can not be processed by OCR."""
+        """Determine whether the submission can not be processed by OCR."""
         return self._data["cannot_ocr"]
 
     @property
     def redis_id(self) -> Optional[str]:
-        """The Redis ID of the submission."""
+        """Get the Redis ID of the submission."""
         return self._data["redis_id"]
 
     @property
     def subreddit(self) -> Optional[str]:
-        """The subreddit that the submission was posted to.
+        """Get the subreddit that the submission was posted to.
 
-        The Blossom API doesn't provide this directly, so we need to get it from the URL instead.
+        The Blossom API doesn't provide this directly, so we need to get it
+        from the URL instead.
         """
         return self.url.split("/")[4] if self.url is not None else None
 
     @property
     def volunteer(self) -> Optional[Volunteer]:
-        """The volunteer working on this submission."""
+        """Get the volunteer working on this submission."""
         return self._volunteer
 
     def fetch_volunteer(self, blossom_api: BlossomAPI) -> Optional[Volunteer]:
-        """Retrieves the volunteer working on this submission from Blossom."""
+        """Retrieve the volunteer working on this submission from Blossom."""
         if self._volunteer is not None:
             return self._volunteer
 
@@ -158,13 +156,13 @@ class Submission:
 
     @property
     def transcriptions(self) -> Optional[List[Transcription]]:
-        """The transcriptions for this post."""
+        """Get the transcriptions for this post."""
         return self._transcriptions
 
     def fetch_transcriptions(
         self, blossom_api: BlossomAPI
     ) -> Optional[List[Transcription]]:
-        """Retrieves the transcriptions for this submission from Blossom."""
+        """Retrieve the transcriptions for this submission from Blossom."""
         if self._transcriptions is not None:
             return self._transcriptions
 
@@ -174,7 +172,7 @@ class Submission:
 
     @property
     def main_transcription(self) -> Optional[Transcription]:
-        """The main transcription that completed the submission"""
+        """Get the main transcription that completed the submission."""
         if self.transcriptions is None or len(self.transcriptions) == 0:
             return None
 
@@ -198,7 +196,7 @@ class Submission:
         return self.transcriptions[-1]
 
     def to_embed(self) -> Embed:
-        """Converts the submission to a Discord embed."""
+        """Convert the submission to a Discord embed."""
         color = Color.from_rgb(255, 176, 0)  # Orange
         status = "Unclaimed"
 
@@ -248,7 +246,7 @@ class Submission:
 
 
 def try_get_submission(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Submission]:
-    """Tries to get the submission with the given arguments."""
+    """Try to get the submission with the given arguments."""
     data = try_get_first(blossom_api.get_submission(**kwargs))
 
     if data is None:
@@ -260,9 +258,10 @@ def try_get_submission(blossom_api: BlossomAPI, **kwargs: Any) -> Optional[Submi
 def try_get_submission_from_url(
     blossom_api: BlossomAPI, reddit_url_str: str
 ) -> Optional[Submission]:
-    """Tries to get the submission corresponding to the given Reddit URL.
+    """Try to get the submission corresponding to the given Reddit URL.
 
-    The URL can be a link to either a post on the partner sub or r/ToR, or it can be a transcription link.
+    The URL can be a link to either a post on the partner sub or r/ToR, or it can be a
+    transcription link.
     """
     parse_result = urlparse(reddit_url_str)
 
@@ -292,7 +291,8 @@ def try_get_submission_from_url(
         if tr_data is None:
             return None
 
-        # We don't have direct access to the submission ID, so we need to extract it from the submission URL
+        # We don't have direct access to the submission ID, so we need to extract it
+        # from the submission URL
         submission_url = tr_data["submission"]
         submission_id = get_id_from_url(submission_url)
         return try_get_submission(blossom_api, id=submission_id)
