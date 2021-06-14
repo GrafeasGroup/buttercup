@@ -95,3 +95,9 @@ class Submission:
     def redis_id(self) -> Optional[str]:
         """The Redis ID of the submission."""
         return self._data["redis_id"]
+
+    def __str__(self) -> str:
+        return str(self._data)
+
+    def __repr__(self) -> str:
+        return f"Submission({str(self._data)})"

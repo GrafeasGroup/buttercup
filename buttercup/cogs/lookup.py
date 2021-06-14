@@ -9,6 +9,8 @@ from typing import Optional, Dict, Any
 from buttercup.bot import ButtercupBot
 from blossom_wrapper import BlossomAPI, BlossomStatus
 
+from buttercup.objects.submission import Submission
+
 
 class Lookup(Cog):
     def __init__(self, bot: ButtercupBot, blossom: BlossomAPI) -> None:
@@ -33,26 +35,23 @@ class Lookup(Cog):
         if not path.endswith("/"):
             path += "/"
 
-        # Reformat URL in the format that Blossom uses
-        return f"https://reddit.com{path}"
+        return path
 
     @staticmethod
-    def _submission_to_embed(submission: Dict[str, Any]) -> Embed:
-        print(submission)
-
+    def _submission_to_embed(submission: Submission) -> Embed:
         status = "Unclaimed"
         color = Color.from_rgb(255, 176, 0)  # Orange
-        if submission["completed_by"] is not None:
+        if submission.completed_by is not None:
             status = "Completed"
             color = Color.from_rgb(148, 224, 68)  # Green
-        elif submission["claimed_by"] is not None:
+        elif submission.claimed_by is not None:
             status = "In Progress"
             color = Color.from_rgb(13, 211, 187)  # Cyan
 
         return Embed(color=color)\
-            .set_image(url=submission["content_url"])\
-            .add_field(name="ToR Post", value=submission["tor_url"], inline=False)\
-            .add_field(name="Partner Post", value=submission["url"], inline=False)\
+            .set_image(url=submission.content_url)\
+            .add_field(name="ToR Post", value=submission.tor_url, inline=False)\
+            .add_field(name="Partner Post", value=submission.url, inline=False)\
             .add_field(name="Status", value=status)
 
     @cog_ext.cog_slash(
@@ -70,17 +69,18 @@ class Lookup(Cog):
     async def _lookup(self, ctx: SlashContext, reddit_url: str) -> None:
         """Look up the post with the given URL."""
 
-        normalized_url = Lookup._parse_reddit_url(reddit_url)
+        path = Lookup._parse_reddit_url(reddit_url)
+        normalized_url = f"https://reddit.com{path}"
 
         if normalized_url is None:
             await ctx.send(f"I don't recognize '{reddit_url}' as valid Reddit URL. Please provide a link to "
                            "either a post on a r/TranscribersOfReddit, on a partner sub or a transcription.")
             return
 
-        if "/r/TranscribersOfReddit" in normalized_url:
+        if "/r/TranscribersOfReddit" in path:
             # It's a link to the ToR submission
             response = self.blossom.get_submission(tor_url=normalized_url)
-        elif len(normalized_url.split("/")) >= 8:
+        elif len(path.split("/")) >= 8:
             # It's a comment on a partner sub, i.e. a transcription
             tr_response = self.blossom.get_transcription(url=normalized_url)
             tr_data = tr_response.data
@@ -97,13 +97,11 @@ class Lookup(Cog):
             # It's a link to the submission on a partner sub
             response = self.blossom.get_submission(url=normalized_url)
 
-        data = response.data
-
-        if response.status != BlossomStatus.ok or data is None or len(data) == 0:
+        if response is None or response.status != BlossomStatus.ok or response.data is None or len(response.data) == 0:
             await ctx.send(f"""I couldn't find a post with URL "{normalized_url}", sorry.""")
             return
 
-        submission = data[0]
+        submission = Submission(response.data[0])
         embed = Lookup._submission_to_embed(submission)
 
         await ctx.send("I found your post!", embed=embed)
