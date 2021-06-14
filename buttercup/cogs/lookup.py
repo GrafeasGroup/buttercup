@@ -50,6 +50,10 @@ class Lookup(Cog):
         submission.fetch_volunteer(self.blossom_api)
         await msg.edit(content="I found your post!", embed=submission.to_embed())
 
+        # Also get the transcription content
+        submission.fetch_transcriptions(self.blossom_api)
+        await msg.edit(content="I found your post!", embed=submission.to_embed())
+
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the Lookup cog."""

@@ -6,7 +6,8 @@ from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from discord import Color, Embed
 
-from buttercup.blossom_api.helpers import try_get_first, get_id_from_url
+from buttercup.blossom_api.helpers import try_get_first, get_id_from_url, get_url_from_id
+from buttercup.blossom_api.transcription import Transcription, try_get_transcriptions
 from buttercup.blossom_api.volunteer import Volunteer, try_get_volunteer
 
 
@@ -17,6 +18,7 @@ class Submission:
         """
         self._data = submission_data
         self._volunteer = None
+        self._transcriptions = None
 
     def __str__(self) -> str:
         return str(self._data)
@@ -141,6 +143,39 @@ class Submission:
 
         return None
 
+    @property
+    def transcriptions(self) -> Optional[List[Transcription]]:
+        """The transcriptions for this post."""
+        return self._transcriptions
+
+    def fetch_transcriptions(self, blossom_api: BlossomAPI) -> Optional[List[Transcription]]:
+        """Retrieves the transcriptions for this submission from Blossom."""
+        if self._transcriptions is not None:
+            return self._transcriptions
+
+        transcriptions = try_get_transcriptions(blossom_api, submission=self.id)
+        self._transcriptions = transcriptions
+        return transcriptions
+
+    @property
+    def content(self) -> Optional[str]:
+        """The transcribed content of the submission."""
+        if self.transcriptions is None or len(self.transcriptions) == 0:
+            return None
+
+        if self.completed_by is not None:
+            # Try find the user transcription
+            # Kinda ugly, but Python doesn't seem to have a List.find function
+            user_transcription = next(iter(
+                [tr for tr in self.transcriptions if tr.author_link == self.completed_by]),
+                None
+            )
+            if user_transcription is not None:
+                return user_transcription.content
+
+        # Use the last one as fallback, probably OCR
+        return self.transcriptions[-1].content
+
     def to_embed(self) -> Embed:
         """Converts the submission to a Discord embed."""
         color = Color.from_rgb(255, 176, 0)  # Orange
@@ -166,6 +201,8 @@ class Submission:
             .add_field(name="Archived", value="Yes" if self.archived else "No") \
             .add_field(name="OCR", value="Yes" if self.has_ocr_transcription else "No")
 
+        if self.content is not None:
+            embed.description = self.content[:200]
         if self.content_url is not None:
             embed.set_image(url=self.content_url)
         if self.tor_url is not None:
