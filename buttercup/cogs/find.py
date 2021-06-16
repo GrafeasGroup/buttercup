@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 from urllib.parse import urlparse
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
@@ -17,7 +17,7 @@ PLEASE_CHECK_URL = (
 DISCORD_USERNAME_LINK = "[{0}](https://reddit.com/u/{0})"
 
 
-def normalize_url(reddit_url_str: str) -> Union[str, None]:
+def normalize_url(reddit_url_str: str) -> Optional[str]:
     """
     Normalize a Reddit URL to the format that Blossom uses.
 
