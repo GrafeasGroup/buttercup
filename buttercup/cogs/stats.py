@@ -22,18 +22,16 @@ class Stats(Cog):
         """Get stats about all users."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(f"Getting stats for all users...")
+        msg = await ctx.send(i18n["stats"]["getting_stats"])
 
         response = self.blossom_api.get("summary/")
 
         if response.status_code != 200:
-            await msg.edit(content="Failed to get the stats for all users.")
+            await msg.edit(content=i18n["stats"]["failed_getting_stats"])
 
         data = response.json()
 
-        description = """**Volunteers**: {:,d}
-**Transcriptions**: {:,d}
-**Days Since Inception**: {:,d}""".format(
+        description = i18n["stats"]["stats"].format(
             data["volunteer_count"],
             data["transcription_count"],
             data["days_since_inception"],
