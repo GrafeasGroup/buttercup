@@ -216,9 +216,9 @@ class Find(Cog):
     )
     async def _find(self, ctx: SlashContext, reddit_url: str) -> None:
         """Find the post with the given URL."""
-        if (reddit_url := normalize_url(reddit_url)) is None:
+        if (normalized_url := normalize_url(reddit_url)) is None:
             await ctx.send(
-                "Sorry, that doesn't look like a URL I can work with."
+                f"Sorry, <{reddit_url}> doesn't look like a URL I can work with."
                 + " "
                 + i18n["find"]["please_check_url"]
             )
@@ -226,15 +226,15 @@ class Find(Cog):
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(f"Looking for post <{reddit_url}>...")
+        msg = await ctx.send(f"Looking for post <{normalized_url}>...")
 
         data: Dict = {}
 
-        data: Dict[str, Dict] = self.get_submission_from_url(reddit_url, data)
+        data: Dict[str, Dict] = self.get_submission_from_url(normalized_url, data)
         if data["submission"] is None:
             await msg.edit(
                 content=(
-                    f"Sorry, I couldn't find a post with the URL <{reddit_url}>."
+                    f"Sorry, I couldn't find a post with the URL <{normalized_url}>."
                     + " "
                     + i18n["find"]["please_check_url"]
                 )
