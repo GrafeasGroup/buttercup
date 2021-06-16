@@ -1,10 +1,15 @@
+import io
+import logging
 from typing import Dict, Optional
+from datetime import datetime
+from dateutil import parser
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
-from discord import Color, Embed
+from discord import Color, Embed, File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
+from requests import HTTPError
 
 from buttercup.bot import ButtercupBot
 from buttercup.strings import translation
@@ -61,8 +66,46 @@ class History(Cog):
             await msg.edit(content=f"Failed to get the data for user {username_1}!")
             return
         user_1_gamma = user_1_response.data["gamma"]
+        user_1_id = user_1_response.data["id"]
 
-        await msg.edit(content=f"User {username_1} has {user_1_gamma} gamma.")
+        user_1_times = [datetime.now()]
+        user_1_values = [user_1_gamma]
+        page = 1
+        gamma_offset = 0
+        response = self.blossom_api.get_transcription(author=user_1_id, page=page)
+
+        while response.status == BlossomStatus.ok:
+            transcriptions = response.data
+            logging.info(f"Transcriptions: {len(transcriptions)}")
+
+            # Add the transcriptions to the data
+            for tr in transcriptions:
+                date = parser.parse(tr["create_time"])
+                user_1_times.append(date)
+                user_1_values.append(user_1_gamma - gamma_offset)
+                gamma_offset += 1
+
+            # Continue with the next page
+            page += 1
+            try:
+                response = self.blossom_api.get_transcription(author=user_1_id, page=page)
+            except HTTPError:
+                # Hack: The error means that the next page is not available anymore, so we reached the end
+
+                # Update the graph
+                plt.plot(user_1_times, user_1_values, color="white")
+                plt.xlabel("Time")
+                plt.ylabel("Gamma")
+                plt.xticks(rotation=90)
+                plt.title(f"Gamma history of u/{user_1}")
+                history_plot = io.BytesIO()
+                plt.savefig(history_plot, format="png")
+                history_plot.seek(0)
+                plt.clf()
+
+                file = File(history_plot, "history_plot.png")
+                await msg.edit(content="Here is the plot!", file=file)
+                break
 
 
 def setup(bot: ButtercupBot) -> None:
