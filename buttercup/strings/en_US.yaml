@@ -28,7 +28,11 @@ stats:
     Getting stats for all users...
   failed_getting_stats: |
     Failed to get the stats for all users.
-  stats: |
+  embed_message: |
+    Here are the stats!
+  embed_title: |
+    Stats For All Users
+  embed_description: |
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}

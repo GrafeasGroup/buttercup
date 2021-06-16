@@ -31,15 +31,16 @@ class Stats(Cog):
 
         data = response.json()
 
-        description = i18n["stats"]["stats"].format(
+        description = i18n["stats"]["embed_description"].format(
             data["volunteer_count"],
             data["transcription_count"],
             data["days_since_inception"],
         )
 
-        embed = Embed(title="Stats", description=description)
-
-        await msg.edit(embed=embed)
+        await msg.edit(
+            content=i18n["stats"]["embed_message"],
+            embed=Embed(title=i18n["stats"]["embed_title"], description=description),
+        )
 
 
 def setup(bot: ButtercupBot) -> None:
