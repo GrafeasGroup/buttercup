@@ -19,3 +19,7 @@ name_validator:
     Hey <@{0}>, it appears that you have attempted to change your nickname, but forgot the initial `/` in your nickname. Make sure that your nickname starts with `/u/` and not `u/`!
   new_lifted: |
     Welcome <@{0}> to the Transcribers of Reddit Discord! Since you have changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
+find:
+  please_check_url: |
+    Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
+  discord_username_link: "[{0}](https://reddit.com/u/{0})"

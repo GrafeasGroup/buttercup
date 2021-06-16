@@ -8,13 +8,9 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.strings import translation
 
-PLEASE_CHECK_URL = (
-    " Please check that your link is correct, it should lead to"
-    " either a post on r/TranscribersOfReddit, a post on a partner"
-    " sub or to a transcription."
-)
-DISCORD_USERNAME_LINK = "[{0}](https://reddit.com/u/{0})"
+i18n = translation()
 
 
 def normalize_url(reddit_url_str: str) -> Optional[str]:
@@ -93,7 +89,9 @@ class Find(Cog):
 
             if "author" in data:
                 status = "Completed by {}".format(
-                    DISCORD_USERNAME_LINK.format(data["author"]["username"])
+                    i18n["find"]["discord_username_link"].format(
+                        data["author"]["username"]
+                    )
                 )
             else:
                 status = "Completed"
@@ -102,7 +100,9 @@ class Find(Cog):
 
             if "author" in data:
                 status = "Claimed by {}".format(
-                    DISCORD_USERNAME_LINK.format(data["author"]["username"])
+                    i18n["find"]["discord_username_link"].format(
+                        data["author"]["username"]
+                    )
                 )
             else:
                 status = "Claimed"
@@ -219,7 +219,8 @@ class Find(Cog):
         if (reddit_url := normalize_url(reddit_url)) is None:
             await ctx.send(
                 "Sorry, that doesn't look like a URL I can work with."
-                + PLEASE_CHECK_URL
+                + " "
+                + i18n["find"]["please_check_url"]
             )
             return
 
@@ -234,7 +235,8 @@ class Find(Cog):
             await msg.edit(
                 content=(
                     f"Sorry, I couldn't find a post with the URL <{reddit_url}>."
-                    + PLEASE_CHECK_URL
+                    + " "
+                    + i18n["find"]["please_check_url"]
                 )
             )
             return
