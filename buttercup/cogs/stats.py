@@ -1,8 +1,5 @@
-from typing import Dict, Optional
-from urllib.parse import urlparse
-
-from blossom_wrapper import BlossomAPI, BlossomStatus
-from discord import Color, Embed
+from blossom_wrapper import BlossomAPI
+from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 
@@ -19,14 +16,32 @@ class Stats(Cog):
         self.blossom_api = blossom_api
 
     @cog_ext.cog_slash(
-        name="stats",
-        description="Get stats about all users.",
+        name="stats", description="Get stats about all users.",
     )
     async def _stats(self, ctx: SlashContext) -> None:
         """Get stats about all users."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(f"Getting stats for all users...")
+
+        response = self.blossom_api.get("summary/")
+
+        if response.status_code != 200:
+            await msg.edit(content="Failed to get the stats for all users.")
+
+        data = response.json()
+
+        description = """**Volunteers**: {:,d}
+**Transcriptions**: {:,d}
+**Days Since Inception**: {:,d}""".format(
+            data["volunteer_count"],
+            data["transcription_count"],
+            data["days_since_inception"],
+        )
+
+        embed = Embed(title="Stats", description=description)
+
+        await msg.edit(embed=embed)
 
 
 def setup(bot: ButtercupBot) -> None:
