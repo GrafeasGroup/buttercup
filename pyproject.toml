@@ -13,6 +13,7 @@ blossom-wrapper = { git = "https://github.com/GrafeasGroup/blossom-wrapper.git",
 requests = "^2.25.1"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
+matplotlib = "^3.4.2"
 
 [tool.poetry.dev-dependencies]
 better-exceptions = "^0.2.2"

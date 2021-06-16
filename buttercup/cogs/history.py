@@ -1,5 +1,4 @@
 from typing import Dict, Optional
-from urllib.parse import urlparse
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Color, Embed
@@ -9,6 +8,8 @@ from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.strings import translation
+
+import matplotlib.pyplot as plt
 
 i18n = translation()
 
@@ -66,11 +67,32 @@ class History(Cog):
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the History cog."""
+    # Initialize blossom api
     cog_config = bot.config["Blossom"]
     email = cog_config.get("email")
     password = cog_config.get("password")
     api_key = cog_config.get("api_key")
     blossom_api = BlossomAPI(email=email, password=password, api_key=api_key)
+
+    # Initialize PyPlot
+
+    # Colors to use in the plots
+    background_color = "#36393f"  # Discord background color
+    text_color = "white"
+    line_color = "white"
+
+    # Global settings for the plots
+    plt.rcParams['figure.facecolor'] = background_color
+    plt.rcParams['axes.facecolor'] = background_color
+    plt.rcParams['axes.labelcolor'] = text_color
+    plt.rcParams['axes.edgecolor'] = line_color
+    plt.rcParams['text.color'] = text_color
+    plt.rcParams['xtick.color'] = line_color
+    plt.rcParams['ytick.color'] = line_color
+    plt.rcParams['grid.color'] = line_color
+    plt.rcParams['grid.alpha'] = 0.8
+    plt.rcParams["figure.dpi"] = 200.0
+
     bot.add_cog(History(bot=bot, blossom_api=blossom_api))
 
 
