@@ -23,3 +23,16 @@ find:
   please_check_url: |
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
   discord_username_link: "[{0}](https://reddit.com/u/{0})"
+stats:
+  getting_stats: |
+    Getting stats for all users...
+  failed_getting_stats: |
+    Failed to get the stats for all users.
+  embed_message: |
+    Here are the stats!
+  embed_title: |
+    Stats For All Users
+  embed_description: |
+    **Volunteers**: {:,d}
+    **Transcriptions**: {:,d}
+    **Days Since Inception**: {:,d}
