@@ -76,6 +76,8 @@ class History(Cog):
         """Find the post with the given URL."""
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
+        start = datetime.now()
+        page_size = 500
         msg = await ctx.send("Creating the history graph...")
 
         username_1 = user_1
@@ -105,11 +107,10 @@ class History(Cog):
         user_1_values = [user_1_gamma]
         page = 1
         gamma_offset = 0
-        response = self.blossom_api.get_transcription(author=user_1_id, page=page)
+        response = self.blossom_api.get_transcription(author=user_1_id, page=page, page_size=page_size)
 
         while response.status == BlossomStatus.ok:
             transcriptions = response.data
-            logging.info(f"Transcriptions: {len(transcriptions)}")
 
             # Add the transcriptions to the data
             for tr in transcriptions:
@@ -127,15 +128,15 @@ class History(Cog):
             page += 1
             try:
                 response = self.blossom_api.get_transcription(
-                    author=user_1_id, page=page
+                    author=user_1_id, page=page, page_size=page_size
                 )
             except HTTPError:
                 # Hack: The next page is not available anymore, so we reached the end
                 discord_file = create_file_from_data(
                     user_1_times, user_1_values, user_1
                 )
-
-                await msg.edit(content="Here is the plot!", file=discord_file)
+                duration = datetime.now() - start
+                await msg.edit(content=f"I created the plot in {duration.seconds}s", file=discord_file)
                 break
 
 
