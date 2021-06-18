@@ -8,6 +8,15 @@ from discord_slash.utils.manage_commands import create_option
 from buttercup.bot import ButtercupBot
 
 
+def extract_sub_name(subreddit: str) -> str:
+    """Extract the name of the sub without prefix."""
+    if subreddit.startswith("/r/"):
+        return subreddit[3:]
+    if subreddit.startswith("r/"):
+        return subreddit[2:]
+    return subreddit
+
+
 class Rules(Cog):
     def __init__(self, bot: ButtercupBot, reddit_api: asyncpraw.Reddit) -> None:
         """Initialize the Rules cog."""
@@ -29,11 +38,12 @@ class Rules(Cog):
         """Get the rules of the specified subreddit."""
         # Send a quick response
         # We will edit this later with the actual content
-        msg = await ctx.send(f"Getting the rules for r/{subreddit}...")
+        sub_name = extract_sub_name(subreddit)
+        msg = await ctx.send(f"Getting the rules for r/{sub_name}...")
 
-        sub = await self.reddit_api.subreddit(subreddit)
+        sub = await self.reddit_api.subreddit(sub_name)
 
-        embed = Embed(title=f"Rules for r/{subreddit}")
+        embed = Embed(title=f"Rules for r/{sub_name}")
 
         try:
             async for rule in sub.rules:
@@ -42,11 +52,11 @@ class Rules(Cog):
                 embed.add_field(name=rule.short_name, value=rule.description or rule.short_name, inline=False)
         except Redirect:
             # Sometimes Reddit redirects to the subreddit search
-            await msg.edit(content=f"I couldn't find a sub named r/{subreddit}. Please check the spelling.")
+            await msg.edit(content=f"I couldn't find a sub named r/{sub_name}. Please check the spelling.")
             return
         except NotFound:
             # Sometimes it throws a not found exception, e.g. if a character isn't allowed
-            await msg.edit(content=f"I couldn't find a sub named r/{subreddit}. Please check the spelling.")
+            await msg.edit(content=f"I couldn't find a sub named r/{sub_name}. Please check the spelling.")
             return
 
         await msg.edit(content="Here are the rules!", embed=embed)
