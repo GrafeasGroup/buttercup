@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import asyncpraw
 from asyncprawcore import Redirect, NotFound
 from discord import Embed
@@ -38,6 +40,7 @@ class Rules(Cog):
         """Get the rules of the specified subreddit."""
         # Send a quick response
         # We will edit this later with the actual content
+        start = datetime.now()
         sub_name = extract_sub_name(subreddit)
         msg = await ctx.send(f"Getting the rules for r/{sub_name}...")
 
@@ -59,7 +62,8 @@ class Rules(Cog):
             await msg.edit(content=f"I couldn't find a sub named r/{sub_name}. Please check the spelling.")
             return
 
-        await msg.edit(content="Here are the rules!", embed=embed)
+        delay = datetime.now() - start
+        await msg.edit(content=f"Here are the rules! ({delay.microseconds // 1000} ms)", embed=embed)
 
 
 def setup(bot: ButtercupBot) -> None:
