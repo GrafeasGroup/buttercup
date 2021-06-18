@@ -17,7 +17,12 @@ In order to run buttercup, [poetry](https://python-poetry.org/) is used to manag
 Apart from this, a `.toml` configuration file is expected. Below is a default `config.toml`:
 ```
 [Discord]
-token = "YOUR DISCORD BOT SECRET HERE"
+token = "<YOUR DISCORD BOT SECRET HERE>"
+
+[Reddit]
+client_id = "<YOUR REDDIT CLIENT ID HERE>"
+client_secret = "<YOUR REDDIT CLIENT SECRET HERE>"
+user_agent = "grafeas.org.buttercup:v0.1.0 (contact u/<YOUR USERNAME HERE>)"
 
 [guild]
 name = "Test Bubbles"
