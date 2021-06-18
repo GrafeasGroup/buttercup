@@ -1,13 +1,16 @@
 from datetime import datetime
 
 import asyncpraw
-from asyncprawcore import Redirect, NotFound
+from asyncprawcore import NotFound, Redirect
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.strings import translation
+
+i18n = translation()
 
 
 def extract_sub_name(subreddit: str) -> str:
@@ -26,7 +29,8 @@ class Rules(Cog):
         self.reddit_api = reddit_api
 
     @cog_ext.cog_slash(
-        name="rules", description="Get the rules of the specified subreddit.",
+        name="rules",
+        description="Get the rules of the specified subreddit.",
         options=[
             create_option(
                 name="subreddit",
@@ -42,28 +46,37 @@ class Rules(Cog):
         # We will edit this later with the actual content
         start = datetime.now()
         sub_name = extract_sub_name(subreddit)
-        msg = await ctx.send(f"Getting the rules for r/{sub_name}...")
+        msg = await ctx.send(i18n["rules"]["getting_rules"].format(sub_name))
 
         sub = await self.reddit_api.subreddit(sub_name)
 
-        embed = Embed(title=f"Rules for r/{sub_name}")
+        embed = Embed(title=i18n["rules"]["embed_title"].format(sub_name))
 
         try:
             async for rule in sub.rules:
                 # The value field is not allowed to be a blank string
                 # So we just repeat the name of the rule if it is not provided
-                embed.add_field(name=rule.short_name, value=rule.description or rule.short_name, inline=False)
+                embed.add_field(
+                    name=rule.short_name,
+                    value=rule.description or rule.short_name,
+                    inline=False,
+                )
         except Redirect:
             # Sometimes Reddit redirects to the subreddit search
-            await msg.edit(content=f"I couldn't find a sub named r/{sub_name}. Please check the spelling.")
+            await msg.edit(content=i18n["rules"]["sub_not_found"].format(sub_name))
             return
         except NotFound:
             # Sometimes it throws a not found exception, e.g. if a character isn't allowed
-            await msg.edit(content=f"I couldn't find a sub named r/{sub_name}. Please check the spelling.")
+            await msg.edit(content=i18n["rules"]["sub_not_found"].format(sub_name))
             return
 
         delay = datetime.now() - start
-        await msg.edit(content=f"Here are the rules! ({delay.microseconds // 1000} ms)", embed=embed)
+        await msg.edit(
+            content=i18n["rules"]["embed_message"].format(
+                f"{delay.microseconds // 1000} ms"
+            ),
+            embed=embed,
+        )
 
 
 def setup(bot: ButtercupBot) -> None:
