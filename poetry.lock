@@ -1,4 +1,12 @@
 [[package]]
+name = "aiofiles"
+version = "0.7.0"
+description = "File support for asyncio."
+category = "main"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[[package]]
 name = "aiohttp"
 version = "3.7.4.post0"
 description = "Async http client/server framework (asyncio)"
@@ -43,6 +51,44 @@ description = "Timeout context manager for asyncio programs"
 category = "main"
 optional = false
 python-versions = ">=3.5.3"
+
+[[package]]
+name = "asyncpraw"
+version = "7.2.0"
+description = "Async PRAW, an abbreviation for `Asynchronous Python Reddit API Wrapper`, is a python package that allows for simple access to reddit's API."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+aiofiles = "*"
+asyncprawcore = ">=2,<3"
+update-checker = ">=0.18"
+
+[package.extras]
+ci = ["coveralls"]
+dev = ["packaging", "pre-commit", "black", "docstrfmt", "flake8", "flynt", "isort", "pydocstyle", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-trio", "asynctest (>=0.13.0)", "mock (>=0.8)", "pytest (>=2.7.3)", "pytest-asyncio", "pytest-vcr", "testfixtures (>4.13.2,<7)", "vcrpy (==4.0.2)"]
+lint = ["black", "docstrfmt", "flake8", "flynt", "isort", "pydocstyle", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-trio"]
+readthedocs = ["sphinx", "sphinxcontrib-trio"]
+test = ["asynctest (>=0.13.0)", "mock (>=0.8)", "pytest (>=2.7.3)", "pytest-asyncio", "pytest-vcr", "testfixtures (>4.13.2,<7)", "vcrpy (==4.0.2)"]
+
+[[package]]
+name = "asyncprawcore"
+version = "2.2.0"
+description = "Low-level asynchronous communication layer for Async PRAW 7+."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+aiohttp = "*"
+yarl = "*"
+
+[package.extras]
+ci = ["coveralls"]
+dev = ["black", "flake8", "flynt", "pre-commit", "pydocstyle", "asynctest (>=0.13.0)", "mock (>=0.8)", "pytest", "pytest-vcr", "testfixtures (>4.13.2,<7)", "vcrpy (==4.0.2)"]
+lint = ["black", "flake8", "flynt", "pre-commit", "pydocstyle"]
+test = ["asynctest (>=0.13.0)", "mock (>=0.8)", "pytest", "pytest-vcr", "testfixtures (>4.13.2,<7)", "vcrpy (==4.0.2)"]
 
 [[package]]
 name = "attrs"
@@ -349,43 +395,6 @@ python-versions = "*"
 flake8-polyfill = ">=1.0.2,<2"
 
 [[package]]
-name = "praw"
-version = "7.3.0"
-description = "PRAW, an acronym for `Python Reddit API Wrapper`, is a python package that allows for simple access to reddit's API."
-category = "main"
-optional = false
-python-versions = "~=3.6"
-
-[package.dependencies]
-prawcore = ">=2.1,<3"
-update-checker = ">=0.18"
-websocket-client = ">=0.54.0"
-
-[package.extras]
-ci = ["coveralls"]
-dev = ["packaging", "pre-commit", "black", "docstrfmt", "flake8", "flynt", "isort", "pydocstyle", "sphinx", "sphinx-rtd-theme", "betamax (>=0.8,<0.9)", "betamax-matchers (>=0.3.0,<0.5)", "pytest (>=2.7.3)"]
-lint = ["black", "docstrfmt", "flake8", "flynt", "isort", "pydocstyle", "sphinx", "sphinx-rtd-theme"]
-readthedocs = ["sphinx"]
-test = ["betamax (>=0.8,<0.9)", "betamax-matchers (>=0.3.0,<0.5)", "pytest (>=2.7.3)"]
-
-[[package]]
-name = "prawcore"
-version = "2.2.0"
-description = "Low-level communication layer for PRAW 4+."
-category = "main"
-optional = false
-python-versions = "~=3.6"
-
-[package.dependencies]
-requests = ">=2.6.0,<3.0"
-
-[package.extras]
-ci = ["coveralls"]
-dev = ["black", "flake8", "pre-commit", "pydocstyle", "flynt", "betamax (>=0.8,<0.9)", "betamax-matchers (>=0.4.0,<0.5)", "betamax-serializers (>=0.2.0,<0.3)", "mock (>=0.8)", "pytest", "testfixtures (>4.13.2,<7)"]
-lint = ["black", "flake8", "pre-commit", "pydocstyle", "flynt"]
-test = ["betamax (>=0.8,<0.9)", "betamax-matchers (>=0.4.0,<0.5)", "betamax-serializers (>=0.2.0,<0.3)", "mock (>=0.8)", "pytest", "testfixtures (>4.13.2,<7)"]
-
-[[package]]
 name = "pre-commit"
 version = "2.13.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
@@ -575,14 +584,6 @@ docs = ["proselint (>=0.10.2)", "sphinx (>=3)", "sphinx-argparse (>=0.2.5)", "sp
 testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", "pytest (>=4)", "pytest-env (>=0.6.2)", "pytest-freezegun (>=0.4.1)", "pytest-mock (>=2)", "pytest-randomly (>=1)", "pytest-timeout (>=1)", "packaging (>=20.0)", "xonsh (>=0.9.16)"]
 
 [[package]]
-name = "websocket-client"
-version = "1.1.0"
-description = "WebSocket client for Python with low level API options"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "yarl"
 version = "1.6.3"
 description = "Yet another URL library"
@@ -597,9 +598,13 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "787fb72a35dc4eade73446bfde7c2749588f1587baac8b85822660322470d885"
+content-hash = "bcb5061b0acbc43cbab287b34934a8c29e8f0e07856d8c08f26445c59a769d47"
 
 [metadata.files]
+aiofiles = [
+    {file = "aiofiles-0.7.0-py3-none-any.whl", hash = "sha256:c67a6823b5f23fcab0a2595a289cec7d8c863ffcb4322fb8cd6b90400aedfdbc"},
+    {file = "aiofiles-0.7.0.tar.gz", hash = "sha256:a1c4fc9b2ff81568c83e21392a82f344ea9d23da906e4f6a52662764545e19d4"},
+]
 aiohttp = [
     {file = "aiohttp-3.7.4.post0-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:3cf75f7cdc2397ed4442594b935a11ed5569961333d49b7539ea741be2cc79d5"},
     {file = "aiohttp-3.7.4.post0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:4b302b45040890cea949ad092479e01ba25911a15e648429c7c5aae9650c67a8"},
@@ -650,6 +655,14 @@ appdirs = [
 async-timeout = [
     {file = "async-timeout-3.0.1.tar.gz", hash = "sha256:0c3c816a028d47f659d6ff5c745cb2acf1f966da1fe5c19c77a70282b25f4c5f"},
     {file = "async_timeout-3.0.1-py3-none-any.whl", hash = "sha256:4291ca197d287d274d0b6cb5d6f8f8f82d434ed288f962539ff18cc9012f9ea3"},
+]
+asyncpraw = [
+    {file = "asyncpraw-7.2.0-py3-none-any.whl", hash = "sha256:817a4881ce84bda17a207f93156419825c7934b227244a8f05bdfcf557134181"},
+    {file = "asyncpraw-7.2.0.tar.gz", hash = "sha256:7890414f0c5f8f3747dfe8a4a1ca3348064ef124f17b744cf0d12f8e202d38cd"},
+]
+asyncprawcore = [
+    {file = "asyncprawcore-2.2.0-py3-none-any.whl", hash = "sha256:9dcc8a13f9c1c0d10a4ce3029f6a952cb464081f2b3c6756767a013312099660"},
+    {file = "asyncprawcore-2.2.0.tar.gz", hash = "sha256:a9eb25e76f2eb676ff5e233c049190ebf71e2e735aa1e1b58507e1597be7b7bf"},
 ]
 attrs = [
     {file = "attrs-21.2.0-py2.py3-none-any.whl", hash = "sha256:149e90d6d8ac20db7a955ad60cf0e6881a3f20d37096140088356da6c716b0b1"},
@@ -796,14 +809,6 @@ pathspec = [
 pep8-naming = [
     {file = "pep8-naming-0.9.1.tar.gz", hash = "sha256:a33d38177056321a167decd6ba70b890856ba5025f0a8eca6a3eda607da93caf"},
     {file = "pep8_naming-0.9.1-py2.py3-none-any.whl", hash = "sha256:45f330db8fcfb0fba57458c77385e288e7a3be1d01e8ea4268263ef677ceea5f"},
-]
-praw = [
-    {file = "praw-7.3.0-py3-none-any.whl", hash = "sha256:98d435856b34851aaf88575b65b4864f1f7f848913b47e046243bb126682a66f"},
-    {file = "praw-7.3.0.tar.gz", hash = "sha256:9773fb5a2f5ab910d6f8e14da84e81d8d3d868261745371341d8b2043588ba7c"},
-]
-prawcore = [
-    {file = "prawcore-2.2.0-py3-none-any.whl", hash = "sha256:cb7a01e43202233d62c4f9c0da890f6e6a534cebc16fb6ef1e71aff7077b0f42"},
-    {file = "prawcore-2.2.0.tar.gz", hash = "sha256:bde42fad459c4dcfe0f22a18921ef4981ee7cd286ea1de3eb697ba91838c9123"},
 ]
 pre-commit = [
     {file = "pre_commit-2.13.0-py2.py3-none-any.whl", hash = "sha256:b679d0fddd5b9d6d98783ae5f10fd0c4c59954f375b70a58cbe1ce9bcf9809a4"},
@@ -967,10 +972,6 @@ urllib3 = [
 virtualenv = [
     {file = "virtualenv-20.4.7-py2.py3-none-any.whl", hash = "sha256:2b0126166ea7c9c3661f5b8e06773d28f83322de7a3ff7d06f0aed18c9de6a76"},
     {file = "virtualenv-20.4.7.tar.gz", hash = "sha256:14fdf849f80dbb29a4eb6caa9875d476ee2a5cf76a5f5415fa2f1606010ab467"},
-]
-websocket-client = [
-    {file = "websocket-client-1.1.0.tar.gz", hash = "sha256:b68e4959d704768fa20e35c9d508c8dc2bbc041fd8d267c0d7345cffe2824568"},
-    {file = "websocket_client-1.1.0-py2.py3-none-any.whl", hash = "sha256:e5c333bfa9fa739538b652b6f8c8fc2559f1d364243c8a689d7c0e1d41c2e611"},
 ]
 yarl = [
     {file = "yarl-1.6.3-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:0355a701b3998dcd832d0dc47cc5dedf3874f966ac7f870e0f3a6788d802d434"},
