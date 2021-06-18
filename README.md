@@ -16,8 +16,8 @@ In order to run buttercup, [poetry](https://python-poetry.org/) is used to manag
 
 Apart from this, a `.toml` configuration file is expected. Below is a default `config.toml`:
 ```
-[secrets]
-discord = "YOUR DISCORD BOT SECRET HERE"
+[Discord]
+token = "YOUR DISCORD BOT SECRET HERE"
 
 [guild]
 name = "Test Bubbles"
