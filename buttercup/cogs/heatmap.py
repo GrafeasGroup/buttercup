@@ -31,6 +31,15 @@ class Heatmap(Cog):
         """Generate a heatmap for the given user."""
         msg = await ctx.send(f"Generating a heatmap for u/{username}...")
 
+        response = self.blossom_api.get("volunteer/heatmap/", params={"username": username})
+
+        if response.status_code != 200:
+            await msg.edit(content=f"User u/{username} not found!")
+            return
+
+        data = response.json()
+        await msg.edit(content=f"Data: {data}")
+
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the Heatmap cog."""
