@@ -131,13 +131,13 @@ def create_file_from_heatmap(
 ) -> File:
     """Create a Discord file containing the heatmap table."""
     days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun",
     ]
     hours = ["{:02d}".format(hour) for hour in range(0, 24)]
     cells = get_cell_texts(heatmap_dict)
@@ -147,6 +147,7 @@ def create_file_from_heatmap(
     cell_colors = get_cell_colors(heatmap_dict)
 
     fig, ax = plt.subplots()
+    fig.set_size_inches(18.5, 5.0)
 
     # hide axes
     ax.axis("off")
@@ -173,6 +174,13 @@ def create_file_from_heatmap(
         # Remove cell edges
         # Setting edges="open" removes the cell colors for some reason
         cell.set_linewidth(0)
+        # Increase size
+        cell.set_height(0.15)
+        cell.set_width(0.05)
+
+    # Make text bigger
+    table.auto_set_font_size(False)
+    table.set_fontsize(19)
 
     heatmap_table = io.BytesIO()
     plt.savefig(heatmap_table, format="png")
