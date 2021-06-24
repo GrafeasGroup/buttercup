@@ -1,8 +1,7 @@
 import io
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
-import matplotlib.table as tbl
 from blossom_wrapper import BlossomAPI
 from discord import File
 from discord.ext.commands import Cog
@@ -169,7 +168,7 @@ def create_file_from_heatmap(
     for (row, col), cell in table.get_celld().items():
         # Make headers bold
         if (row == 0) or (col == -1):
-            cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+            cell.set_text_props(fontproperties=FontProperties(weight="bold"))
 
         # Remove cell edges
         # Setting edges="open" removes the cell colors for some reason
@@ -202,9 +201,9 @@ class Heatmap(Cog):
         options=[
             create_option(
                 name="username",
-                description="The user to get the heatmap for. Defaults to the user executing the command.",
+                description="The user to get the heatmap for.",
                 option_type=3,
-                required=False,
+                required=True,
             )
         ],
     )
