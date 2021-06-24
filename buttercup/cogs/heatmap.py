@@ -1,8 +1,11 @@
 from datetime import datetime
+import io
 from typing import Optional, Dict, List
 
 import matplotlib.pyplot as plt
+import matplotlib.table as tbl
 from blossom_wrapper import BlossomAPI
+from discord import File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
@@ -43,6 +46,71 @@ def get_heatmap_dict(data: List[Dict[str, int]]) -> Dict[int, Dict[int, int]]:
     return heatmap_dict
 
 
+def get_cell_text(heatmap_dict: Dict[int, Dict[int, int]]) -> List[List[str]]:
+    """Get the text for each cell of the table."""
+    rows = []
+
+    for day in heatmap_dict:
+        cols = []
+        day_data = heatmap_dict[day]
+
+        for hour in day_data:
+            hour_data = day_data[hour]
+            cell_text = "" if hour_data == 0 else str(hour_data)
+            cols.append(cell_text)
+
+        rows.append(cols)
+
+    return rows
+
+
+def create_file_from_heatmap(
+    heatmap_dict: Dict[int, Dict[int, int]], username: str,
+) -> File:
+    """Create a Discord file containing the heatmap table."""
+    background_color = "#36393f"  # Discord background color
+
+    days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
+    hours = ["{:02d}".format(hour) for hour in range(0, 24)]
+    cells = get_cell_text(heatmap_dict)
+
+    row_colors = [background_color for _ in range(0, 7)]
+    col_colors = [background_color for _ in range(0, 24)]
+
+    fig, ax = plt.subplots()
+
+    # hide axes
+    ax.axis("off")
+    ax.axis("tight")
+
+    ax.table(
+        rowLoc="right",
+        rowLabels=days,
+        rowColours=row_colors,
+        colLoc="center",
+        colLabels=hours,
+        colColours=col_colors,
+        cellText=cells,
+        loc="center",
+        edges="",
+    )
+
+    heatmap_table = io.BytesIO()
+    plt.savefig(heatmap_table, format="png")
+    heatmap_table.seek(0)
+    plt.clf()
+
+    return File(heatmap_table, "heatmap_table.png")
+
+
 class Heatmap(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the Heatmap cog."""
@@ -75,8 +143,11 @@ class Heatmap(Cog):
 
         data = response.json()
         heatmap_dict = get_heatmap_dict(data)
+        heatmap_table = create_file_from_heatmap(heatmap_dict, username)
 
-        await msg.edit(content=f"Data: {heatmap_dict}")
+        await msg.edit(
+            content=f"Here is the heatmap for u/{username}:", file=heatmap_table
+        )
 
 
 def setup(bot: ButtercupBot) -> None:
