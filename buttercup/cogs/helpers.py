@@ -1,4 +1,4 @@
-from typing import Optional
+from datetime import datetime
 import re
 
 from discord import DiscordException
@@ -16,3 +16,10 @@ def extract_username(display_name: str) -> str:
     if match is None:
         raise NoUsernameError()
     return match.group("username")
+
+
+def get_duration_str(start: datetime) -> str:
+    """Get the processing duration based on the start time."""
+    duration = datetime.now() - start
+    duration_ms = duration.microseconds / 1000
+    return f"{duration_ms:0.0f} ms"

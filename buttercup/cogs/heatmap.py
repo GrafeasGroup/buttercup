@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -11,11 +12,12 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import extract_username, get_duration_str
+from buttercup.strings import translation
 
+i18n = translation()
 
 # Colors to use in the plots
-from buttercup.cogs.helpers import extract_username
-
 background_color = "#36393f"  # Discord background color
 text_color = "white"
 line_color = "white"
@@ -23,15 +25,7 @@ line_color = "white"
 
 def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
     """Create a Discord file containing the heatmap table."""
-    days = [
-        "Mon",
-        "Tue",
-        "Wed",
-        "Thu",
-        "Fri",
-        "Sat",
-        "Sun",
-    ]
+    days = i18n["heatmap"]["days"]
     hours = ["{:02d}".format(hour) for hour in range(0, 24)]
 
     # The built in formatting for the heatmap doesn't allow displaying floats as ints
@@ -43,7 +37,7 @@ def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
 
     fig, ax = plt.subplots()
     fig.set_size_inches(9, 3.2)
-    plt.title(f"Activity Heatmap for u/{username}")
+    plt.title(i18n["heatmap"]["plot_title"].format(username))
 
     sns.heatmap(
         heatmap,
@@ -85,15 +79,16 @@ class Heatmap(Cog):
     )
     async def _heatmap(self, ctx: SlashContext, username: Optional[str] = None) -> None:
         """Generate a heatmap for the given user."""
+        start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
-        msg = await ctx.send(f"Generating a heatmap for u/{user}...")
+        msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
 
         response = self.blossom_api.get(
             "volunteer/heatmap/", params={"username": user}
         )
 
         if response.status_code != 200:
-            await msg.edit(content=f"User u/{user} not found!")
+            await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
             return
 
         data = response.json()
@@ -113,7 +108,7 @@ class Heatmap(Cog):
         heatmap_table = create_file_from_heatmap(heatmap, user)
 
         await msg.edit(
-            content=f"Here is the heatmap for u/{user}:", file=heatmap_table
+            content=i18n["heatmap"]["response_message"].format(user, get_duration_str(start)), file=heatmap_table
         )
 
 

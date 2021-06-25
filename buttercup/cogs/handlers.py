@@ -6,6 +6,9 @@ from discord.ext import commands
 from buttercup import logger
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import NoUsernameError
+from buttercup.strings import translation
+
+i18n = translation()
 
 
 class Handlers(commands.Cog):
@@ -26,24 +29,14 @@ class Handlers(commands.Cog):
         """Log that a command has errored and provide the user with feedback."""
         if isinstance(error, commands.CheckFailure):
             logger.warning("An unauthorized Command was performed.", ctx)
-            await ctx.send(
-                "You are not authorized to use this command. "
-                "This incident will be reported"
-            )
+            await ctx.send(i18n["handlers"]["not_authorized"])
         elif isinstance(error, NoUsernameError):
             logger.warning("Command executed without providing a username.", ctx)
-            await ctx.send(
-                "You did not provide a valid username. "
-                "Either add it to the command or change your display name "
-                "to a valid format."
-            )
+            await ctx.send(i18n["handlers"]["no_username"])
         else:
             tracker_id = uuid.uuid4()
             logger.warning(f"[{tracker_id}] {type(error).__name__}: {str(error)}", ctx)
-            await ctx.send(
-                f"[{tracker_id}] Something went wrong, "
-                "please contact a moderator with the provided ID."
-            )
+            await ctx.send(i18n["handlers"]["unknown_error"].format(tracker_id))
 
 
 def setup(bot: ButtercupBot) -> None:
