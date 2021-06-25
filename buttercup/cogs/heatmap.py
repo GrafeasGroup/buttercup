@@ -40,7 +40,8 @@ def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
     )
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(14, 5.0)
+    fig.set_size_inches(9, 3.2)
+    plt.title(f"Activity Heatmap for u/{username}")
 
     sns.heatmap(
         heatmap,
@@ -53,6 +54,7 @@ def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
         yticklabels=days,
     )
 
+    fig.tight_layout()
     heatmap_table = io.BytesIO()
     plt.savefig(heatmap_table, format="png")
     heatmap_table.seek(0)
