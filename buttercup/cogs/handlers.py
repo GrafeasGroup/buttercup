@@ -5,6 +5,7 @@ from discord.ext import commands
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import NoUsernameError
 
 
 class Handlers(commands.Cog):
@@ -28,6 +29,13 @@ class Handlers(commands.Cog):
             await ctx.send(
                 "You are not authorized to use this command. "
                 "This incident will be reported"
+            )
+        elif isinstance(error, NoUsernameError):
+            logger.warning("Command executed without providing a username.", ctx)
+            await ctx.send(
+                "You did not provide a valid username. "
+                "Either add it to the command or change your display name "
+                "to a valid format."
             )
         else:
             tracker_id = uuid.uuid4()

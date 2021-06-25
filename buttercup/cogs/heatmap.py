@@ -14,6 +14,8 @@ from buttercup.bot import ButtercupBot
 
 
 # Colors to use in the plots
+from buttercup.cogs.helpers import extract_username
+
 background_color = "#36393f"  # Discord background color
 text_color = "white"
 line_color = "white"
@@ -77,20 +79,21 @@ class Heatmap(Cog):
                 name="username",
                 description="The user to get the heatmap for.",
                 option_type=3,
-                required=True,
+                required=False,
             )
         ],
     )
     async def _heatmap(self, ctx: SlashContext, username: Optional[str] = None) -> None:
         """Generate a heatmap for the given user."""
-        msg = await ctx.send(f"Generating a heatmap for u/{username}...")
+        user = username or extract_username(ctx.author.display_name)
+        msg = await ctx.send(f"Generating a heatmap for u/{user}...")
 
         response = self.blossom_api.get(
-            "volunteer/heatmap/", params={"username": username}
+            "volunteer/heatmap/", params={"username": user}
         )
 
         if response.status_code != 200:
-            await msg.edit(content=f"User u/{username} not found!")
+            await msg.edit(content=f"User u/{user} not found!")
             return
 
         data = response.json()
@@ -107,10 +110,10 @@ class Heatmap(Cog):
             .reindex(index=day_index, columns=hour_index)
         )
 
-        heatmap_table = create_file_from_heatmap(heatmap, username)
+        heatmap_table = create_file_from_heatmap(heatmap, user)
 
         await msg.edit(
-            content=f"Here is the heatmap for u/{username}:", file=heatmap_table
+            content=f"Here is the heatmap for u/{user}:", file=heatmap_table
         )
 
 
