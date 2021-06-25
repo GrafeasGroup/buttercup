@@ -24,7 +24,7 @@ class ButtercupBot(Bot):
         intents.members = True
         super().__init__(command_prefix, intents=intents, **kwargs)
         self.slash = SlashCommand(self, sync_commands=True, sync_on_cog_reload=True)
-        self.config_path = kwargs.get("config_path", "config.toml")
+        self.config_path = kwargs.get("config_path", "../config.toml")
         self.cog_path = kwargs.get("cog_path", "buttercup.cogs.")
         self.guild_name = self.config["guild"]["name"]
 
