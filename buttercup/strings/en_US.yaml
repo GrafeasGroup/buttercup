@@ -60,3 +60,12 @@ heatmap:
     Activity Heatmap for u/{0}
   response_message: |
     Here is the heatmap for u/{0}! ({1})
+rules:
+  getting_rules: |
+    Getting the rules for r/{0}...
+  sub_not_found: |
+    I couldn't find a sub named r/{0}. Are you sure you spelled it correctly?
+  embed_message: |
+    Here are the rules! ({0})
+  embed_title: |
+    Rules for r/{0}
