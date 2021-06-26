@@ -17,11 +17,6 @@ from buttercup.strings import translation
 
 i18n = translation()
 
-# Colors to use in the plots
-background_color = "#36393f"  # Discord background color
-text_color = "white"
-line_color = "white"
-
 
 def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
     """Create a Discord file containing the heatmap table."""
@@ -120,19 +115,6 @@ def setup(bot: ButtercupBot) -> None:
     password = cog_config.get("password")
     api_key = cog_config.get("api_key")
     blossom_api = BlossomAPI(email=email, password=password, api_key=api_key)
-
-    # Initialize PyPlot
-    # Global settings for the plots
-    plt.rcParams["figure.facecolor"] = background_color
-    plt.rcParams["axes.facecolor"] = background_color
-    plt.rcParams["axes.labelcolor"] = text_color
-    plt.rcParams["axes.edgecolor"] = line_color
-    plt.rcParams["text.color"] = text_color
-    plt.rcParams["xtick.color"] = line_color
-    plt.rcParams["ytick.color"] = line_color
-    plt.rcParams["grid.color"] = line_color
-    plt.rcParams["grid.alpha"] = 0.8
-    plt.rcParams["figure.dpi"] = 200.0
 
     bot.add_cog(Heatmap(bot=bot, blossom_api=blossom_api))
 
