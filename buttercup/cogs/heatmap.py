@@ -62,6 +62,41 @@ def create_file_from_heatmap(
     return File(heatmap_table, "heatmap_table.png")
 
 
+def adjust_timezone(heatmap: pd.DataFrame, utc_offset: int) -> pd.DataFrame:
+    """Adjust the heatmap to the given UTC offset."""
+    result = heatmap
+    forward = utc_offset > 0
+
+    # TODO: Make this more efficient
+    # Suppose we have a data frame like this:
+    #     A  B  C
+    # D   1  2  3
+    # E   4  5  6
+    # F   7  8  9
+    # With each iteration, we shift like this:
+    #     A  B  C
+    # D   9  1  2
+    # E   3  4  5
+    # F   6  7  8
+    # Assuming we have a positive UTC offset.
+    for _ in range(0, abs(utc_offset)):
+        periods = 1 if forward else -1
+        wrap_column = result[23] if forward else result[0]
+        wrap_value = wrap_column[7] if forward else wrap_column[1]
+        wrap_column = wrap_column.shift(periods=periods)
+        if forward:
+            wrap_column[1] = wrap_value
+        else:
+            wrap_column[7] = wrap_value
+        result = result.shift(periods=periods, axis="columns")
+        if forward:
+            result[0] = wrap_column
+        else:
+            result[23] = wrap_column
+
+    return result
+
+
 class Heatmap(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the Heatmap cog."""
@@ -106,6 +141,8 @@ class Heatmap(Cog):
             # Add the missing days and hours
             .reindex(index=day_index, columns=hour_index)
         )
+
+        heatmap = adjust_timezone(heatmap, utc_offset)
 
         heatmap_table = create_file_from_heatmap(heatmap, user, utc_offset)
 
