@@ -12,7 +12,7 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_username, get_duration_str
+from buttercup.cogs.helpers import extract_username, get_duration_str, extract_utc_offset
 from buttercup.strings import translation
 
 i18n = translation()
@@ -84,6 +84,7 @@ class Heatmap(Cog):
         """Generate a heatmap for the given user."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
+        utc_offset = extract_utc_offset(ctx.author.display_name)
         msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
 
         response = self.blossom_api.get("volunteer/heatmap/", params={"username": user})
@@ -106,7 +107,7 @@ class Heatmap(Cog):
             .reindex(index=day_index, columns=hour_index)
         )
 
-        heatmap_table = create_file_from_heatmap(heatmap, user)
+        heatmap_table = create_file_from_heatmap(heatmap, user, utc_offset)
 
         await msg.edit(
             content=i18n["heatmap"]["response_message"].format(
