@@ -12,7 +12,11 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_username, get_duration_str, extract_utc_offset
+from buttercup.cogs.helpers import (
+    extract_username,
+    extract_utc_offset,
+    get_duration_str,
+)
 from buttercup.strings import translation
 
 i18n = translation()
