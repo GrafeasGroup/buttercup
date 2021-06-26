@@ -58,6 +58,10 @@ heatmap:
     - Sun
   plot_title: |
     Activity Heatmap for u/{0}
+  plot_xlabel: |
+    Time ({0})
+  plot_ylabel: |
+    Weekday
   response_message: |
     Here is the heatmap for u/{0}! ({1})
 rules:

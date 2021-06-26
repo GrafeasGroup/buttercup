@@ -18,7 +18,9 @@ from buttercup.strings import translation
 i18n = translation()
 
 
-def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
+def create_file_from_heatmap(
+    heatmap: pd.DataFrame, username: str, utc_offset: int = 0
+) -> File:
     """Create a Discord file containing the heatmap table."""
     days = i18n["heatmap"]["days"]
     hours = ["{:02d}".format(hour) for hour in range(0, 24)]
@@ -31,8 +33,7 @@ def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
     )
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(9, 3.2)
-    plt.title(i18n["heatmap"]["plot_title"].format(username))
+    fig.set_size_inches(9, 3.44)
 
     sns.heatmap(
         heatmap,
@@ -44,6 +45,13 @@ def create_file_from_heatmap(heatmap: pd.DataFrame, username: str,) -> File:
         xticklabels=hours,
         yticklabels=days,
     )
+
+    # TODO: Make this dependant on the user's timezone set in the display name
+    timezone = "UTC" if utc_offset == 0 else f"UTC{utc_offset:+d}"
+
+    plt.title(i18n["heatmap"]["plot_title"].format(username))
+    plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone))
+    plt.ylabel(i18n["heatmap"]["plot_ylabel"])
 
     fig.tight_layout()
     heatmap_table = io.BytesIO()
@@ -78,9 +86,7 @@ class Heatmap(Cog):
         user = username or extract_username(ctx.author.display_name)
         msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
 
-        response = self.blossom_api.get(
-            "volunteer/heatmap/", params={"username": user}
-        )
+        response = self.blossom_api.get("volunteer/heatmap/", params={"username": user})
 
         if response.status_code != 200:
             await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
@@ -103,7 +109,10 @@ class Heatmap(Cog):
         heatmap_table = create_file_from_heatmap(heatmap, user)
 
         await msg.edit(
-            content=i18n["heatmap"]["response_message"].format(user, get_duration_str(start)), file=heatmap_table
+            content=i18n["heatmap"]["response_message"].format(
+                user, get_duration_str(start)
+            ),
+            file=heatmap_table,
         )
 
 

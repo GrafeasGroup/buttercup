@@ -6,6 +6,7 @@ from discord import DiscordException
 
 class NoUsernameError(DiscordException):
     """Exception raised when the username was not provided."""
+
     pass
 
 
