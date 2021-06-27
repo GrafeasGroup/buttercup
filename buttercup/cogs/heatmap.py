@@ -50,7 +50,6 @@ def create_file_from_heatmap(
         yticklabels=days,
     )
 
-    # TODO: Make this dependant on the user's timezone set in the display name
     timezone = "UTC" if utc_offset == 0 else f"UTC{utc_offset:+d}"
 
     plt.title(i18n["heatmap"]["plot_title"].format(username))
