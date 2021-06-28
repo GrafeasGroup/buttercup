@@ -15,7 +15,16 @@ from buttercup.strings import translation
 i18n = translation()
 
 
-PI_KEYWORDS = ["personal info", "identifying info", "censor"]
+PI_KEYWORDS = [
+    "personal info",
+    "identifying info",
+    "censor",
+    "redact",
+    "blur",
+    "obscure",
+    "privacy",
+    "dox",
+]
 
 
 def extract_sub_name(subreddit: str) -> str:
@@ -109,7 +118,8 @@ class Rules(Cog):
 
     @cog_ext.cog_slash(
         name="pirules",
-        description="Get the rules of the specified subreddit regarding personal information.",
+        description="Get the rules of the specified subreddit "
+        "regarding personal information.",
         options=[
             create_option(
                 name="subreddit",
