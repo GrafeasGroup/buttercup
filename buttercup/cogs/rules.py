@@ -76,6 +76,12 @@ class Rules(Cog):
         embed = Embed(title=i18n["rules"]["embed_title"].format(sub_name))
 
         try:
+            rules = [rule async for rule in sub.rules]
+
+            if len(rules) == 0:
+                await msg.edit(content=i18n["rules"]["no_rules"].format(sub_name))
+                return
+
             async for rule in sub.rules:
                 # The value field is not allowed to be a blank string
                 # So we just repeat the name of the rule if it is not provided
@@ -113,41 +119,51 @@ class Rules(Cog):
             )
         ],
     )
-    async def _rules(self, ctx: SlashContext, subreddit: str) -> None:
+    async def _pi_rules(self, ctx: SlashContext, subreddit: str) -> None:
         """Get the rules of the specified subreddit regarding personal information."""
         # Send a quick response
         # We will edit this later with the actual content
         start = datetime.now()
         sub_name = extract_sub_name(subreddit)
-        msg = await ctx.send(i18n["pirules"]["getting_rules"].format(sub_name))
+        msg = await ctx.send(i18n["pi_rules"]["getting_rules"].format(sub_name))
 
         sub = await self.reddit_api.subreddit(sub_name)
 
-        embed = Embed(title=i18n["pirules"]["embed_title"].format(sub_name))
+        embed = Embed(title=i18n["pi_rules"]["embed_title"].format(sub_name))
 
         try:
-            async for rule in sub.rules:
-                if is_pi_rule(rule):
-                    # The value field is not allowed to be a blank string
-                    # So we just repeat the name of the rule if it is not provided
-                    embed.add_field(
-                        name=rule.short_name,
-                        value=rule.description or rule.short_name,
-                        inline=False,
-                    )
+            rules = [rule async for rule in sub.rules]
+
+            if len(rules) == 0:
+                await msg.edit(content=i18n["pi_rules"]["no_rules"].format(sub_name))
+                return
+
+            pi_rules = [rule for rule in rules if is_pi_rule(rule)]
+
+            if len(pi_rules) == 0:
+                await msg.edit(content=i18n["pi_rules"]["no_pi_rules"].format(sub_name))
+                return
+
+            for rule in pi_rules:
+                # The value field is not allowed to be a blank string
+                # So we just repeat the name of the rule if it is not provided
+                embed.add_field(
+                    name=rule.short_name,
+                    value=rule.description or rule.short_name,
+                    inline=False,
+                )
         except Redirect:
             # Sometimes Reddit redirects to the subreddit search
-            await msg.edit(content=i18n["pirules"]["sub_not_found"].format(sub_name))
+            await msg.edit(content=i18n["pi_rules"]["sub_not_found"].format(sub_name))
             return
         except NotFound:
             # Sometimes it throws a not found exception, e.g. if a character isn't allowed
-            await msg.edit(content=i18n["pirules"]["sub_not_found"].format(sub_name))
+            await msg.edit(content=i18n["pi_rules"]["sub_not_found"].format(sub_name))
             return
 
         delay = datetime.now() - start
-        print("4")
         await msg.edit(
-            content=i18n["pirules"]["embed_message"].format(
+            content=i18n["pi_rules"]["embed_message"].format(
                 f"{delay.microseconds // 1000} ms"
             ),
             embed=embed,
