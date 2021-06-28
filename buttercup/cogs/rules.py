@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import asyncpraw
 from asyncpraw.models import Rule
-from asyncprawcore import NotFound, Redirect
+from asyncprawcore import Forbidden, NotFound, Redirect
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -107,6 +107,10 @@ class Rules(Cog):
             # Sometimes it throws a not found exception, e.g. if a character isn't allowed
             await msg.edit(content=i18n["rules"]["sub_not_found"].format(sub_name))
             return
+        except Forbidden:
+            # The subreddit is private
+            await msg.edit(content=i18n["rules"]["sub_private"].format(sub_name))
+            return
 
         delay = datetime.now() - start
         await msg.edit(
@@ -169,6 +173,10 @@ class Rules(Cog):
         except NotFound:
             # Sometimes it throws a not found exception, e.g. if a character isn't allowed
             await msg.edit(content=i18n["pi_rules"]["sub_not_found"].format(sub_name))
+            return
+        except Forbidden:
+            # The subreddit is private
+            await msg.edit(content=i18n["pi_rules"]["sub_private"].format(sub_name))
             return
 
         delay = datetime.now() - start
