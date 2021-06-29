@@ -23,6 +23,21 @@ find:
   please_check_url: |
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
   discord_username_link: "[{0}](https://reddit.com/u/{0})"
+claimed:
+  looking_for_claimed_posts: |
+    Looking for posts claimed by u/{0}...
+  user_not_found: |
+    Sorry, I couldn't find user u/{0}.
+  posts_not_found: |
+    Sorry, I couldn't find the posts by u/{0}.
+  no_claimed_posts: |
+    It looks like u/{0} doesn't have any posts claimed right now!
+  one_post_message: |
+    u/{0} claimed the following post:
+  multiple_posts_message: |
+    u/{0} claimed {1} posts:
+    {2}
+  post_list_item: "- **{0}**: [ToR post]({1}) / [partner post]({2})"
 stats:
   getting_stats: |
     Getting stats for all users...

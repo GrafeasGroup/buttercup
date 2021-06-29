@@ -260,11 +260,13 @@ class Find(Cog):
     async def _claimed(self, ctx: SlashContext, username: str) -> None:
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(f"Looking for posts claimed by u/{username}...")
+        msg = await ctx.send(
+            i18n["claimed"]["looking_for_claimed_posts"].format(username)
+        )
 
         volunteer_response = self.blossom_api.get_user(username)
         if volunteer_response.status != BlossomStatus.ok:
-            await msg.edit(content=f"Sorry, I couldn't find user u/{username}.")
+            await msg.edit(content=i18n["claimed"]["user_not_found"].format(username))
             return
         volunteer = volunteer_response.data
 
@@ -275,9 +277,7 @@ class Find(Cog):
             "submission/", params={"claimed_by": volunteer["id"], "archived": False}
         )
         if submission_response.status_code != 200:
-            await msg.edit(
-                content=f"Sorry, I couldn't find the submissions by u/{username}."
-            )
+            await msg.edit(content=i18n["claimed"]["posts_not_found"].format(username))
             return
         # Filter out completed posts
         submissions = [
@@ -287,27 +287,30 @@ class Find(Cog):
         ]
 
         if len(submissions) == 0:
-            await msg.edit(
-                content=f"It looks like u/{username} doesn't have any posts claimed right now!"
-            )
+            await msg.edit(content=i18n["claimed"]["no_claimed_posts"].format(username))
             return
 
         embed = to_embed(dict(submission=submissions[0], author=volunteer))
 
         if len(submissions) == 1:
             await msg.edit(
-                content=f"u/{username} claimed the following post:", embed=embed
+                content=i18n["claimed"]["one_post_message"].format(username),
+                embed=embed,
             )
             return
 
         post_list = "\n".join(
             [
-                f"- [Post {i + 1}]({post['tor_url']})"
+                i18n["claimed"]["post_list_item"].format(
+                    i + 1, post["tor_url"], post["url"]
+                )
                 for i, post in enumerate(submissions)
             ]
         )
         await msg.edit(
-            content=f"u/{username} claimed {len(submissions)} posts:\n{post_list}",
+            content=i18n["claimed"]["multiple_posts_message"].format(
+                username, len(submissions), post_list
+            ),
             embed=embed,
         )
 
