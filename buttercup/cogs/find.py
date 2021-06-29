@@ -266,7 +266,7 @@ class Find(Cog):
             )
         ],
     )
-    async def _find(self, ctx: SlashContext, username: str) -> None:
+    async def _claimed(self, ctx: SlashContext, username: str) -> None:
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(f"Looking for posts claimed by u/{username}...")
@@ -276,7 +276,6 @@ class Find(Cog):
             await msg.edit(content=f"Sorry, I couldn't find user u/{username}.")
             return
         volunteer = volunteer_response.data
-        print(volunteer)
 
         submission_response = self.blossom_api.get(
             "submission/", params={"claimed_by": volunteer["id"], "archived": False}
@@ -296,9 +295,21 @@ class Find(Cog):
 
         embed = self.to_embed(dict(submission=submissions[0]))
 
-        print("Sending message...")
+        if len(submissions) == 1:
+            await msg.edit(
+                content=f"u/{username} claimed the following post:", embed=embed
+            )
+            return
+
+        post_list = "\n".join(
+            [
+                f"- [Post {i + 1}]({post['tor_url']})"
+                for i, post in enumerate(submissions)
+            ]
+        )
         await msg.edit(
-            content=f"Here are the posts claimed by u/{username}:", embed=embed
+            content=f"u/{username} claimed {len(submissions)} posts:\n{post_list}",
+            embed=embed,
         )
 
 
