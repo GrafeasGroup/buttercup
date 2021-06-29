@@ -254,6 +254,53 @@ class Find(Cog):
 
         await msg.edit(content="I found the post!", embed=self.to_embed(data))
 
+    @cog_ext.cog_slash(
+        name="claimed",
+        description="Find the posts claimed by the given user.",
+        options=[
+            create_option(
+                name="username",
+                description="The user to find the claimed posts for.",
+                option_type=3,
+                required=True,
+            )
+        ],
+    )
+    async def _find(self, ctx: SlashContext, username: str) -> None:
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(f"Looking for posts claimed by u/{username}...")
+
+        volunteer_response = self.blossom_api.get_user(username)
+        if volunteer_response.status != BlossomStatus.ok:
+            await msg.edit(content=f"Sorry, I couldn't find user u/{username}.")
+            return
+        volunteer = volunteer_response.data
+        print(volunteer)
+
+        submission_response = self.blossom_api.get(
+            "submission/", params={"claimed_by": volunteer["id"], "archived": False}
+        )
+        if submission_response.status_code != 200:
+            await msg.edit(
+                content=f"Sorry, I couldn't find the submissions by u/{username}."
+            )
+            return
+        submissions = submission_response.json()["results"]
+
+        if len(submissions) == 0:
+            await msg.edit(
+                content=f"It looks like u/{username} doesn't have any posts claimed right now!"
+            )
+            return
+
+        embed = self.to_embed(dict(submission=submissions[0]))
+
+        print("Sending message...")
+        await msg.edit(
+            content=f"Here are the posts claimed by u/{username}:", embed=embed
+        )
+
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the Find cog."""
