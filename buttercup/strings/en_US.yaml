@@ -45,6 +45,20 @@ stats:
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}
+user_stats:
+  getting_stats: |
+    Getting stats for u/{0}...
+  failed_getting_stats: |
+    Failed to get the stats for u/{0}.
+  embed_message: |
+    Here are the stats for u/{0}!
+  embed_title: |
+    Stats for u/{0}
+  embed_description: |
+    **Transcriptions**: {0:,d}
+    **Flair Rank**: {1}
+    **Leaderboard**: #{2}
+    **Date Joined**: {3}
 progress:
   getting_progress: |
     Getting progress for u/{user} in the last {hours} hours...

@@ -3,6 +3,7 @@ from random import choice
 from typing import Optional
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
+from dateutil.parser import parse
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -49,6 +50,7 @@ class Stats(Cog):
 
         if response.status_code != 200:
             await msg.edit(content=i18n["stats"]["failed_getting_stats"])
+            return
 
         data = response.json()
 
@@ -61,6 +63,49 @@ class Stats(Cog):
         await msg.edit(
             content=i18n["stats"]["embed_message"],
             embed=Embed(title=i18n["stats"]["embed_title"], description=description),
+        )
+
+    @cog_ext.cog_slash(
+        name="userstats",
+        description="Get stats about a user.",
+        options=[
+            create_option(
+                name="username",
+                description="The username to get the stats for.",
+                option_type=3,
+                required=True,
+            )
+        ],
+    )
+    async def _user_stats(self, ctx: SlashContext, username: str) -> None:
+        """Get stats about a user."""
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(username))
+
+        response = self.blossom_api.get_user(username)
+
+        if response.status != BlossomStatus.ok:
+            await msg.edit(
+                content=i18n["user_stats"]["failed_getting_stats"].format(username)
+            )
+            return
+
+        data = response.data
+
+        description = i18n["user_stats"]["embed_description"].format(
+            data["gamma"],
+            "Green",
+            22,
+            parse(data["date_joined"]).strftime("%B %d, %Y"),
+        )
+
+        await msg.edit(
+            content=i18n["user_stats"]["embed_message"].format(username),
+            embed=Embed(
+                title=i18n["user_stats"]["embed_title"].format(username),
+                description=description,
+            ),
         )
 
     @cog_ext.cog_slash(
