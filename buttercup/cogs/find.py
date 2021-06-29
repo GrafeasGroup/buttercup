@@ -68,84 +68,75 @@ def get_clean_transcription(data: Dict) -> str:
     return "---".join(parts[1:-1]).strip()
 
 
+def to_embed(data: Dict) -> Embed:  # noqa: C901
+    """Convert the submission to a Discord embed."""
+    color = Color.from_rgb(255, 176, 0)  # Orange
+    status: str = "Unclaimed"
+
+    if "transcription" in data:
+        tr_link = f"[Link]({data['transcription']['url']})"
+    else:
+        tr_link = None
+
+    if data["submission"].get("completed_by"):
+        color = Color.from_rgb(148, 224, 68)  # Green
+
+        if "author" in data:
+            status = "Completed by {}".format(
+                i18n["find"]["discord_username_link"].format(data["author"]["username"])
+            )
+        else:
+            status = "Completed"
+    elif data["submission"].get("claimed_by"):
+        color = Color.from_rgb(13, 211, 187)  # Cyan
+
+        if "author" in data:
+            status = "Claimed by {}".format(
+                i18n["find"]["discord_username_link"].format(data["author"]["username"])
+            )
+        else:
+            status = "Claimed"
+
+    embed = (
+        Embed(color=color)
+        .add_field(name="Status", value=status)
+        .add_field(
+            name="OCR",
+            value="Yes" if data["submission"].get("has_ocr_transcription") else "No",
+        )
+        .add_field(
+            name="Archived",
+            value="Yes" if data["submission"].get("archived") else "No",
+        )
+    )
+
+    if "transcription" in data or "ocr" in data:
+        embed.description = limit_str(get_clean_transcription(data), 200)
+    if data["submission"].get("content_url"):
+        embed.set_image(url=data["submission"]["content_url"])
+    if data["submission"].get("tor_url"):
+        embed.add_field(
+            name="ToR Post", value=f"[Link]({data['submission']['tor_url']})"
+        )
+    if data["submission"].get("url"):
+        embed.add_field(
+            name="Partner Post", value=f"[Link]({data['submission']['url']})"
+        )
+    if tr_link:
+        embed.add_field(name="Transcription", value=tr_link)
+    if subreddit := (
+        data["submission"]["url"].split("/")[4] if "url" in data["submission"] else None
+    ):
+        embed.set_author(name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}")
+
+    return embed
+
+
 class Find(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the Find cog."""
         self.bot = bot
         self.blossom_api = blossom_api
-
-    def to_embed(self, data: Dict) -> Embed:  # noqa: C901
-        """Convert the submission to a Discord embed."""
-        color = Color.from_rgb(255, 176, 0)  # Orange
-        status: str = "Unclaimed"
-
-        if "transcription" in data:
-            tr_link = f"[Link]({data['transcription']['url']})"
-        else:
-            tr_link = None
-
-        if data["submission"].get("completed_by"):
-            color = Color.from_rgb(148, 224, 68)  # Green
-
-            if "author" in data:
-                status = "Completed by {}".format(
-                    i18n["find"]["discord_username_link"].format(
-                        data["author"]["username"]
-                    )
-                )
-            else:
-                status = "Completed"
-        elif data["submission"].get("claimed_by"):
-            color = Color.from_rgb(13, 211, 187)  # Cyan
-
-            if "author" in data:
-                status = "Claimed by {}".format(
-                    i18n["find"]["discord_username_link"].format(
-                        data["author"]["username"]
-                    )
-                )
-            else:
-                status = "Claimed"
-
-        embed = (
-            Embed(color=color)
-            .add_field(name="Status", value=status)
-            .add_field(
-                name="OCR",
-                value="Yes"
-                if data["submission"].get("has_ocr_transcription")
-                else "No",
-            )
-            .add_field(
-                name="Archived",
-                value="Yes" if data["submission"].get("archived") else "No",
-            )
-        )
-
-        if "transcription" in data or "ocr" in data:
-            embed.description = limit_str(get_clean_transcription(data), 200)
-        if data["submission"].get("content_url"):
-            embed.set_image(url=data["submission"]["content_url"])
-        if data["submission"].get("tor_url"):
-            embed.add_field(
-                name="ToR Post", value=f"[Link]({data['submission']['tor_url']})"
-            )
-        if data["submission"].get("url"):
-            embed.add_field(
-                name="Partner Post", value=f"[Link]({data['submission']['url']})"
-            )
-        if tr_link:
-            embed.add_field(name="Transcription", value=tr_link)
-        if subreddit := (
-            data["submission"]["url"].split("/")[4]
-            if "url" in data["submission"]
-            else None
-        ):
-            embed.set_author(
-                name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}"
-            )
-
-        return embed
 
     def get_transcription(self, data: Dict) -> Dict:
         """Get the target transcription from Blossom."""
@@ -241,18 +232,18 @@ class Find(Cog):
             )
             return
 
-        await msg.edit(content="I found the post!", embed=self.to_embed(data))
+        await msg.edit(content="I found the post!", embed=to_embed(data))
 
         # If we started with a transcription link, this will be set already.
         if "transcription" not in data:
             data: Dict[str, Dict] = self.get_transcription(data)
 
-        await msg.edit(content="I found the post!", embed=self.to_embed(data))
+        await msg.edit(content="I found the post!", embed=to_embed(data))
 
         if data.get("transcription") or data["submission"].get("claimed_by"):
             data: Dict[str, Dict] = self.get_author(data)
 
-        await msg.edit(content="I found the post!", embed=self.to_embed(data))
+        await msg.edit(content="I found the post!", embed=to_embed(data))
 
     @cog_ext.cog_slash(
         name="claimed",
@@ -277,6 +268,9 @@ class Find(Cog):
             return
         volunteer = volunteer_response.data
 
+        # We can't specify that no user completed the post yet.
+        # Instead, we ask that the post isn't archived yet.
+        # For a short amount of time this might return completed posts.
         submission_response = self.blossom_api.get(
             "submission/", params={"claimed_by": volunteer["id"], "archived": False}
         )
@@ -285,7 +279,12 @@ class Find(Cog):
                 content=f"Sorry, I couldn't find the submissions by u/{username}."
             )
             return
-        submissions = submission_response.json()["results"]
+        # Filter out completed posts
+        submissions = [
+            post
+            for post in submission_response.json()["results"]
+            if post["completed_by"] is None
+        ]
 
         if len(submissions) == 0:
             await msg.edit(
@@ -293,7 +292,7 @@ class Find(Cog):
             )
             return
 
-        embed = self.to_embed(dict(submission=submissions[0]))
+        embed = to_embed(dict(submission=submissions[0], author=volunteer))
 
         if len(submissions) == 1:
             await msg.edit(
