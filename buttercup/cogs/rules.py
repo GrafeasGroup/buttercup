@@ -38,13 +38,11 @@ def extract_sub_name(subreddit: str) -> str:
 
 def contains_any(text: Optional[str], keywords: List[str]) -> bool:
     """Determine if the text contains any of the keywords."""
-    if text is None:
-        return False
-    lower_text = text.casefold()
-    for word in keywords:
-        if word.casefold() in lower_text:
-            return True
-    return False
+    return (
+        False
+        if text is None
+        else any(word.casefold() in text.casefold() for word in keywords)
+    )
 
 
 def is_pi_rule(rule: Rule) -> bool:
