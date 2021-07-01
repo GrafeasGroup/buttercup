@@ -11,6 +11,7 @@ from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
@@ -25,6 +26,7 @@ PI_KEYWORDS = [
     "obscure",
     "privacy",
     "dox",
+    "witch hunt",
 ]
 
 
@@ -76,11 +78,8 @@ async def send_rules_message(
             inline=False,
         )
 
-    delay = datetime.now() - start_time
     await msg.edit(
-        content=i18n["rules"]["embed_message"].format(
-            f"{delay.microseconds // 1000} ms"
-        ),
+        content=i18n["rules"]["embed_message"].format(get_duration_str(start_time)),
         embed=embed,
     )
 

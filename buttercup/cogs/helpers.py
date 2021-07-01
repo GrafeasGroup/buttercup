@@ -32,5 +32,8 @@ def extract_utc_offset(display_name: str) -> int:
 def get_duration_str(start: datetime) -> str:
     """Get the processing duration based on the start time."""
     duration = datetime.now() - start
-    duration_ms = duration.microseconds / 1000
-    return f"{duration_ms:0.0f} ms"
+    if duration.seconds > 5:
+        return f"{duration.seconds} s"
+
+    duration_ms = duration.seconds * 1000 + duration.microseconds // 1000
+    return f"{duration_ms} ms"
