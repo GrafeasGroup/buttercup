@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Callable, List, Optional
+from xmlrpc.client import Boolean
 
 import asyncpraw
 from asyncpraw.models import Rule
@@ -81,24 +82,43 @@ class Rules(Cog):
         self.bot = bot
         self.reddit_api = reddit_api
 
-    async def _get_rule_list(
-        self, msg: SlashMessage, subreddit: str
-    ) -> Optional[List[Rule]]:
-        """Get the list of rules for the given subreddit."""
+    async def _send_filtered_rules(
+        self,
+        ctx: SlashContext,
+        subreddit: str,
+        localization_key: str,
+        filter_function: Callable[[Rule], Boolean],
+    ) -> None:
+        """Send the rules filtered by the given function to the user."""
+        start = datetime.now()
+        sub_name = extract_sub_name(subreddit)
+        # Send a quick response
+        # We will edit this later with the actual content
+        msg = await ctx.send(i18n[localization_key]["getting_rules"].format(sub_name))
         try:
             sub = await self.reddit_api.subreddit(subreddit)
-            return [rule async for rule in sub.rules]
+            return await send_rules_message(
+                msg,
+                [rule async for rule in sub.rules if filter_function(rule)],
+                sub_name,
+                start,
+                localization_key,
+            )
         except Redirect:
             # The subreddit does not exist
-            await msg.edit(content=i18n["rules"]["sub_not_found"].format(subreddit))
+            await msg.edit(
+                content=i18n[localization_key]["sub_not_found"].format(subreddit)
+            )
         except NotFound:
             # A character in the sub name is not allowed
-            await msg.edit(content=i18n["rules"]["sub_not_found"].format(subreddit))
+            await msg.edit(
+                content=i18n[localization_key]["sub_not_found"].format(subreddit)
+            )
         except Forbidden:
             # The subreddit is private
-            await msg.edit(content=i18n["rules"]["sub_private"].format(subreddit))
-
-        return None
+            await msg.edit(
+                content=i18n[localization_key]["sub_private"].format(subreddit)
+            )
 
     @cog_ext.cog_slash(
         name="rules",
@@ -114,17 +134,7 @@ class Rules(Cog):
     )
     async def _rules(self, ctx: SlashContext, subreddit: str) -> None:
         """Get the rules of the specified subreddit."""
-        start = datetime.now()
-        sub_name = extract_sub_name(subreddit)
-        # Send a quick response
-        # We will edit this later with the actual content
-        msg = await ctx.send(i18n["rules"]["getting_rules"].format(sub_name))
-
-        rules = await self._get_rule_list(msg, subreddit)
-        if rules is None:
-            return
-
-        await send_rules_message(msg, rules, subreddit, start, "rules")
+        await self._send_filtered_rules(ctx, subreddit, "rules", lambda rule: True)
 
     @cog_ext.cog_slash(
         name="pirules",
@@ -141,18 +151,7 @@ class Rules(Cog):
     )
     async def _pi_rules(self, ctx: SlashContext, subreddit: str) -> None:
         """Get the rules of the specified subreddit regarding personal information."""
-        start = datetime.now()
-        sub_name = extract_sub_name(subreddit)
-        # Send a quick response
-        # We will edit this later with the actual content
-        msg = await ctx.send(i18n["pi_rules"]["getting_rules"].format(sub_name))
-
-        rules = await self._get_rule_list(msg, subreddit)
-        if rules is None:
-            return
-        rules = [rule for rule in rules if is_pi_rule(rule)]
-
-        await send_rules_message(msg, rules, subreddit, start, "pi_rules")
+        await self._send_filtered_rules(ctx, subreddit, "pi_rules", is_pi_rule)
 
 
 def setup(bot: ButtercupBot) -> None:
