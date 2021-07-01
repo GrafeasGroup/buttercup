@@ -1,3 +1,10 @@
+handlers:
+  not_authorized: |
+    You are not authorized to use this command. This incident will be reported.
+  no_username: |
+    You did not provide a valid username. Either add it to the command or change your display name to a valid format.
+  unknown_error: |
+    [{0}] Something went wrong, please contact a moderator with the provided ID.
 name_validator:
   new_member: |
     Hello, <@{0}>! Welcome to the Transcribers of Reddit chill room! Thanks for helping make somebody's day better!
@@ -51,6 +58,27 @@ stats:
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}
+heatmap:
+  getting_heatmap: |
+    Generating a heatmap for u/{0}...
+  user_not_found: |
+    Sorry, I couldn't find the user u/{0}.
+  days:
+    - Mon
+    - Tue
+    - Wed
+    - Thu
+    - Fri
+    - Sat
+    - Sun
+  plot_title: |
+    Activity Heatmap for u/{0}
+  plot_xlabel: |
+    Time ({0})
+  plot_ylabel: |
+    Weekday
+  response_message: |
+    Here is the heatmap for u/{0}! ({1})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...

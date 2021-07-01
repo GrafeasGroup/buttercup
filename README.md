@@ -37,7 +37,7 @@ restrict_channel = "new-user"
 welcome_channel = "off-topic"
 
 [Blossom]
-username = ""
+email = ""
 password = ""
 api_key = ""
 ```
