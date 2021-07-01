@@ -21,6 +21,15 @@ def extract_username(display_name: str) -> str:
     return match.group("username")
 
 
+def extract_sub_name(subreddit: str) -> str:
+    """Extract the name of the sub without prefix."""
+    if subreddit.startswith("/r/"):
+        return subreddit[3:]
+    if subreddit.startswith("r/"):
+        return subreddit[2:]
+    return subreddit
+
+
 def extract_utc_offset(display_name: str) -> int:
     """Extract the user's timezone (UTC offset) from the display name."""
     match = timezone_regex.search(display_name)

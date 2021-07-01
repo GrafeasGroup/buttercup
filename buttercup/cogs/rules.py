@@ -11,7 +11,7 @@ from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import get_duration_str
+from buttercup.cogs.helpers import extract_sub_name, get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
@@ -28,15 +28,6 @@ PI_KEYWORDS = [
     "dox",
     "witch hunt",
 ]
-
-
-def extract_sub_name(subreddit: str) -> str:
-    """Extract the name of the sub without prefix."""
-    if subreddit.startswith("/r/"):
-        return subreddit[3:]
-    if subreddit.startswith("r/"):
-        return subreddit[2:]
-    return subreddit
 
 
 def contains_any(text: Optional[str], keywords: List[str]) -> bool:
