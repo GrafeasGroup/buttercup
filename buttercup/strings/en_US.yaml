@@ -43,6 +43,19 @@ stats:
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}
+progress:
+  getting_progress: |
+    Getting progress for u/{0}...
+  user_not_found: |
+    I couldn't find user u/{0}!
+  failed_getting_progress: |
+    I couldn't get the progress of u/{0}!
+  embed_message: |
+    Here is the progress! ({0})
+  embed_title: |
+    Progress of u/{0}
+  embed_description: |
+    {0} transcriptions in the last 24 hours.
 heatmap:
   getting_heatmap: |
     Generating a heatmap for u/{0}...

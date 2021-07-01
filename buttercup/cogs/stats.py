@@ -1,9 +1,14 @@
-from blossom_wrapper import BlossomAPI
+from datetime import datetime, timedelta
+from typing import Optional
+
+from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import extract_username, get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
@@ -40,6 +45,64 @@ class Stats(Cog):
         await msg.edit(
             content=i18n["stats"]["embed_message"],
             embed=Embed(title=i18n["stats"]["embed_title"], description=description),
+        )
+
+    @cog_ext.cog_slash(
+        name="progress",
+        description="Get the 100/24 progress of a user.",
+        options=[
+            create_option(
+                name="username",
+                description="The user to get the progress of. "
+                "Defaults to the user executing the command.",
+                option_type=3,
+                required=False,
+            )
+        ],
+    )
+    async def _progress(
+        self, ctx: SlashContext, username: Optional[str] = None
+    ) -> None:
+        """Get the 100/24 progress of a user."""
+        start = datetime.now()
+        user = username or extract_username(ctx.author.display_name)
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(i18n["progress"]["getting_progress"].format(user))
+
+        volunteer_response = self.blossom_api.get_user(user)
+        if volunteer_response.status != BlossomStatus.ok:
+            await msg.edit(content=i18n["progress"]["user_not_found"].format(user))
+            return
+        volunteer_id = volunteer_response.data["id"]
+
+        one_day_ago = start - timedelta(hours=24)
+
+        # We ask for submission completed by the user in the last 24 hours
+        # The response will contain a count, so we just need 1 result
+        progress_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": volunteer_id,
+                "from": one_day_ago.isoformat(),
+                "page_size": 1,
+            },
+        )
+        if progress_response.status_code != 200:
+            await msg.edit(
+                content=i18n["progress"]["failed_getting_progress"].format(user)
+            )
+            return
+        progress_count = progress_response.json()["count"]
+
+        await msg.edit(
+            content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
+            embed=Embed(
+                title=i18n["progress"]["embed_title"].format(user),
+                description=i18n["progress"]["embed_description"].format(
+                    progress_count
+                ),
+            ),
         )
 
 
