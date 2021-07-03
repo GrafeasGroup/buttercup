@@ -69,7 +69,29 @@ rules:
     Getting the rules for r/{0}...
   sub_not_found: |
     I couldn't find a sub named r/{0}. Are you sure you spelled it correctly?
+  sub_private: |
+    Sorry, but it looks like r/{0} has gone private!
+  no_rules: |
+    r/{0} doesn't appear to have any rules!
   embed_message: |
     Here are the rules! ({0})
   embed_title: |
     Rules for r/{0}
+pi_rules:
+  getting_rules: |
+    Getting the rules regarding personal information for r/{0}...
+  sub_not_found: |
+    I couldn't find a sub named r/{0}. Are you sure you spelled it correctly?
+  sub_private: |
+    Sorry, but it looks like r/{0} has gone private!
+  no_rules: |
+    r/{0} doesn't have any PI rules, because it doesn't have any rules at all!
+  no_pi_rules: |
+    I couldn't automatically detect any rules regarding personal information for r/{0}, but I'm not perfect!
+
+    You can use the `/rules` command to verify for yourself.
+    Did I miss anything? Please report it to the moderators!
+  embed_message: |
+    I automatically detected some rules regarding personal information! ({0})
+  embed_title: |
+    PI Rules for r/{0}
