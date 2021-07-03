@@ -46,3 +46,12 @@ def get_duration_str(start: datetime) -> str:
 
     duration_ms = duration.seconds * 1000 + duration.microseconds // 1000
     return f"{duration_ms} ms"
+
+
+def get_progress_bar(count: int, total: int, width: int = 10) -> str:
+    """Get a textual progress bar."""
+    bar_count = round(count / total * width)
+    inner_bar_count = min(bar_count, width)
+    inner_space_count = width - inner_bar_count
+    outer_bar_count = bar_count - inner_bar_count
+    return f"[{'#' * inner_bar_count}{' ' * inner_space_count}]{'#' * outer_bar_count}"

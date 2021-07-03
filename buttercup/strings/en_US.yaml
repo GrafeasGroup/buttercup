@@ -43,6 +43,88 @@ stats:
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}
+progress:
+  getting_progress: |
+    Getting progress for u/{user} in the last {hours} hours...
+  user_not_found: |
+    I couldn't find user u/{0}!
+  failed_getting_progress: |
+    I couldn't get the progress of u/{0}!
+  embed_message: |
+    Here is the progress! ({0})
+  embed_title: |
+    Progress of u/{0}
+  embed_description_24: |
+    `{bar}` {count}/{total} transcriptions in the last {hours} hours.
+
+    {message}
+  embed_description_other: |
+    {count} transcriptions in the last {hours} hours.
+  embed_description_new: |
+    Hey u/{user}!
+    It looks like you haven't started transribing yet. Do you need any help to get started?
+    Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
+  motivational_messages:
+    0:
+      - Look who's slacking off.
+      - Taking a break?
+      - Transcribing a post would be a good start.
+      - At that pace we're gonna be here a long time.
+      - There are people who transcribe and there's u/{user}.
+      - Not sure what you expected. You know exactly how much it is.
+      - Slow and stead wins the race. Too bad this is not a race.
+      - At least there are more posts for the others.
+      - ":sleeping:"
+      - ":yawning_face:"
+    1:
+      - A good start, keep on going!
+      - Don't worry, you'll get there eventually!
+      - It's a long road, but a rewarding one!
+      - '"After executing the `/progress` command, u/{user} claimed another post."'
+      - Oh! Do it again!
+      - More. MORE!
+    25:
+      - Go forth and conquer!
+      - I see, the motivation is there!
+      - One quarter done. Will the rest follow?
+    50:
+      - Halfway there!
+      - The first half is done. Remember to take a break!
+      - I'm a "progress bar is half full" kind of bot.
+      - That's half of it. Wanna push on?
+    75:
+      - We're getting there, keep on going!
+      - It's getting warmer, warmer...
+      - Good human!
+    95:
+      - So close!
+      - I can already *taste* victory!
+      - Only a few more!
+      - I can see the light at the end of the tunnel...
+      - ":pinching_hand:"
+    100:
+      - "Done and dusted! Great job! :partying_face:"
+      - "It's finally done! Congrats! :tada:"
+      - '"Challenge? What challenge?", u/{user} said.'
+      - The party will be at my place!
+      - Pop the champagne, u/{user} did it!
+      - I wish I could be as cool as u/{user}...
+    105:
+      - You're already finished. You can stop now.
+      - It's addicting, isn't it?
+    200:
+      - u/{user}. We'll remember that name for a long time.
+      - I thought I was the only bot here...
+      - You can't split your 200/24 and give half of it to another user. Just thought I should clarify this.
+      - Sometimes I ask myself how many cats u/{user} trained to make transcriptions for them.
+    300:
+      - Uhm. Please leave a few posts for the others...
+    400:
+      - Clearing the queue all by yourself?
+      - I'm not a doctor, but I'm not sure how healthy this is...
+    500:
+      - Well. It finally happened. And of course it's u/{user}.
+      - Is that a 500/24 or is the progress bar just happy to see me?
 heatmap:
   getting_heatmap: |
     Generating a heatmap for u/{0}...
