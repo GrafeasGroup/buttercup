@@ -55,7 +55,7 @@ progress:
   embed_title: |
     Progress of u/{0}
   embed_description: |
-    {0} transcriptions in the last 24 hours.
+    `{bar}` {count}/{total} transcriptions in the last 24 hours.
 heatmap:
   getting_heatmap: |
     Generating a heatmap for u/{0}...

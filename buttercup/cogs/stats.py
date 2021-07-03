@@ -8,7 +8,7 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_username, get_duration_str
+from buttercup.cogs.helpers import extract_username, get_duration_str, get_progress_bar
 from buttercup.strings import translation
 
 i18n = translation()
@@ -100,7 +100,9 @@ class Stats(Cog):
             embed=Embed(
                 title=i18n["progress"]["embed_title"].format(user),
                 description=i18n["progress"]["embed_description"].format(
-                    progress_count
+                    bar=get_progress_bar(progress_count, 100),
+                    count=progress_count,
+                    total=100,
                 ),
             ),
         )
