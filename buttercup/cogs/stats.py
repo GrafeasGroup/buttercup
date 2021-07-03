@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from random import randint
 from typing import Optional
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
@@ -95,6 +96,18 @@ class Stats(Cog):
             return
         progress_count = progress_response.json()["count"]
 
+        motivational_messages = i18n["progress"]["motivational_messages"]
+        message_set = []
+
+        # Determine the motivational messages for the current progress
+        for threshold in reversed(motivational_messages):
+            if progress_count >= threshold:
+                message_set = motivational_messages[threshold]
+                break
+
+        # Select a random message
+        motivational_message = message_set[randint(0, len(message_set) - 1)].format(user=user)
+
         await msg.edit(
             content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
             embed=Embed(
@@ -103,6 +116,7 @@ class Stats(Cog):
                     bar=get_progress_bar(progress_count, 100),
                     count=progress_count,
                     total=100,
+                    message=motivational_message,
                 ),
             ),
         )
