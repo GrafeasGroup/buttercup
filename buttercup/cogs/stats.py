@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from random import randint
+from random import choice
 from typing import Optional
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
@@ -13,6 +13,21 @@ from buttercup.cogs.helpers import extract_username, get_duration_str, get_progr
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+def get_motivational_message(user: str, progress_count: int) -> str:
+    """Determine the motivational message for the current progress."""
+    all_messages = i18n["progress"]["motivational_messages"]
+    message_set = []
+
+    # Determine the motivational messages for the current progress
+    for threshold in reversed(all_messages):
+        if progress_count >= threshold:
+            message_set = all_messages[threshold]
+            break
+
+    # Select a random message
+    return choice(message_set).format(user=user)
 
 
 class Stats(Cog):
@@ -101,7 +116,7 @@ class Stats(Cog):
             )
             return
 
-        one_day_ago = start - timedelta(hours=hours)
+        from_date = start - timedelta(hours=hours)
 
         # We ask for submission completed by the user in the last 24 hours
         # The response will contain a count, so we just need 1 result
@@ -109,7 +124,7 @@ class Stats(Cog):
             "submission/",
             params={
                 "completed_by": volunteer_id,
-                "from": one_day_ago.isoformat(),
+                "from": from_date.isoformat(),
                 "page_size": 1,
             },
         )
@@ -135,19 +150,7 @@ class Stats(Cog):
             )
             return
 
-        motivational_messages = i18n["progress"]["motivational_messages"]
-        message_set = []
-
-        # Determine the motivational messages for the current progress
-        for threshold in reversed(motivational_messages):
-            if progress_count >= threshold:
-                message_set = motivational_messages[threshold]
-                break
-
-        # Select a random message
-        motivational_message = message_set[randint(0, len(message_set) - 1)].format(
-            user=user
-        )
+        motivational_message = get_motivational_message(user, progress_count)
 
         await msg.edit(
             content=i18n["progress"]["embed_message"].format(get_duration_str(start)),

@@ -56,6 +56,8 @@ progress:
     Progress of u/{0}
   embed_description_24: |
     `{bar}` {count}/{total} transcriptions in the last {hours} hours.
+
+    {message}
   embed_description_other: |
     {count} transcriptions in the last {hours} hours.
   embed_description_new: |
