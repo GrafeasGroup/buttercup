@@ -45,7 +45,7 @@ stats:
     **Days Since Inception**: {:,d}
 progress:
   getting_progress: |
-    Getting progress for u/{0}...
+    Getting progress for u/{user} in the last {hours} hours...
   user_not_found: |
     I couldn't find user u/{0}!
   failed_getting_progress: |
@@ -54,8 +54,10 @@ progress:
     Here is the progress! ({0})
   embed_title: |
     Progress of u/{0}
-  embed_description: |
-    `{bar}` {count}/{total} transcriptions in the last 24 hours.
+  embed_description_other: |
+    {count} transcriptions in the last {hours} hours.
+  embed_description_24: |
+    `{bar}` {count}/{total} transcriptions in the last {hours} hours.
 
     {message}
   motivational_messages:

@@ -50,7 +50,7 @@ class Stats(Cog):
 
     @cog_ext.cog_slash(
         name="progress",
-        description="Get the 100/24 progress of a user.",
+        description="Get the transcribing progress of a user.",
         options=[
             create_option(
                 name="username",
@@ -58,18 +58,25 @@ class Stats(Cog):
                 "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
+            ),
+            create_option(
+                name="hours",
+                description="The time frame of the progress in hours. "
+                "Defaults to 24 hours.",
+                option_type=4,
+                required=False,
             )
         ],
     )
     async def _progress(
-        self, ctx: SlashContext, username: Optional[str] = None
+        self, ctx: SlashContext, username: Optional[str] = None, hours: int = 24,
     ) -> None:
-        """Get the 100/24 progress of a user."""
+        """Get the transcribing progress of a user in the given time frame."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["progress"]["getting_progress"].format(user))
+        msg = await ctx.send(i18n["progress"]["getting_progress"].format(user=user, hours=hours))
 
         volunteer_response = self.blossom_api.get_user(user)
         if volunteer_response.status != BlossomStatus.ok:
@@ -77,7 +84,7 @@ class Stats(Cog):
             return
         volunteer_id = volunteer_response.data["id"]
 
-        one_day_ago = start - timedelta(hours=24)
+        one_day_ago = start - timedelta(hours=hours)
 
         # We ask for submission completed by the user in the last 24 hours
         # The response will contain a count, so we just need 1 result
@@ -96,6 +103,20 @@ class Stats(Cog):
             return
         progress_count = progress_response.json()["count"]
 
+        if hours != 24:
+            # If it isn't 24, we can't really display a progress bar
+            await msg.edit(
+                content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
+                embed=Embed(
+                    title=i18n["progress"]["embed_title"].format(user),
+                    description=i18n["progress"]["embed_description_other"].format(
+                        count=progress_count,
+                        hours=hours,
+                    ),
+                ),
+            )
+            return
+
         motivational_messages = i18n["progress"]["motivational_messages"]
         message_set = []
 
@@ -112,10 +133,11 @@ class Stats(Cog):
             content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
             embed=Embed(
                 title=i18n["progress"]["embed_title"].format(user),
-                description=i18n["progress"]["embed_description"].format(
+                description=i18n["progress"]["embed_description_24"].format(
                     bar=get_progress_bar(progress_count, 100),
                     count=progress_count,
                     total=100,
+                    hours=hours,
                     message=motivational_message,
                 ),
             ),
