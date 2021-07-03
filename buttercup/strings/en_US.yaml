@@ -54,12 +54,14 @@ progress:
     Here is the progress! ({0})
   embed_title: |
     Progress of u/{0}
-  embed_description_other: |
-    {count} transcriptions in the last {hours} hours.
   embed_description_24: |
     `{bar}` {count}/{total} transcriptions in the last {hours} hours.
-
-    {message}
+  embed_description_other: |
+    {count} transcriptions in the last {hours} hours.
+  embed_description_new: |
+    Hey u/{user}!
+    It looks like you haven't started transribing yet. Do you need any help to get started?
+    Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   motivational_messages:
     0:
       - Look who's slacking off.

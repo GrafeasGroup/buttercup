@@ -65,7 +65,7 @@ class Stats(Cog):
                 "Defaults to 24 hours.",
                 option_type=4,
                 required=False,
-            )
+            ),
         ],
     )
     async def _progress(
@@ -76,13 +76,30 @@ class Stats(Cog):
         user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["progress"]["getting_progress"].format(user=user, hours=hours))
+        msg = await ctx.send(
+            i18n["progress"]["getting_progress"].format(user=user, hours=hours)
+        )
 
         volunteer_response = self.blossom_api.get_user(user)
         if volunteer_response.status != BlossomStatus.ok:
             await msg.edit(content=i18n["progress"]["user_not_found"].format(user))
             return
         volunteer_id = volunteer_response.data["id"]
+
+        if volunteer_response.data["gamma"] == 0:
+            # The user has not started transcribing yet
+            await msg.edit(
+                content=i18n["progress"]["embed_message"].format(
+                    get_duration_str(start)
+                ),
+                embed=Embed(
+                    title=i18n["progress"]["embed_title"].format(user),
+                    description=i18n["progress"]["embed_description_new"].format(
+                        user=user
+                    ),
+                ),
+            )
+            return
 
         one_day_ago = start - timedelta(hours=hours)
 
@@ -106,12 +123,13 @@ class Stats(Cog):
         if hours != 24:
             # If it isn't 24, we can't really display a progress bar
             await msg.edit(
-                content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
+                content=i18n["progress"]["embed_message"].format(
+                    get_duration_str(start)
+                ),
                 embed=Embed(
                     title=i18n["progress"]["embed_title"].format(user),
                     description=i18n["progress"]["embed_description_other"].format(
-                        count=progress_count,
-                        hours=hours,
+                        count=progress_count, hours=hours,
                     ),
                 ),
             )
@@ -127,7 +145,9 @@ class Stats(Cog):
                 break
 
         # Select a random message
-        motivational_message = message_set[randint(0, len(message_set) - 1)].format(user=user)
+        motivational_message = message_set[randint(0, len(message_set) - 1)].format(
+            user=user
+        )
 
         await msg.edit(
             content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
