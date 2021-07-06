@@ -13,20 +13,11 @@ from discord_slash.utils.manage_commands import create_option
 from requests import HTTPError
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import extract_username
 from buttercup.strings import translation
 
 
 i18n = translation()
-
-
-def username_from_display_name(display_name: str) -> Optional[str]:
-    """Extract the username from the display name."""
-    first_part = display_name.split(" ")[0]
-
-    if not first_part.startswith("/u/"):
-        return None
-
-    return first_part[3:]
 
 
 def create_file_from_data(
@@ -79,15 +70,7 @@ class History(Cog):
         page_size = 500
         msg = await ctx.send("Creating the history graph...")
 
-        username_1 = user_1
-        if user_1 is None:
-            username_1 = username_from_display_name(ctx.author.display_name)
-            if username_1 is None:
-                await msg.edit(
-                    content=f"{ctx.author.display_name} is an invalid username! "
-                    "Did you change your display name to the required format?"
-                )
-                return
+        username_1 = user_1 or extract_username(ctx.author.display_name)
 
         # First, get the total gamma for the user
         user_1_response = self.blossom_api.get_user(username_1)
