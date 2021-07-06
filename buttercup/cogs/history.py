@@ -1,5 +1,4 @@
 import io
-import logging
 import math
 from datetime import datetime
 from typing import List, Optional
@@ -107,7 +106,9 @@ class History(Cog):
         user_1_values = [user_1_gamma]
         page = 1
         gamma_offset = 0
-        response = self.blossom_api.get_transcription(author=user_1_id, page=page, page_size=page_size)
+        response = self.blossom_api.get_transcription(
+            author=user_1_id, page=page, page_size=page_size
+        )
 
         while response.status == BlossomStatus.ok:
             transcriptions = response.data
@@ -136,7 +137,10 @@ class History(Cog):
                     user_1_times, user_1_values, user_1
                 )
                 duration = datetime.now() - start
-                await msg.edit(content=f"I created the plot in {duration.seconds}s", file=discord_file)
+                await msg.edit(
+                    content=f"I created the plot in {duration.seconds}s",
+                    file=discord_file,
+                )
                 break
 
 

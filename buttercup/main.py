@@ -3,7 +3,17 @@ import sys
 from buttercup import logger
 from buttercup.bot import ButtercupBot
 
-EXTENSIONS = ["admin", "handlers", "name_validator", "find", "history", "stats", "ping"]
+EXTENSIONS = [
+    "admin",
+    "handlers",
+    "name_validator",
+    "find",
+    "stats",
+    "heatmap",
+    "history",
+    "ping",
+    "rules",
+]
 
 
 logger.configure_logging()
