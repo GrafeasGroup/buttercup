@@ -78,23 +78,25 @@ class History(Cog):
             f"{get_progress_bar(0, user_1_gamma, display_count=True)}"
         )
 
-        user_1_times = [datetime.now()]
-        user_1_values = [user_1_gamma]
+        user_1_times = []
+        user_1_values = []
         page = 1
         gamma_offset = 0
-        response = self.blossom_api.get_transcription(
-            author=user_1_id, page=page, page_size=page_size
+        response = self.blossom_api.get(
+            f"volunteer/{user_1_id}/rate",
+            params={"page": page, "page_size": page_size},
         )
 
-        while response.status == BlossomStatus.ok:
-            transcriptions = response.data
+        while response.status_code == 200:
+            rate_data = response.json()["results"]
 
-            # Add the transcriptions to the data
-            for tr in transcriptions:
-                date = parser.parse(tr["create_time"])
+            for data in rate_data:
+                date = parser.parse(data["date"])
+                count = data["count"]
+                gamma_offset += count
+
                 user_1_times.append(date)
-                user_1_values.append(user_1_gamma - gamma_offset)
-                gamma_offset += 1
+                user_1_values.append(gamma_offset)
 
             await msg.edit(
                 content=f"Creating the history graph... "
@@ -103,20 +105,30 @@ class History(Cog):
 
             # Continue with the next page
             page += 1
-            try:
-                response = self.blossom_api.get_transcription(
-                    author=user_1_id, page=page, page_size=page_size
-                )
-            except HTTPError:
-                # Hack: The next page is not available anymore, so we reached the end
-                discord_file = create_file_from_data(
-                    user_1_times, user_1_values, user_1
-                )
-                await msg.edit(
-                    content=f"Here is your history graph! ({get_duration_str(start)})",
-                    file=discord_file,
-                )
-                break
+            response = self.blossom_api.get(
+                f"volunteer/{user_1_id}/rate",
+                params={"page": page, "page_size": page_size},
+            )
+
+        if response.status_code == 404:
+            # Hack: The next page is not available anymore, so we reached the end
+
+            # Add an up-to-date entry for the current time
+            user_1_times.append(datetime.now())
+            user_1_values.append(user_1_gamma)
+
+            discord_file = create_file_from_data(
+                user_1_times, user_1_values, user_1
+            )
+            await msg.edit(
+                content=f"Here is your history graph! ({get_duration_str(start)})",
+                file=discord_file,
+            )
+        else:
+            await msg.edit(
+                content="Something went wrong while creating the "
+                f"history graph: {response.status_code}"
+            )
 
 
 def setup(bot: ButtercupBot) -> None:
