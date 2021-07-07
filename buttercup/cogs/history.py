@@ -20,6 +20,25 @@ from buttercup.strings import translation
 i18n = translation()
 
 
+def get_data_granularity(total_gamma: int) -> str:
+    """Determine granularity of the graph.
+
+    It should be as detailed as possible, but only require 1 API call in the best case.
+    """
+    # TODO: Adjust this when the Blossom dates have been fixed
+    if total_gamma <= 500:
+        return "none"
+    if total_gamma <= 1000:
+        return "hour"
+    elif total_gamma <= 5000:
+        return "day"
+    elif total_gamma <= 10000:
+        return "week"
+    elif total_gamma <= 50000:
+        return "month"
+    return "year"
+
+
 def create_file_from_data(
     times: List[datetime], values: List[int], username: str
 ) -> File:
@@ -78,13 +97,15 @@ class History(Cog):
             f"{get_progress_bar(0, user_1_gamma, display_count=True)}"
         )
 
+        time_frame = get_data_granularity(user_1_gamma)
+
         user_1_times = []
         user_1_values = []
         page = 1
         gamma_offset = 0
         response = self.blossom_api.get(
             f"volunteer/{user_1_id}/rate",
-            params={"page": page, "page_size": page_size},
+            params={"page": page, "page_size": page_size, "time_frame": time_frame},
         )
 
         while response.status_code == 200:
@@ -107,7 +128,7 @@ class History(Cog):
             page += 1
             response = self.blossom_api.get(
                 f"volunteer/{user_1_id}/rate",
-                params={"page": page, "page_size": page_size},
+                params={"page": page, "page_size": page_size, "time_frame": time_frame},
             )
 
         if response.status_code == 404:
@@ -117,9 +138,7 @@ class History(Cog):
             user_1_times.append(datetime.now())
             user_1_values.append(user_1_gamma)
 
-            discord_file = create_file_from_data(
-                user_1_times, user_1_values, user_1
-            )
+            discord_file = create_file_from_data(user_1_times, user_1_values, user_1)
             await msg.edit(
                 content=f"Here is your history graph! ({get_duration_str(start)})",
                 file=discord_file,
