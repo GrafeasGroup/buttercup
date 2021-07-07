@@ -13,7 +13,7 @@ from discord_slash.utils.manage_commands import create_option
 from requests import HTTPError
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_username
+from buttercup.cogs.helpers import extract_username, get_progress_bar, get_duration_str
 from buttercup.strings import translation
 
 
@@ -35,13 +35,6 @@ def create_file_from_data(
     plt.clf()
 
     return File(history_plot, "history_plot.png")
-
-
-def get_progress_indicator(current: int, maximum: int) -> str:
-    """Get a string indicating the current progress."""
-    max_bars = 20
-    bars = math.ceil((current / maximum) * max_bars)
-    return f"`[{bars * '#'}{(max_bars - bars) * ' '}]` ({current}/{maximum})"
 
 
 class History(Cog):
@@ -82,7 +75,7 @@ class History(Cog):
 
         await msg.edit(
             content=f"Creating the history graph... "
-            f"{get_progress_indicator(0, user_1_gamma)}"
+            f"{get_progress_bar(0, user_1_gamma, display_count=True)}"
         )
 
         user_1_times = [datetime.now()]
@@ -105,7 +98,7 @@ class History(Cog):
 
             await msg.edit(
                 content=f"Creating the history graph... "
-                f"{get_progress_indicator(gamma_offset, user_1_gamma)}"
+                f"{get_progress_bar(gamma_offset, user_1_gamma, display_count=True)}"
             )
 
             # Continue with the next page
@@ -119,9 +112,8 @@ class History(Cog):
                 discord_file = create_file_from_data(
                     user_1_times, user_1_values, user_1
                 )
-                duration = datetime.now() - start
                 await msg.edit(
-                    content=f"I created the plot in {duration.seconds}s",
+                    content=f"Here is your history graph! ({get_duration_str(start)})",
                     file=discord_file,
                 )
                 break
@@ -135,26 +127,6 @@ def setup(bot: ButtercupBot) -> None:
     password = cog_config.get("password")
     api_key = cog_config.get("api_key")
     blossom_api = BlossomAPI(email=email, password=password, api_key=api_key)
-
-    # Initialize PyPlot
-
-    # Colors to use in the plots
-    background_color = "#36393f"  # Discord background color
-    text_color = "white"
-    line_color = "white"
-
-    # Global settings for the plots
-    plt.rcParams["figure.facecolor"] = background_color
-    plt.rcParams["axes.facecolor"] = background_color
-    plt.rcParams["axes.labelcolor"] = text_color
-    plt.rcParams["axes.edgecolor"] = line_color
-    plt.rcParams["text.color"] = text_color
-    plt.rcParams["xtick.color"] = line_color
-    plt.rcParams["ytick.color"] = line_color
-    plt.rcParams["grid.color"] = line_color
-    plt.rcParams["grid.alpha"] = 0.8
-    plt.rcParams["figure.dpi"] = 200.0
-
     bot.add_cog(History(bot=bot, blossom_api=blossom_api))
 
 
