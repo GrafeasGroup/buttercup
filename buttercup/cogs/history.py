@@ -1,10 +1,9 @@
 import io
-import math
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Optional
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from dateutil.tz import tzutc
@@ -15,7 +14,12 @@ from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
-from buttercup.cogs.helpers import extract_username, get_progress_bar, get_duration_str
+from buttercup.cogs.helpers import (
+    BlossomException,
+    extract_username,
+    get_duration_str,
+    join_items_with_and,
+)
 from buttercup.strings import translation
 
 
@@ -79,7 +83,7 @@ def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
 
 
 def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
-    """Adds the rank lines to the given axes."""
+    """Add the rank lines to the given axes."""
     # Show ranks when you are close to them already
     threshold_factor = 0.7
     for rank_name in ranks:
@@ -91,7 +95,6 @@ def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
 
 def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     """Create a Discord file containing the figure."""
-
     history_plot = io.BytesIO()
 
     fig.savefig(history_plot, format="png")
@@ -143,26 +146,39 @@ class History(Cog):
         # We'll later edit this message with the actual content
         start = datetime.now()
         page_size = 500
-        msg = await ctx.send("Creating the history graph...")
 
         username_1 = user_1 or extract_username(ctx.author.display_name)
         users = [user for user in [username_1, user_2, user_3] if user is not None]
+        usernames = join_items_with_and([f"u/{user}" for user in users])
+        if len(users) == 1:
+            msg = await ctx.send(
+                i18n["history"]["getting_history_single"].format(user=username_1)
+            )
+        else:
+            msg = await ctx.send(
+                i18n["history"]["getting_history_multi"].format(
+                    users=usernames, count=0, total=len(users)
+                )
+            )
 
         user_gammas = []
 
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
 
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Gamma")
-        ax.set_title(f"Gamma history of u/{username_1}")
+        ax.set_xlabel(i18n["history"]["plot_xlabel"])
+        ax.set_ylabel(i18n["history"]["plot_ylabel"])
+        if len(users) == 1:
+            ax.set_title(i18n["history"]["plot_title_single"].format(user=username_1))
+        else:
+            ax.set_title(i18n["history"]["plot_title_multi"])
 
         for index, user in enumerate(users):
             # First, get the total gamma for the user
             user_response = self.blossom_api.get_user(user)
             if user_response.status != BlossomStatus.ok:
-                await msg.edit(content=f"Failed to get the data for user u/{user}!")
-                return
+                raise BlossomException(user_response)
+
             user_gamma = user_response.data["gamma"]
             user_gammas.append(user_gamma)
             user_id = user_response.data["id"]
@@ -171,7 +187,6 @@ class History(Cog):
 
             user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
             page = 1
-            gamma_offset = 0
             response = self.blossom_api.get(
                 f"volunteer/{user_id}/rate",
                 params={"page": page, "page_size": page_size, "time_frame": time_frame},
@@ -186,10 +201,12 @@ class History(Cog):
                 # Add the data to the list
                 user_data = user_data.append(new_frame.set_index("date"))
 
-                await msg.edit(
-                    content=f"Creating the history graph for u/{user} ({index + 1}/{len(users)})... "
-                    f"{get_progress_bar(gamma_offset, user_gamma, display_count=True)}"
-                )
+                if len(users) != 1:
+                    await msg.edit(
+                        content=i18n["history"]["getting_history_multi"].format(
+                            users=usernames, count=index, total=len(users)
+                        )
+                    )
 
                 # Continue with the next page
                 page += 1
@@ -214,17 +231,15 @@ class History(Cog):
                 # Plot the graph
                 ax.plot("date", "gamma", data=user_data.reset_index(), color="white")
             else:
-                await msg.edit(
-                    content="Something went wrong while creating the "
-                    f"history graph: {response.status_code}"
-                )
-                return
+                raise BlossomException(response)
 
         add_rank_lines(ax, max(user_gammas))
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
         await msg.edit(
-            content=f"Here is your history graph! ({get_duration_str(start)})",
+            content=i18n["history"]["response_message"].format(
+                duration=get_duration_str(start)
+            ),
             file=discord_file,
         )
 

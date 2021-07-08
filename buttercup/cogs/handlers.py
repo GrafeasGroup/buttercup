@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import NoUsernameError
+from buttercup.cogs.helpers import BlossomException, NoUsernameException
 from buttercup.strings import translation
 
 i18n = translation()
@@ -30,13 +30,23 @@ class Handlers(commands.Cog):
         if isinstance(error, commands.CheckFailure):
             logger.warning("An unauthorized Command was performed.", ctx)
             await ctx.send(i18n["handlers"]["not_authorized"])
-        elif isinstance(error, NoUsernameError):
+        elif isinstance(error, NoUsernameException):
             logger.warning("Command executed without providing a username.", ctx)
             await ctx.send(i18n["handlers"]["no_username"])
+        elif isinstance(error, BlossomException):
+            tracker_id = uuid.uuid4()
+            logger.warning(
+                f"[{tracker_id}] Blossom Error: {error.status}\n{error.data}", ctx
+            )
+            await ctx.send(
+                i18n["handlers"]["blossom_error"].format(tracker_id=tracker_id)
+            )
         else:
             tracker_id = uuid.uuid4()
             logger.warning(f"[{tracker_id}] {type(error).__name__}: {str(error)}", ctx)
-            await ctx.send(i18n["handlers"]["unknown_error"].format(tracker_id))
+            await ctx.send(
+                i18n["handlers"]["unknown_error"].format(tracker_id=tracker_id)
+            )
 
 
 def setup(bot: ButtercupBot) -> None:

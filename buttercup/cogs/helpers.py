@@ -1,23 +1,41 @@
 import re
+from ctypes import Union
 from datetime import datetime
+from typing import List
 
+from blossom_wrapper import BlossomResponse
 from discord import DiscordException
+from requests import Response
 
 username_regex = re.compile(r"^/?u/(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 
-class NoUsernameError(DiscordException):
+class NoUsernameException(DiscordException):
     """Exception raised when the username was not provided."""
 
     pass
+
+
+class BlossomException(RuntimeError):
+    """Exception raised when a problem with the Blossom API occurred."""
+
+    def __init__(self, response: Union[BlossomResponse, Response]) -> None:
+        """Create a new Blossom API exception."""
+        super().__init__()
+        if isinstance(response, BlossomResponse):
+            self.status = response.status.__str__()
+            self.data = response.data
+        else:
+            self.status = response.status_code.__str__()
+            self.data = response.json()
 
 
 def extract_username(display_name: str) -> str:
     """Extract the Reddit username from the display name."""
     match = username_regex.search(display_name)
     if match is None:
-        raise NoUsernameError()
+        raise NoUsernameException()
     return match.group("username")
 
 
@@ -69,3 +87,10 @@ def get_progress_bar(
     count_str = f" ({count:,d}/{total:,d})" if display_count else ""
 
     return f"{bar_str}{count_str}"
+
+
+def join_items_with_and(items: List[str]) -> str:
+    """Join the list with commas and "and"."""
+    if len(items) <= 2:
+        return " and ".join(items)
+    return "{} and {}".format(", ".join(items[:-1]), items[-1])
