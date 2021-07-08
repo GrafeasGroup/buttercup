@@ -3,14 +3,15 @@ import math
 from datetime import datetime
 from typing import List, Optional
 
+import pandas as pd
 import matplotlib.pyplot as plt
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
+from dateutil.tz import tzutc
 from discord import File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
-from requests import HTTPError
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
@@ -131,8 +132,7 @@ class History(Cog):
 
             time_frame = get_data_granularity(user_gamma)
 
-            user_times = []
-            user_values = []
+            user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
             page = 1
             gamma_offset = 0
             response = self.blossom_api.get(
@@ -143,13 +143,11 @@ class History(Cog):
             while response.status_code == 200:
                 rate_data = response.json()["results"]
 
-                for data in rate_data:
-                    date = parser.parse(data["date"])
-                    count = data["count"]
-                    gamma_offset += count
-
-                    user_times.append(date)
-                    user_values.append(gamma_offset)
+                new_frame = pd.DataFrame.from_records(rate_data)
+                # Convert date strings to datetime objects
+                new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
+                # Add the data to the list
+                user_data = user_data.append(new_frame.set_index("date"))
 
                 await msg.edit(
                     content=f"Creating the history graph for u/{user} ({index + 1}/{len(users)})... "
@@ -170,11 +168,12 @@ class History(Cog):
             if response.status_code == 404:
                 # Hack: The next page is not available anymore, so we reached the end
 
-                # Add an up-to-date entry for the current time
-                user_times.append(datetime.now())
-                user_values.append(user_gamma)
-
-                ax.plot(user_times, user_values, color="white")
+                # Add an up-to-date entry
+                user_data.loc[datetime.now(tz=tzutc())] = [0]
+                # Aggregate the gamma score
+                user_data = user_data.assign(gamma=user_data.expanding(1).sum())
+                # Plot the graph
+                ax.plot("date", "gamma", data=user_data.reset_index(), color="white")
             else:
                 await msg.edit(
                     content="Something went wrong while creating the "
