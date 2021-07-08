@@ -166,14 +166,27 @@ class History(Cog):
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
 
+        fig.subplots_adjust(bottom=0.17)
         ax.set_xlabel(i18n["history"]["plot_xlabel"])
         ax.set_ylabel(i18n["history"]["plot_ylabel"])
+
+        for label in ax.get_xticklabels():
+            label.set_rotation(15)
+            label.set_ha('right')
+
         if len(users) == 1:
             ax.set_title(i18n["history"]["plot_title_single"].format(user=username_1))
         else:
             ax.set_title(i18n["history"]["plot_title_multi"])
 
         for index, user in enumerate(users):
+            if len(users) != 1:
+                await msg.edit(
+                    content=i18n["history"]["getting_history_multi"].format(
+                        users=usernames, count=index + 1, total=len(users)
+                    )
+                )
+
             # First, get the total gamma for the user
             user_response = self.blossom_api.get_user(user)
             if user_response.status != BlossomStatus.ok:
@@ -201,13 +214,6 @@ class History(Cog):
                 # Add the data to the list
                 user_data = user_data.append(new_frame.set_index("date"))
 
-                if len(users) != 1:
-                    await msg.edit(
-                        content=i18n["history"]["getting_history_multi"].format(
-                            users=usernames, count=index, total=len(users)
-                        )
-                    )
-
                 # Continue with the next page
                 page += 1
                 response = self.blossom_api.get(
@@ -234,6 +240,7 @@ class History(Cog):
                 raise BlossomException(response)
 
         add_rank_lines(ax, max(user_gammas))
+
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
         await msg.edit(

@@ -1,7 +1,6 @@
 import re
-from ctypes import Union
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 from blossom_wrapper import BlossomResponse
 from discord import DiscordException
