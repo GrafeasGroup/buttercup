@@ -1,6 +1,6 @@
 import io
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pandas as pd
@@ -39,6 +39,43 @@ def get_data_granularity(total_gamma: int) -> str:
     elif total_gamma <= 50000:
         return "month"
     return "year"
+
+
+def get_timedelta_from_time_frame(time_frame: Optional[str]) -> timedelta:
+    """Get the timedelta for the given time frame option."""
+    if time_frame == "year":
+        return timedelta(days=356)
+    if time_frame == "month":
+        return timedelta(days=30)
+    if time_frame == "week":
+        return timedelta(weeks=1)
+    if time_frame == "hour":
+        return timedelta(hours=1)
+    if time_frame == "none":
+        return timedelta(seconds=1)
+    # One day is the default
+    return timedelta(days=1)
+
+
+def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
+    """Add entries for the zero rates to the data frame.
+
+    When the rate is zero, it is not returned in the API response.
+    Therefore we need to add it manually.
+    However, for a span of zero entries, we only need the first
+    and last entry. This reduces the number of data points.
+    """
+    new_index = set()
+    delta = get_timedelta_from_time_frame(time_frame)
+    now = datetime.now(tz=tzutc())
+
+    for date in data.index:
+        new_index.add(date)
+        new_index.add(date - delta)
+        if date + delta < now:
+            new_index.add(date + delta)
+
+    return data.reindex(new_index, fill_value=0).sort_index()
 
 
 def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
@@ -167,6 +204,8 @@ class History(Cog):
 
             if response.status_code == 404:
                 # Hack: The next page is not available anymore, so we reached the end
+
+                user_data = add_zero_rates(user_data, time_frame)
 
                 # Add an up-to-date entry
                 user_data.loc[datetime.now(tz=tzutc())] = [0]
