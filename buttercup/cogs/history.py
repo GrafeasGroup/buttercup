@@ -51,9 +51,7 @@ def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
     return ax
 
 
-def create_file_from_figure(
-    fig: plt.Figure, file_name: str
-) -> File:
+def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     """Create a Discord file containing the figure."""
 
     history_plot = io.BytesIO()
@@ -80,10 +78,28 @@ class History(Cog):
                 description="The user to display the history graph for.",
                 option_type=3,
                 required=False,
-            )
+            ),
+            create_option(
+                name="user_2",
+                description="The second user to add to the graph.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="user_3",
+                description="The third user to add to the graph.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def _history(self, ctx: SlashContext, user_1: Optional[str] = None) -> None:
+    async def _history(
+        self,
+        ctx: SlashContext,
+        user_1: Optional[str] = None,
+        user_2: Optional[str] = None,
+        user_3: Optional[str] = None,
+    ) -> None:
         """Find the post with the given URL."""
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
@@ -92,80 +108,87 @@ class History(Cog):
         msg = await ctx.send("Creating the history graph...")
 
         username_1 = user_1 or extract_username(ctx.author.display_name)
+        users = [user for user in [username_1, user_2, user_3] if user is not None]
 
-        # First, get the total gamma for the user
-        user_1_response = self.blossom_api.get_user(username_1)
-        if user_1_response.status != BlossomStatus.ok:
-            await msg.edit(content=f"Failed to get the data for user {username_1}!")
-            return
-        user_1_gamma = user_1_response.data["gamma"]
-        user_1_id = user_1_response.data["id"]
+        user_gammas = []
 
-        await msg.edit(
-            content=f"Creating the history graph... "
-            f"{get_progress_bar(0, user_1_gamma, display_count=True)}"
-        )
+        fig: plt.Figure = plt.figure()
+        ax: plt.Axes = fig.gca()
 
-        time_frame = get_data_granularity(user_1_gamma)
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Gamma")
+        ax.set_title(f"Gamma history of u/{username_1}")
 
-        user_1_times = []
-        user_1_values = []
-        page = 1
-        gamma_offset = 0
-        response = self.blossom_api.get(
-            f"volunteer/{user_1_id}/rate",
-            params={"page": page, "page_size": page_size, "time_frame": time_frame},
-        )
+        for index, user in enumerate(users):
+            # First, get the total gamma for the user
+            user_response = self.blossom_api.get_user(user)
+            if user_response.status != BlossomStatus.ok:
+                await msg.edit(content=f"Failed to get the data for user u/{user}!")
+                return
+            user_gamma = user_response.data["gamma"]
+            user_gammas.append(user_gamma)
+            user_id = user_response.data["id"]
 
-        while response.status_code == 200:
-            rate_data = response.json()["results"]
+            time_frame = get_data_granularity(user_gamma)
 
-            for data in rate_data:
-                date = parser.parse(data["date"])
-                count = data["count"]
-                gamma_offset += count
-
-                user_1_times.append(date)
-                user_1_values.append(gamma_offset)
-
-            await msg.edit(
-                content=f"Creating the history graph... "
-                f"{get_progress_bar(gamma_offset, user_1_gamma, display_count=True)}"
-            )
-
-            # Continue with the next page
-            page += 1
+            user_times = []
+            user_values = []
+            page = 1
+            gamma_offset = 0
             response = self.blossom_api.get(
-                f"volunteer/{user_1_id}/rate",
+                f"volunteer/{user_id}/rate",
                 params={"page": page, "page_size": page_size, "time_frame": time_frame},
             )
 
-        if response.status_code == 404:
-            # Hack: The next page is not available anymore, so we reached the end
+            while response.status_code == 200:
+                rate_data = response.json()["results"]
 
-            # Add an up-to-date entry for the current time
-            user_1_times.append(datetime.now())
-            user_1_values.append(user_1_gamma)
+                for data in rate_data:
+                    date = parser.parse(data["date"])
+                    count = data["count"]
+                    gamma_offset += count
 
-            fig: plt.Figure = plt.figure()
-            ax: plt.Axes = fig.gca()
+                    user_times.append(date)
+                    user_values.append(gamma_offset)
 
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Gamma")
-            ax.set_title(f"Gamma history of u/{username_1}")
-            ax.plot(user_1_times, user_1_values, color="white")
-            add_rank_lines(ax, user_1_gamma)
-            discord_file = create_file_from_figure(fig, "history_plot.png")
+                await msg.edit(
+                    content=f"Creating the history graph for u/{user} ({index + 1}/{len(users)})... "
+                    f"{get_progress_bar(gamma_offset, user_gamma, display_count=True)}"
+                )
 
-            await msg.edit(
-                content=f"Here is your history graph! ({get_duration_str(start)})",
-                file=discord_file,
-            )
-        else:
-            await msg.edit(
-                content="Something went wrong while creating the "
-                f"history graph: {response.status_code}"
-            )
+                # Continue with the next page
+                page += 1
+                response = self.blossom_api.get(
+                    f"volunteer/{user_id}/rate",
+                    params={
+                        "page": page,
+                        "page_size": page_size,
+                        "time_frame": time_frame,
+                    },
+                )
+
+            if response.status_code == 404:
+                # Hack: The next page is not available anymore, so we reached the end
+
+                # Add an up-to-date entry for the current time
+                user_times.append(datetime.now())
+                user_values.append(user_gamma)
+
+                ax.plot(user_times, user_values, color="white")
+            else:
+                await msg.edit(
+                    content="Something went wrong while creating the "
+                    f"history graph: {response.status_code}"
+                )
+                return
+
+        add_rank_lines(ax, max(user_gammas))
+        discord_file = create_file_from_figure(fig, "history_plot.png")
+
+        await msg.edit(
+            content=f"Here is your history graph! ({get_duration_str(start)})",
+            file=discord_file,
+        )
 
 
 def setup(bot: ButtercupBot) -> None:
