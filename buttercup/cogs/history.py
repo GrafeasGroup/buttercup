@@ -1,6 +1,6 @@
 import io
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -109,6 +109,64 @@ class History(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
+    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
+        """Get a data frame representing the history of the user.
+
+        :returns: The gamma of the user and their history data.
+        """
+        page_size = 500
+
+        # First, get the total gamma for the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_gamma = user_response.data["gamma"]
+        user_id = user_response.data["id"]
+
+        time_frame = get_data_granularity(user_gamma)
+
+        # Get all rate data
+        user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
+        page = 1
+        response = self.blossom_api.get(
+            f"volunteer/{user_id}/rate",
+            params={"page": page, "page_size": page_size, "time_frame": time_frame},
+        )
+
+        while response.status_code == 200:
+            rate_data = response.json()["results"]
+
+            new_frame = pd.DataFrame.from_records(rate_data)
+            # Convert date strings to datetime objects
+            new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
+            # Add the data to the list
+            user_data = user_data.append(new_frame.set_index("date"))
+
+            # Continue with the next page
+            page += 1
+            response = self.blossom_api.get(
+                f"volunteer/{user_id}/rate",
+                params={
+                    "page": page,
+                    "page_size": page_size,
+                    "time_frame": time_frame,
+                },
+            )
+
+        # Status 404 means the last page was reached
+        if response.status_code != 404:
+            raise BlossomException(response)
+
+        user_data = add_zero_rates(user_data, time_frame)
+
+        # Add an up-to-date entry
+        user_data.loc[datetime.now(tz=tzutc())] = [0]
+        # Aggregate the gamma score
+        user_data = user_data.assign(gamma=user_data.expanding(1).sum())
+
+        return user_gamma, user_data
+
     @cog_ext.cog_slash(
         name="history",
         description="Display the history graph.",
@@ -144,7 +202,6 @@ class History(Cog):
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
         start = datetime.now()
-        page_size = 500
 
         username_1 = user_1 or extract_username(ctx.author.display_name)
         users = [user for user in [username_1, user_2, user_3] if user is not None]
@@ -165,12 +222,12 @@ class History(Cog):
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
 
-        fig.subplots_adjust(bottom=0.17)
+        fig.subplots_adjust(bottom=0.2)
         ax.set_xlabel(i18n["history"]["plot_xlabel"])
         ax.set_ylabel(i18n["history"]["plot_ylabel"])
 
         for label in ax.get_xticklabels():
-            label.set_rotation(15)
+            label.set_rotation(32)
             label.set_ha("right")
 
         if len(users) == 1:
@@ -179,67 +236,27 @@ class History(Cog):
             ax.set_title(i18n["history"]["plot_title_multi"])
 
         for index, user in enumerate(users):
-            if len(users) != 1:
+            if len(users) > 1:
                 await msg.edit(
                     content=i18n["history"]["getting_history_multi"].format(
                         users=usernames, count=index + 1, total=len(users)
                     )
                 )
 
-            # First, get the total gamma for the user
-            user_response = self.blossom_api.get_user(user)
-            if user_response.status != BlossomStatus.ok:
-                raise BlossomException(user_response)
-
-            user_gamma = user_response.data["gamma"]
+            user_gamma, user_data = self.get_user_history(user)
             user_gammas.append(user_gamma)
-            user_id = user_response.data["id"]
 
-            time_frame = get_data_granularity(user_gamma)
-
-            user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
-            page = 1
-            response = self.blossom_api.get(
-                f"volunteer/{user_id}/rate",
-                params={"page": page, "page_size": page_size, "time_frame": time_frame},
+            # Plot the graph
+            ax.plot(
+                "date",
+                "gamma",
+                data=user_data.reset_index(),
+                color=ranks[index]["color"],
             )
 
-            while response.status_code == 200:
-                rate_data = response.json()["results"]
-
-                new_frame = pd.DataFrame.from_records(rate_data)
-                # Convert date strings to datetime objects
-                new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
-                # Add the data to the list
-                user_data = user_data.append(new_frame.set_index("date"))
-
-                # Continue with the next page
-                page += 1
-                response = self.blossom_api.get(
-                    f"volunteer/{user_id}/rate",
-                    params={
-                        "page": page,
-                        "page_size": page_size,
-                        "time_frame": time_frame,
-                    },
-                )
-
-            if response.status_code == 404:
-                # Hack: The next page is not available anymore, so we reached the end
-
-                user_data = add_zero_rates(user_data, time_frame)
-
-                # Add an up-to-date entry
-                user_data.loc[datetime.now(tz=tzutc())] = [0]
-                # Aggregate the gamma score
-                user_data = user_data.assign(gamma=user_data.expanding(1).sum())
-                # Plot the graph
-                ax.plot("date", "gamma", data=user_data.reset_index(), color=ranks[index]["color"])
-            else:
-                raise BlossomException(response)
-
         add_rank_lines(ax, max(user_gammas))
-        ax.legend([f"u/{user}" for user in users])
+        if len(users) > 1:
+            ax.legend([f"u/{user}" for user in users])
 
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
