@@ -13,6 +13,7 @@ from discord_slash.utils.manage_commands import create_option
 from requests import HTTPError
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs import ranks
 from buttercup.cogs.helpers import extract_username, get_progress_bar, get_duration_str
 from buttercup.strings import translation
 
@@ -39,21 +40,29 @@ def get_data_granularity(total_gamma: int) -> str:
     return "year"
 
 
-def create_file_from_data(
-    times: List[datetime], values: List[int], username: str
-) -> File:
-    """Create a Discord file containing the plotted history graph."""
-    plt.plot(times, values, color="white")
-    plt.xlabel("Time")
-    plt.ylabel("Gamma")
-    plt.xticks(rotation=90)
-    plt.title(f"Gamma history of u/{username}")
-    history_plot = io.BytesIO()
-    plt.savefig(history_plot, format="png")
-    history_plot.seek(0)
-    plt.clf()
+def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
+    """Adds the rank lines to the given axes."""
+    # Show ranks when you are close to them already
+    threshold_factor = 0.7
+    for rank_name in ranks:
+        rank = ranks[rank_name]
+        if gamma >= rank["threshold"] * threshold_factor:
+            ax.axhline(y=rank["threshold"], color=rank["color"], zorder=-1)
+    return ax
 
-    return File(history_plot, "history_plot.png")
+
+def create_file_from_figure(
+    fig: plt.Figure, file_name: str
+) -> File:
+    """Create a Discord file containing the figure."""
+
+    history_plot = io.BytesIO()
+
+    fig.savefig(history_plot, format="png")
+    history_plot.seek(0)
+    plt.close(fig)
+
+    return File(history_plot, file_name)
 
 
 class History(Cog):
@@ -138,7 +147,16 @@ class History(Cog):
             user_1_times.append(datetime.now())
             user_1_values.append(user_1_gamma)
 
-            discord_file = create_file_from_data(user_1_times, user_1_values, user_1)
+            fig: plt.Figure = plt.figure()
+            ax: plt.Axes = fig.gca()
+
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Gamma")
+            ax.set_title(f"Gamma history of u/{username_1}")
+            ax.plot(user_1_times, user_1_values, color="white")
+            add_rank_lines(ax, user_1_gamma)
+            discord_file = create_file_from_figure(fig, "history_plot.png")
+
             await msg.edit(
                 content=f"Here is your history graph! ({get_duration_str(start)})",
                 file=discord_file,
