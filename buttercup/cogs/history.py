@@ -86,8 +86,7 @@ def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
     """Add the rank lines to the given axes."""
     # Show ranks when you are close to them already
     threshold_factor = 0.7
-    for rank_name in ranks:
-        rank = ranks[rank_name]
+    for rank in ranks:
         if gamma >= rank["threshold"] * threshold_factor:
             ax.axhline(y=rank["threshold"], color=rank["color"], zorder=-1)
     return ax
@@ -172,7 +171,7 @@ class History(Cog):
 
         for label in ax.get_xticklabels():
             label.set_rotation(15)
-            label.set_ha('right')
+            label.set_ha("right")
 
         if len(users) == 1:
             ax.set_title(i18n["history"]["plot_title_single"].format(user=username_1))
@@ -235,11 +234,12 @@ class History(Cog):
                 # Aggregate the gamma score
                 user_data = user_data.assign(gamma=user_data.expanding(1).sum())
                 # Plot the graph
-                ax.plot("date", "gamma", data=user_data.reset_index(), color="white")
+                ax.plot("date", "gamma", data=user_data.reset_index(), color=ranks[index]["color"])
             else:
                 raise BlossomException(response)
 
         add_rank_lines(ax, max(user_gammas))
+        ax.legend([f"u/{user}" for user in users])
 
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
