@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from random import choice
 from typing import Optional
 
+import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil.parser import parse
 from discord import Embed
@@ -81,7 +82,7 @@ class Stats(Cog):
         self, ctx: SlashContext, username: Optional[str] = None
     ) -> None:
         """Get stats about a user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.utc)
         user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
@@ -97,11 +98,14 @@ class Stats(Cog):
 
         data = response.data
 
+        date_joined = parse(data["date_joined"])
+
         description = i18n["user_stats"]["embed_description"].format(
             gamma=data["gamma"],
             flair_rank="Green",
             leaderboard_rank=22,
-            date_joined=parse(data["date_joined"]).strftime("%B %d, %Y"),
+            date_joined=date_joined.strftime("%B %d, %Y"),
+            joined_ago=get_duration_str(date_joined),
         )
 
         await msg.edit(

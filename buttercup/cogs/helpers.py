@@ -57,12 +57,29 @@ def extract_utc_offset(display_name: str) -> int:
 
 def get_duration_str(start: datetime) -> str:
     """Get the processing duration based on the start time."""
-    duration = datetime.now() - start
-    if duration.seconds > 5:
-        return f"{duration.seconds} s"
+    duration = datetime.now(tz=start.tzinfo) - start
 
-    duration_ms = duration.seconds * 1000 + duration.microseconds // 1000
-    return f"{duration_ms} ms"
+    if duration.days >= 365:
+        duration_years = duration.days / 365
+        return f"{duration_years:.1f} years"
+    if duration.days >= 7:
+        duration_weeks = duration.days / 7
+        return f"{duration_weeks:.1f} weeks"
+    if duration.days >= 1:
+        duration_days = duration.days + duration.seconds / 86400
+        return f"{duration_days:.1f} days"
+    if duration.seconds >= 3600:
+        duration_hours = duration.seconds / 3600
+        return f"{duration_hours:.1f} hours"
+    if duration.seconds >= 60:
+        duration_mins = duration.seconds / 60
+        return f"{duration_mins:.1f} mins"
+    if duration.seconds > 5:
+        duration_secs = duration.seconds + duration.microseconds / 1000000
+        return f"{duration_secs:.1f} secs"
+
+    duration_ms = duration.seconds * 1000 + duration.microseconds / 1000
+    return f"{duration_ms:0.0f} ms"
 
 
 def get_progress_bar(

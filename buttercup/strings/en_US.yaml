@@ -58,7 +58,7 @@ user_stats:
     **Transcriptions**: {gamma:,d}
     **Flair Rank**: {flair_rank}
     **Leaderboard**: #{leaderboard_rank}
-    **Date Joined**: {date_joined}
+    **Date Joined**: {date_joined} ({joined_ago} ago)
 progress:
   getting_progress: |
     Getting progress for u/{user} in the last {hours} hours...
