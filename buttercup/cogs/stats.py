@@ -77,34 +77,39 @@ class Stats(Cog):
             )
         ],
     )
-    async def _user_stats(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+    async def _user_stats(
+        self, ctx: SlashContext, username: Optional[str] = None
+    ) -> None:
         """Get stats about a user."""
+        start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user))
+        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user=user))
 
         response = self.blossom_api.get_user(user)
 
         if response.status != BlossomStatus.ok:
             await msg.edit(
-                content=i18n["user_stats"]["failed_getting_stats"].format(user)
+                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
             )
             return
 
         data = response.data
 
         description = i18n["user_stats"]["embed_description"].format(
-            data["gamma"],
-            "Green",
-            22,
-            parse(data["date_joined"]).strftime("%B %d, %Y"),
+            gamma=data["gamma"],
+            flair_rank="Green",
+            leaderboard_rank=22,
+            date_joined=parse(data["date_joined"]).strftime("%B %d, %Y"),
         )
 
         await msg.edit(
-            content=i18n["user_stats"]["embed_message"].format(user),
+            content=i18n["user_stats"]["embed_message"].format(
+                user=user, duration=get_duration_str(start)
+            ),
             embed=Embed(
-                title=i18n["user_stats"]["embed_title"].format(user),
+                title=i18n["user_stats"]["embed_title"].format(user=user),
                 description=description,
             ),
         )

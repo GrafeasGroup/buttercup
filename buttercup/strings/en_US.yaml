@@ -47,18 +47,18 @@ stats:
     **Days Since Inception**: {:,d}
 user_stats:
   getting_stats: |
-    Getting stats for u/{0}...
+    Getting stats for u/{user}...
   failed_getting_stats: |
-    Failed to get the stats for u/{0}.
+    Failed to get the stats for u/{user}.
   embed_message: |
-    Here are the stats for u/{0}!
+    Here are the stats for u/{user}! ({duration})
   embed_title: |
-    Stats for u/{0}
+    Stats for u/{user}
   embed_description: |
-    **Transcriptions**: {0:,d}
-    **Flair Rank**: {1}
-    **Leaderboard**: #{2}
-    **Date Joined**: {3}
+    **Transcriptions**: {gamma:,d}
+    **Flair Rank**: {flair_rank}
+    **Leaderboard**: #{leaderboard_rank}
+    **Date Joined**: {date_joined}
 progress:
   getting_progress: |
     Getting progress for u/{user} in the last {hours} hours...
