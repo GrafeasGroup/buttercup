@@ -73,21 +73,22 @@ class Stats(Cog):
                 name="username",
                 description="The username to get the stats for.",
                 option_type=3,
-                required=True,
+                required=False,
             )
         ],
     )
-    async def _user_stats(self, ctx: SlashContext, username: str) -> None:
+    async def _user_stats(self, ctx: SlashContext, username: Optional[str] = None) -> None:
         """Get stats about a user."""
+        user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(username))
+        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user))
 
-        response = self.blossom_api.get_user(username)
+        response = self.blossom_api.get_user(user)
 
         if response.status != BlossomStatus.ok:
             await msg.edit(
-                content=i18n["user_stats"]["failed_getting_stats"].format(username)
+                content=i18n["user_stats"]["failed_getting_stats"].format(user)
             )
             return
 
@@ -101,9 +102,9 @@ class Stats(Cog):
         )
 
         await msg.edit(
-            content=i18n["user_stats"]["embed_message"].format(username),
+            content=i18n["user_stats"]["embed_message"].format(user),
             embed=Embed(
-                title=i18n["user_stats"]["embed_title"].format(username),
+                title=i18n["user_stats"]["embed_title"].format(user),
                 description=description,
             ),
         )
