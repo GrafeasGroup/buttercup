@@ -129,13 +129,19 @@ class History(Cog):
         # Get all rate data
         user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
         page = 1
-        response = self.blossom_api.get(
-            f"volunteer/{user_id}/rate",
-            params={"page": page, "page_size": page_size, "time_frame": time_frame},
-        )
+        # Placeholder until we get the real value from the response
+        next_page = "1"
 
-        while response.status_code == 200:
+        while next_page is not None:
+            response = self.blossom_api.get(
+                f"volunteer/{user_id}/rate",
+                params={"page": page, "page_size": page_size, "time_frame": time_frame},
+            )
+            if response.status_code != 200:
+                raise BlossomException(response)
+
             rate_data = response.json()["results"]
+            next_page = response.json()["next"]
 
             new_frame = pd.DataFrame.from_records(rate_data)
             # Convert date strings to datetime objects
@@ -153,10 +159,6 @@ class History(Cog):
                     "time_frame": time_frame,
                 },
             )
-
-        # Status 404 means the last page was reached
-        if response.status_code != 404:
-            raise BlossomException(response)
 
         user_data = add_zero_rates(user_data, time_frame)
 
