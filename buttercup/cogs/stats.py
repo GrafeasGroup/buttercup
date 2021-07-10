@@ -88,24 +88,52 @@ class Stats(Cog):
         # We will edit this message later with the actual content.
         msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user=user))
 
-        response = self.blossom_api.get_user(user)
-
-        if response.status != BlossomStatus.ok:
+        volunteer_response = self.blossom_api.get_user(user)
+        if volunteer_response.status != BlossomStatus.ok:
             await msg.edit(
                 content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
             )
             return
+        volunteer_data = volunteer_response.data
 
-        data = response.data
+        # Get the date of last activity
+        # TODO: Make this more efficient, e.g. by ordering it by complete_time
+        submission_response = self.blossom_api.get(
+            "submission/",
+            params={"completed_by": volunteer_data["id"], "page_size": 1, "page": 1},
+        )
+        if submission_response.status_code != 200:
+            await msg.edit(
+                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
+            )
+            return
+        last_page = submission_response.json()["count"]
+        submission_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": volunteer_data["id"],
+                "page_size": 1,
+                "page": last_page,
+            },
+        )
+        if submission_response.status_code != 200:
+            await msg.edit(
+                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
+            )
+            return
+        submission_data = submission_response.json()["results"][0]
 
-        date_joined = parse(data["date_joined"])
+        date_joined = parse(volunteer_data["date_joined"])
+        last_active = parse(submission_data["complete_time"])
 
         description = i18n["user_stats"]["embed_description"].format(
-            gamma=data["gamma"],
+            gamma=volunteer_data["gamma"],
             flair_rank="Green",
             leaderboard_rank=22,
             date_joined=date_joined.strftime("%B %d, %Y"),
             joined_ago=get_duration_str(date_joined),
+            last_active=last_active.strftime("%B %d, %Y"),
+            last_ago=get_duration_str(last_active),
         )
 
         await msg.edit(
