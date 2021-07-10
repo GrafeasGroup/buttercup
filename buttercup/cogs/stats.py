@@ -97,23 +97,13 @@ class Stats(Cog):
         volunteer_data = volunteer_response.data
 
         # Get the date of last activity
-        # TODO: Make this more efficient, e.g. by ordering it by complete_time
-        submission_response = self.blossom_api.get(
-            "submission/",
-            params={"completed_by": volunteer_data["id"], "page_size": 1, "page": 1},
-        )
-        if submission_response.status_code != 200:
-            await msg.edit(
-                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
-            )
-            return
-        last_page = submission_response.json()["count"]
         submission_response = self.blossom_api.get(
             "submission/",
             params={
                 "completed_by": volunteer_data["id"],
+                "ordering": "-complete_time",
                 "page_size": 1,
-                "page": last_page,
+                "page": 1,
             },
         )
         if submission_response.status_code != 200:
@@ -124,7 +114,12 @@ class Stats(Cog):
         submission_data = submission_response.json()["results"][0]
 
         date_joined = parse(volunteer_data["date_joined"])
-        last_active = parse(submission_data["complete_time"])
+        # For some reason, the complete_time is sometimes None, so we have to fall back
+        last_active = parse(
+            submission_data["complete_time"]
+            or submission_data["claim_time"]
+            or submission_data["create_time"]
+        )
 
         description = i18n["user_stats"]["embed_description"].format(
             gamma=volunteer_data["gamma"],
