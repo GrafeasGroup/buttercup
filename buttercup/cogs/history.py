@@ -151,14 +151,6 @@ class History(Cog):
 
             # Continue with the next page
             page += 1
-            response = self.blossom_api.get(
-                f"volunteer/{user_id}/rate",
-                params={
-                    "page": page,
-                    "page_size": page_size,
-                    "time_frame": time_frame,
-                },
-            )
 
         user_data = add_zero_rates(user_data, time_frame)
 
