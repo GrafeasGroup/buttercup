@@ -92,6 +92,18 @@ def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
     return ax
 
 
+def add_rate_lines(ax: plt.Axes, max_rate: int) -> plt.Axes:
+    """Add the rate lines to the given axes."""
+    # Show rate milestones when you are close to them already
+    threshold_buffer = 40
+    for index, rank in enumerate(ranks[3:]):
+        # A milestone every 100 units
+        rate_milestone = (index + 1) * 100
+        if rate_milestone - max_rate - threshold_buffer <= 0:
+            ax.axhline(y=rate_milestone, color=rank["color"], zorder=-1)
+    return ax
+
+
 def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     """Create a Discord file containing the figure."""
     history_plot = io.BytesIO()
@@ -165,30 +177,6 @@ class History(Cog):
         user_data = user_data.assign(gamma=user_data.expanding(1).sum())
 
         return user_gamma, user_data
-
-    def get_user_rate(self, user: str) -> pd.DataFrame:
-        """Get a data frame representing the transcription rate of the user.
-
-        :returns: The rate data of the user.
-        """
-        # First, get the ID of the user
-        user_response = self.blossom_api.get_user(user)
-        if user_response.status != BlossomStatus.ok:
-            raise BlossomException(user_response)
-
-        user_id = user_response.data["id"]
-
-        # Get all rate data
-        user_data = self.get_all_rate_data(user_id, "day")
-
-        # Add an up-to-date entry
-        today = datetime.now(tz=tzutc()).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        if today not in user_data.index:
-            user_data.loc[today] = [0]
-
-        return user_data
 
     @cog_ext.cog_slash(
         name="history",
@@ -279,6 +267,7 @@ class History(Cog):
             )
 
         add_rank_lines(ax, max(user_gammas))
+
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
 
@@ -290,6 +279,30 @@ class History(Cog):
             ),
             file=discord_file,
         )
+
+    def get_user_rate(self, user: str) -> pd.DataFrame:
+        """Get a data frame representing the transcription rate of the user.
+
+        :returns: The rate data of the user.
+        """
+        # First, get the ID of the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_id = user_response.data["id"]
+
+        # Get all rate data
+        user_data = self.get_all_rate_data(user_id, "day")
+
+        # Add an up-to-date entry
+        today = datetime.now(tz=tzutc()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        if today not in user_data.index:
+            user_data.loc[today] = [0]
+
+        return user_data
 
     @cog_ext.cog_slash(
         name="rate",
@@ -342,6 +355,8 @@ class History(Cog):
                 )
             )
 
+        max_rates = []
+
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
 
@@ -368,6 +383,8 @@ class History(Cog):
 
             user_data = self.get_user_rate(user)
 
+            max_rates.append(user_data["count"].max())
+
             # Plot the graph
             ax.plot(
                 "date",
@@ -375,6 +392,8 @@ class History(Cog):
                 data=user_data.reset_index(),
                 color=ranks[index]["color"],
             )
+
+        add_rate_lines(ax, max(max_rates))
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
