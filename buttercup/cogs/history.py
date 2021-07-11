@@ -161,6 +161,57 @@ class History(Cog):
 
         return user_gamma, user_data
 
+    def get_user_rate(self, user: str) -> pd.DataFrame:
+        """Get a data frame representing the transcription rate of the user.
+
+        :returns: The rate data of the user.
+        """
+        page_size = 500
+
+        # First, get the ID of the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_id = user_response.data["id"]
+
+        time_frame = "day"
+
+        # Get all rate data
+        user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
+        page = 1
+        # Placeholder until we get the real value from the response
+        next_page = "1"
+
+        while next_page is not None:
+            response = self.blossom_api.get(
+                f"volunteer/{user_id}/rate",
+                params={"page": page, "page_size": page_size, "time_frame": time_frame},
+            )
+            if response.status_code != 200:
+                raise BlossomException(response)
+
+            rate_data = response.json()["results"]
+            next_page = response.json()["next"]
+
+            new_frame = pd.DataFrame.from_records(rate_data)
+            # Convert date strings to datetime objects
+            new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
+            # Add the data to the list
+            user_data = user_data.append(new_frame.set_index("date"))
+
+            # Continue with the next page
+            page += 1
+
+        user_data = add_zero_rates(user_data, time_frame)
+
+        # Add an up-to-date entry
+        today = datetime.now(tz=tzutc()).replace(hour=0, minute=0, second=0, microsecond=0)
+        if today not in user_data.index:
+            user_data.loc[today] = [0]
+
+        return user_data
+
     @cog_ext.cog_slash(
         name="history",
         description="Display the history graph.",
@@ -192,14 +243,15 @@ class History(Cog):
         user_2: Optional[str] = None,
         user_3: Optional[str] = None,
     ) -> None:
-        """Find the post with the given URL."""
-        # Give a quick response to let the user know we're working on it
-        # We'll later edit this message with the actual content
+        """Get the transcription history of the user."""
         start = datetime.now()
 
         username_1 = user_1 or extract_username(ctx.author.display_name)
         users = [user for user in [username_1, user_2, user_3] if user is not None]
         usernames = join_items_with_and([f"u/{user}" for user in users])
+
+        # Give a quick response to let the user know we're working on it
+        # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
                 i18n["history"]["getting_history_single"].format(user=username_1)
@@ -256,6 +308,103 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["history"]["response_message"].format(
+                duration=get_duration_str(start)
+            ),
+            file=discord_file,
+        )
+
+    @cog_ext.cog_slash(
+        name="rate",
+        description="Display the rate graph.",
+        options=[
+            create_option(
+                name="user_1",
+                description="The user to display the rate graph for.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="user_2",
+                description="The second user to add to the graph.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="user_3",
+                description="The third user to add to the graph.",
+                option_type=3,
+                required=False,
+            ),
+        ],
+    )
+    async def _rate(
+            self,
+            ctx: SlashContext,
+            user_1: Optional[str] = None,
+            user_2: Optional[str] = None,
+            user_3: Optional[str] = None,
+    ) -> None:
+        """Get the transcription rate of the user."""
+        start = datetime.now()
+
+        username_1 = user_1 or extract_username(ctx.author.display_name)
+        users = [user for user in [username_1, user_2, user_3] if user is not None]
+        usernames = join_items_with_and([f"u/{user}" for user in users])
+
+        # Give a quick response to let the user know we're working on it
+        # We'll later edit this message with the actual content
+        if len(users) == 1:
+            msg = await ctx.send(
+                i18n["rate"]["getting_rate_single"].format(user=username_1)
+            )
+        else:
+            msg = await ctx.send(
+                i18n["rate"]["getting_rate_multi"].format(
+                    users=usernames, count=0, total=len(users)
+                )
+            )
+
+        fig: plt.Figure = plt.figure()
+        ax: plt.Axes = fig.gca()
+
+        fig.subplots_adjust(bottom=0.2)
+        ax.set_xlabel(i18n["rate"]["plot_xlabel"])
+        ax.set_ylabel(i18n["rate"]["plot_ylabel"])
+
+        for label in ax.get_xticklabels():
+            label.set_rotation(32)
+            label.set_ha("right")
+
+        if len(users) == 1:
+            ax.set_title(i18n["rate"]["plot_title_single"].format(user=username_1))
+        else:
+            ax.set_title(i18n["rate"]["plot_title_multi"])
+
+        for index, user in enumerate(users):
+            if len(users) > 1:
+                await msg.edit(
+                    content=i18n["rate"]["getting_rate_multi"].format(
+                        users=usernames, count=index + 1, total=len(users)
+                    )
+                )
+
+            user_data = self.get_user_rate(user)
+
+            # Plot the graph
+            ax.plot(
+                "date",
+                "count",
+                data=user_data.reset_index(),
+                color=ranks[index]["color"],
+            )
+
+        if len(users) > 1:
+            ax.legend([f"u/{user}" for user in users])
+
+        discord_file = create_file_from_figure(fig, "rate_plot.png")
+
+        await msg.edit(
+            content=i18n["rate"]["response_message"].format(
                 duration=get_duration_str(start)
             ),
             file=discord_file,
