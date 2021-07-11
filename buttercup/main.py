@@ -10,6 +10,7 @@ EXTENSIONS = [
     "find",
     "stats",
     "heatmap",
+    "history",
     "ping",
     "rules",
 ]
