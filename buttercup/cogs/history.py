@@ -109,24 +109,10 @@ class History(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
-    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
-        """Get a data frame representing the history of the user.
-
-        :returns: The gamma of the user and their history data.
-        """
+    def get_all_rate_data(self, user_id: int, time_frame: str) -> pd.DataFrame:
+        """Get all rate data for the given user."""
         page_size = 500
 
-        # First, get the total gamma for the user
-        user_response = self.blossom_api.get_user(user)
-        if user_response.status != BlossomStatus.ok:
-            raise BlossomException(user_response)
-
-        user_gamma = user_response.data["gamma"]
-        user_id = user_response.data["id"]
-
-        time_frame = get_data_granularity(user_gamma)
-
-        # Get all rate data
         user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
         page = 1
         # Placeholder until we get the real value from the response
@@ -152,7 +138,26 @@ class History(Cog):
             # Continue with the next page
             page += 1
 
+        # Add the missing zero entries
         user_data = add_zero_rates(user_data, time_frame)
+        return user_data
+
+    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
+        """Get a data frame representing the history of the user.
+
+        :returns: The gamma of the user and their history data.
+        """
+        # First, get the total gamma for the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_gamma = user_response.data["gamma"]
+        user_id = user_response.data["id"]
+
+        # Get all rate data
+        time_frame = get_data_granularity(user_gamma)
+        user_data = self.get_all_rate_data(user_id, time_frame)
 
         # Add an up-to-date entry
         user_data.loc[datetime.now(tz=tzutc())] = [0]
@@ -166,8 +171,6 @@ class History(Cog):
 
         :returns: The rate data of the user.
         """
-        page_size = 500
-
         # First, get the ID of the user
         user_response = self.blossom_api.get_user(user)
         if user_response.status != BlossomStatus.ok:
@@ -175,38 +178,13 @@ class History(Cog):
 
         user_id = user_response.data["id"]
 
-        time_frame = "day"
-
         # Get all rate data
-        user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
-        page = 1
-        # Placeholder until we get the real value from the response
-        next_page = "1"
-
-        while next_page is not None:
-            response = self.blossom_api.get(
-                f"volunteer/{user_id}/rate",
-                params={"page": page, "page_size": page_size, "time_frame": time_frame},
-            )
-            if response.status_code != 200:
-                raise BlossomException(response)
-
-            rate_data = response.json()["results"]
-            next_page = response.json()["next"]
-
-            new_frame = pd.DataFrame.from_records(rate_data)
-            # Convert date strings to datetime objects
-            new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
-            # Add the data to the list
-            user_data = user_data.append(new_frame.set_index("date"))
-
-            # Continue with the next page
-            page += 1
-
-        user_data = add_zero_rates(user_data, time_frame)
+        user_data = self.get_all_rate_data(user_id, "day")
 
         # Add an up-to-date entry
-        today = datetime.now(tz=tzutc()).replace(hour=0, minute=0, second=0, microsecond=0)
+        today = datetime.now(tz=tzutc()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         if today not in user_data.index:
             user_data.loc[today] = [0]
 
@@ -338,11 +316,11 @@ class History(Cog):
         ],
     )
     async def _rate(
-            self,
-            ctx: SlashContext,
-            user_1: Optional[str] = None,
-            user_2: Optional[str] = None,
-            user_3: Optional[str] = None,
+        self,
+        ctx: SlashContext,
+        user_1: Optional[str] = None,
+        user_2: Optional[str] = None,
+        user_3: Optional[str] = None,
     ) -> None:
         """Get the transcription rate of the user."""
         start = datetime.now()
