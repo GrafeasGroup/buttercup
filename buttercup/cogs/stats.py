@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from random import choice
-from typing import Optional
+from typing import Dict, Optional, Tuple, Union
 
+import discord
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil.parser import parse
@@ -11,10 +12,28 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs import ranks
 from buttercup.cogs.helpers import extract_username, get_duration_str, get_progress_bar
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+def get_rank(gamma: int) -> Dict[str, Union[str, int]]:
+    """Get the rank matching the gamma score."""
+    for rank in reversed(ranks):
+        if gamma >= rank["threshold"]:
+            return rank
+
+    return {"name": "Visitor", "threshold": 0, "color": "#000000"}
+
+
+def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
+    """Get the rgb values from a hex string."""
+    # Adopted from
+    # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
+    hx = hex_str.lstrip("#")
+    return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
 
 
 def get_motivational_message(user: str, progress_count: int) -> str:
@@ -121,9 +140,11 @@ class Stats(Cog):
             or submission_data["create_time"]
         )
 
+        rank = get_rank(volunteer_data["gamma"])
+
         description = i18n["user_stats"]["embed_description"].format(
             gamma=volunteer_data["gamma"],
-            flair_rank="Green",
+            flair_rank=rank["name"],
             leaderboard_rank=22,
             date_joined=date_joined.strftime("%B %d, %Y"),
             joined_ago=get_duration_str(date_joined),
@@ -137,6 +158,7 @@ class Stats(Cog):
             ),
             embed=Embed(
                 title=i18n["user_stats"]["embed_title"].format(user=user),
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
                 description=description,
             ),
         )
