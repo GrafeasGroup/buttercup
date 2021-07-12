@@ -16,6 +16,16 @@ class NoUsernameException(DiscordException):
     pass
 
 
+class InvalidArgumentException(DiscordException):
+    """Exception raised when an argument has an invalid value."""
+
+    def __init__(self, argument: str, value: str) -> None:
+        """Create a new argument exception."""
+        super().__init__()
+        self.argument = argument
+        self.value = value
+
+
 class BlossomException(RuntimeError):
     """Exception raised when a problem with the Blossom API occurred."""
 

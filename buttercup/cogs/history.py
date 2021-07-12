@@ -20,6 +20,7 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     join_items_with_and,
     get_timedelta_str,
+    InvalidArgumentException,
 )
 from buttercup.strings import translation
 
@@ -117,6 +118,8 @@ def parse_goal_str(goal_str: str) -> Tuple[int, str]:
     for rank in ranks:
         if goal_str.casefold() == rank["name"].casefold():
             return rank["threshold"], f"{rank['name']} ({rank['threshold']})"
+
+    raise InvalidArgumentException("goal", goal_str)
 
 
 class History(Cog):

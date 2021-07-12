@@ -5,7 +5,11 @@ from discord.ext import commands
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException, NoUsernameException
+from buttercup.cogs.helpers import (
+    BlossomException,
+    NoUsernameException,
+    InvalidArgumentException,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -33,6 +37,15 @@ class Handlers(commands.Cog):
         elif isinstance(error, NoUsernameException):
             logger.warning("Command executed without providing a username.", ctx)
             await ctx.send(i18n["handlers"]["no_username"])
+        elif isinstance(error, InvalidArgumentException):
+            logger.warning(
+                f"Invalid value '{error.value}' for argument '{error.argument}'.", ctx
+            )
+            await ctx.send(
+                i18n["handlers"]["invalid_argument"].format(
+                    argument=error.argument, value=error.value
+                )
+            )
         elif isinstance(error, BlossomException):
             tracker_id = uuid.uuid4()
             logger.warning(
