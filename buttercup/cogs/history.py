@@ -1,6 +1,6 @@
 import io
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -82,25 +82,18 @@ def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
     return data.reindex(new_index, fill_value=0).sort_index()
 
 
-def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
-    """Add the rank lines to the given axes."""
-    # Show ranks when you are close to them already
-    threshold_factor = 0.7
-    for rank in ranks:
-        if gamma >= rank["threshold"] * threshold_factor:
-            ax.axhline(y=rank["threshold"], color=rank["color"], zorder=-1)
-    return ax
+def add_milestone_lines(
+    ax: plt.Axes, milestones: List[Dict[str, Union[str, int]]], value: float
+) -> plt.Axes:
+    """Add the lines for the milestones the user reached.
 
-
-def add_rate_lines(ax: plt.Axes, max_rate: int) -> plt.Axes:
-    """Add the rate lines to the given axes."""
-    # Show rate milestones when you are close to them already
-    threshold_buffer = 40
-    for index, rank in enumerate(ranks[3:]):
-        # A milestone every 100 units
-        rate_milestone = (index + 1) * 100
-        if rate_milestone - max_rate - threshold_buffer <= 0:
-            ax.axhline(y=rate_milestone, color=rank["color"], zorder=-1)
+    :param ax: The axis to draw the milestones into.
+    :param milestones: The milestones to consider. Each must have a threshold and color.
+    :param value: The value to determine if a user reached a given milestone.
+    """
+    for milestone in milestones:
+        if value >= milestone["threshold"]:
+            ax.axhline(y=milestone["threshold"], color=milestone["color"], zorder=-1)
     return ax
 
 
@@ -266,7 +259,8 @@ class History(Cog):
                 color=ranks[index]["color"],
             )
 
-        add_rank_lines(ax, max(user_gammas))
+        # Show ranks when you are close to them already
+        ax = add_milestone_lines(ax, ranks, max(user_gammas) * 1.4)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
@@ -393,7 +387,13 @@ class History(Cog):
                 color=ranks[index]["color"],
             )
 
-        add_rate_lines(ax, max(max_rates))
+        # A milestone at every 100 rate
+        milestones = [
+            dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)
+        ]
+        # Show rate milestones when you are close to them already
+        value = max(max_rates) + 40
+        ax = add_milestone_lines(ax, milestones, value)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
