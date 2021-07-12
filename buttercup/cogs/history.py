@@ -339,28 +339,53 @@ class History(Cog):
             )
             return
 
-        from_date = start - timedelta(hours=48)
+        time_frames = [
+            (timedelta(hours=24), "day"),
+            (timedelta(weeks=1), "week"),
+            (timedelta(days=30), "month"),
+            (timedelta(days=365), "year"),
+        ]
 
-        # We ask for submission completed by the user in the last 48 hours
-        # The response will contain a count, so we just need 1 result
-        progress_response = self.blossom_api.get(
-            "submission/",
-            params={
-                "completed_by": volunteer_id,
-                "from": from_date.isoformat(),
-                "page_size": 1,
-            },
-        )
-        if progress_response.status_code != 200:
-            await msg.edit(
-                content=i18n["until"]["failed_getting_prediction"].format(user=user)
+        predictions = []
+
+        for delta, unit in time_frames:
+            # We ask for submission completed by the user in the time frame
+            # The response will contain a count, so we just need 1 result
+            progress_response = self.blossom_api.get(
+                "submission/",
+                params={
+                    "completed_by": volunteer_id,
+                    "from": (start - delta).isoformat(),
+                    "page_size": 1,
+                },
             )
-            return
-        progress_count = progress_response.json()["count"]
+            if progress_response.status_code != 200:
+                await msg.edit(
+                    content=i18n["until"]["failed_getting_prediction"].format(user=user)
+                )
+                return
+            progress_count = progress_response.json()["count"]
 
-        gamma_needed = goal_gamma - gamma
-        hours_needed = (progress_count / 48.0) * gamma_needed
-        time_needed = timedelta(hours=hours_needed)
+            if progress_count == 0:
+                predictions.append(
+                    i18n["until"]["prediction_zero"].format(
+                        time_frame=unit,
+                    )
+                )
+            else:
+                # Based on the progress in the timeframe, calculate the time needed
+                gamma_needed = goal_gamma - gamma
+                time_needed = timedelta(
+                    seconds=gamma_needed * (delta.total_seconds() / progress_count)
+                )
+
+                predictions.append(
+                    i18n["until"]["prediction"].format(
+                        progress=progress_count,
+                        time_frame=unit,
+                        time_needed=get_timedelta_str(time_needed),
+                    )
+                )
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
@@ -369,10 +394,9 @@ class History(Cog):
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=user),
                 description=i18n["until"]["embed_description"].format(
-                    progress=progress_count,
-                    time_frame="48 h",
-                    time_needed=get_timedelta_str(time_needed),
-                    goal=goal_str,
+                    cur_gamma=gamma,
+                    goal_gamma=goal_str,
+                    predictions="\n".join(predictions),
                 ),
             ),
         )
