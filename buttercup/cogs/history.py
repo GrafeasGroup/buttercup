@@ -7,7 +7,7 @@ import pandas as pd
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from dateutil.tz import tzutc
-from discord import File
+from discord import File, Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
@@ -19,6 +19,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     get_duration_str,
     join_items_with_and,
+    get_timedelta_str,
 )
 from buttercup.strings import translation
 
@@ -259,6 +260,103 @@ class History(Cog):
                 duration=get_duration_str(start)
             ),
             file=discord_file,
+        )
+
+    @cog_ext.cog_slash(
+        name="until",
+        description="Determines the time required to reach the next milestone.",
+        options=[
+            create_option(
+                name="goal",
+                description="The gamma or flair rank to reach. "
+                "Defaults to the next rank.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="username",
+                description="The user to make the prediction for. "
+                "Defaults to the user executing the command.",
+                option_type=3,
+                required=False,
+            ),
+        ],
+    )
+    async def _until(
+        self,
+        ctx: SlashContext,
+        goal: Optional[str] = None,
+        username: Optional[str] = None,
+    ) -> None:
+        """Determine how long it will take the user to reach the given goal."""
+        start = datetime.now()
+        user = username or extract_username(ctx.author.display_name)
+        goal_gamma = int(goal)
+
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(
+            i18n["until"]["getting_prediction"].format(user=user, goal_gamma=goal_gamma)
+        )
+
+        volunteer_response = self.blossom_api.get_user(user)
+        if volunteer_response.status != BlossomStatus.ok:
+            await msg.edit(content=i18n["until"]["user_not_found"].format(user))
+            return
+        volunteer_id = volunteer_response.data["id"]
+        gamma = volunteer_response.data["gamma"]
+
+        if gamma == 0:
+            # The user has not started transcribing yet
+            await msg.edit(
+                content=i18n["until"]["embed_message"].format(
+                    duration=get_duration_str(start)
+                ),
+                embed=Embed(
+                    title=i18n["until"]["embed_title"].format(user),
+                    description=i18n["until"]["embed_description_new"].format(
+                        user=user
+                    ),
+                ),
+            )
+            return
+
+        from_date = start - timedelta(hours=48)
+
+        # We ask for submission completed by the user in the last 48 hours
+        # The response will contain a count, so we just need 1 result
+        progress_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": volunteer_id,
+                "from": from_date.isoformat(),
+                "page_size": 1,
+            },
+        )
+        if progress_response.status_code != 200:
+            await msg.edit(
+                content=i18n["until"]["failed_getting_prediction"].format(user=user)
+            )
+            return
+        progress_count = progress_response.json()["count"]
+
+        gamma_needed = goal_gamma - gamma
+        hours_needed = (progress_count / 48) * gamma_needed
+        time_needed = timedelta(hours=hours_needed)
+
+        await msg.edit(
+            content=i18n["until"]["embed_message"].format(
+                duration=get_duration_str(start)
+            ),
+            embed=Embed(
+                title=i18n["until"]["embed_title"].format(user=user),
+                description=i18n["until"]["embed_description"].format(
+                    progress=progress_count,
+                    time_frame="24 h",
+                    time_needed=get_timedelta_str(time_needed),
+                    goal=goal_gamma,
+                ),
+            ),
         )
 
 

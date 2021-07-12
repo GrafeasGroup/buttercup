@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Union
 
 from blossom_wrapper import BlossomResponse
@@ -58,10 +58,15 @@ def extract_utc_offset(display_name: str) -> int:
 def get_duration_str(start: datetime) -> str:
     """Get the processing duration based on the start time."""
     duration = datetime.now() - start
-    if duration.seconds > 5:
-        return f"{duration.seconds} s"
+    return get_timedelta_str(duration)
 
-    duration_ms = duration.seconds * 1000 + duration.microseconds // 1000
+
+def get_timedelta_str(delta: timedelta) -> str:
+    """Format the given timedelta."""
+    if delta.seconds > 5:
+        return f"{delta.seconds} s"
+
+    duration_ms = delta.seconds * 1000 + delta.microseconds // 1000
     return f"{duration_ms} ms"
 
 

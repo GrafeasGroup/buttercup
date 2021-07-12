@@ -187,3 +187,20 @@ history:
     plot_ylabel: Gamma
     response_message:
       Here is the history graph! ({duration})
+until:
+  getting_prediction: |
+    Getting prediction for u/{user} to reach {goal_gamma}...
+  user_not_found: |
+    I couldn't find user u/{user}!
+  failed_getting_prediction: |
+    I couldn't get the prediction of u/{user}!
+  embed_message: |
+    Here is the prediction! ({duration})
+  embed_title: |
+    Prediction for u/{user}
+  embed_description: |
+    At a rate of {progress}/{time_frame} it will take you {time_needed} to reach {goal}!
+  embed_description_new: |
+    Hey u/{user}!
+    It looks like you haven't started transribing yet. Do you need any help to get started?
+    Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
