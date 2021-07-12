@@ -191,6 +191,8 @@ history:
       Here is the history graph! ({duration})
 until:
   getting_prediction: |
+    Getting prediction for u/{user}...
+  getting_prediction_to_goal: |
     Getting prediction for u/{user} to reach {goal_gamma}...
   user_not_found: |
     I couldn't find user u/{user}!

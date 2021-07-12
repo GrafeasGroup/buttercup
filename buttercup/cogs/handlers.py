@@ -7,8 +7,8 @@ from buttercup import logger
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
-    NoUsernameException,
     InvalidArgumentException,
+    NoUsernameException,
 )
 from buttercup.strings import translation
 

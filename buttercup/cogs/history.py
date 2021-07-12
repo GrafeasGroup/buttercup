@@ -1,13 +1,13 @@
 import io
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from dateutil.tz import tzutc
-from discord import File, Embed
+from discord import Embed, File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
@@ -16,11 +16,11 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
+    InvalidArgumentException,
     extract_username,
     get_duration_str,
-    join_items_with_and,
     get_timedelta_str,
-    InvalidArgumentException,
+    join_items_with_and,
 )
 from buttercup.strings import translation
 
@@ -105,8 +105,17 @@ def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     return File(history_plot, file_name)
 
 
+def get_next_rank(gamma: int) -> Dict[str, Union[str, int]]:
+    """Determine the next rank based on the current gamma."""
+    for rank in ranks:
+        if rank["threshold"] > gamma:
+            return rank
+
+    # TODO: How to handle if the user reached the highest rank?
+
+
 def parse_goal_str(goal_str: str) -> Tuple[int, str]:
-    """Parses the given goal string.
+    """Parse the given goal string.
 
     :returns: The goal gamma and the goal string.
     """
@@ -309,13 +318,10 @@ class History(Cog):
         """Determine how long it will take the user to reach the given goal."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
-        goal_gamma, goal_str = parse_goal_str(goal)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(
-            i18n["until"]["getting_prediction"].format(user=user, goal_gamma=goal_str)
-        )
+        msg = await ctx.send(i18n["until"]["getting_prediction"].format(user=user))
 
         volunteer_response = self.blossom_api.get_user(user)
         if volunteer_response.status != BlossomStatus.ok:
@@ -323,6 +329,22 @@ class History(Cog):
             return
         volunteer_id = volunteer_response.data["id"]
         gamma = volunteer_response.data["gamma"]
+
+        if goal is not None:
+            goal_gamma, goal_str = parse_goal_str(goal)
+        else:
+            # Take the next rank for the user
+            next_rank = get_next_rank(gamma)
+            goal_gamma, goal_str = (
+                next_rank["threshold"],
+                f"{next_rank['name']} ({next_rank['threshold']})",
+            )
+
+        await msg.edit(
+            content=i18n["until"]["getting_prediction_to_goal"].format(
+                user=user, goal_gamma=goal_str
+            )
+        )
 
         if gamma == 0:
             # The user has not started transcribing yet
@@ -368,9 +390,7 @@ class History(Cog):
 
             if progress_count == 0:
                 predictions.append(
-                    i18n["until"]["prediction_zero"].format(
-                        time_frame=unit,
-                    )
+                    i18n["until"]["prediction_zero"].format(time_frame=unit,)
                 )
             else:
                 # Based on the progress in the timeframe, calculate the time needed
