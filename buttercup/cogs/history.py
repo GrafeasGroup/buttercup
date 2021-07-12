@@ -16,8 +16,8 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
-    extract_username,
     get_duration_str,
+    get_usernames_from_user_list,
     join_items_with_and,
 )
 from buttercup.strings import translation
@@ -176,44 +176,26 @@ class History(Cog):
         description="Display the history graph.",
         options=[
             create_option(
-                name="user_1",
-                description="The user to display the history graph for.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_2",
-                description="The second user to add to the graph.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_3",
-                description="The third user to add to the graph.",
+                name="users",
+                description="The user to display the history graph for."
+                "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
             ),
         ],
     )
-    async def _history(
-        self,
-        ctx: SlashContext,
-        user_1: Optional[str] = None,
-        user_2: Optional[str] = None,
-        user_3: Optional[str] = None,
-    ) -> None:
+    async def _history(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
         """Get the transcription history of the user."""
         start = datetime.now()
 
-        username_1 = user_1 or extract_username(ctx.author.display_name)
-        users = [user for user in [username_1, user_2, user_3] if user is not None]
+        users = get_usernames_from_user_list(users, ctx.author)
         usernames = join_items_with_and([f"u/{user}" for user in users])
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["history"]["getting_history_single"].format(user=username_1)
+                i18n["history"]["getting_history_single"].format(user=users[0])
             )
         else:
             msg = await ctx.send(
@@ -236,7 +218,7 @@ class History(Cog):
             label.set_ha("right")
 
         if len(users) == 1:
-            ax.set_title(i18n["history"]["plot_title_single"].format(user=username_1))
+            ax.set_title(i18n["history"]["plot_title_single"].format(user=users[0]))
         else:
             ax.set_title(i18n["history"]["plot_title_multi"])
 
@@ -303,44 +285,26 @@ class History(Cog):
         description="Display the rate graph.",
         options=[
             create_option(
-                name="user_1",
-                description="The user to display the rate graph for.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_2",
-                description="The second user to add to the graph.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_3",
-                description="The third user to add to the graph.",
+                name="users",
+                description="The users to display the rate graph for."
+                "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
             ),
         ],
     )
-    async def _rate(
-        self,
-        ctx: SlashContext,
-        user_1: Optional[str] = None,
-        user_2: Optional[str] = None,
-        user_3: Optional[str] = None,
-    ) -> None:
+    async def _rate(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
         """Get the transcription rate of the user."""
         start = datetime.now()
 
-        username_1 = user_1 or extract_username(ctx.author.display_name)
-        users = [user for user in [username_1, user_2, user_3] if user is not None]
+        users = get_usernames_from_user_list(users, ctx.author)
         usernames = join_items_with_and([f"u/{user}" for user in users])
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["rate"]["getting_rate_single"].format(user=username_1)
+                i18n["rate"]["getting_rate_single"].format(user=users[0])
             )
         else:
             msg = await ctx.send(
@@ -363,7 +327,7 @@ class History(Cog):
             label.set_ha("right")
 
         if len(users) == 1:
-            ax.set_title(i18n["rate"]["plot_title_single"].format(user=username_1))
+            ax.set_title(i18n["rate"]["plot_title_single"].format(user=users[0]))
         else:
             ax.set_title(i18n["rate"]["plot_title_multi"])
 
