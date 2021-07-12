@@ -104,6 +104,21 @@ def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     return File(history_plot, file_name)
 
 
+def parse_goal_str(goal_str: str) -> Tuple[int, str]:
+    """Parses the given goal string.
+
+    :returns: The goal gamma and the goal string.
+    """
+    goal_str = goal_str.strip()
+
+    if goal_str.isnumeric():
+        return int(goal_str, 10), goal_str
+
+    for rank in ranks:
+        if goal_str.casefold() == rank["name"].casefold():
+            return rank["threshold"], f"{rank['name']} ({rank['threshold']})"
+
+
 class History(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the History cog."""
@@ -291,12 +306,12 @@ class History(Cog):
         """Determine how long it will take the user to reach the given goal."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
-        goal_gamma = int(goal)
+        goal_gamma, goal_str = parse_goal_str(goal)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
-            i18n["until"]["getting_prediction"].format(user=user, goal_gamma=goal_gamma)
+            i18n["until"]["getting_prediction"].format(user=user, goal_gamma=goal_str)
         )
 
         volunteer_response = self.blossom_api.get_user(user)
@@ -341,7 +356,7 @@ class History(Cog):
         progress_count = progress_response.json()["count"]
 
         gamma_needed = goal_gamma - gamma
-        hours_needed = (progress_count / 48) * gamma_needed
+        hours_needed = (progress_count / 48.0) * gamma_needed
         time_needed = timedelta(hours=hours_needed)
 
         await msg.edit(
@@ -352,9 +367,9 @@ class History(Cog):
                 title=i18n["until"]["embed_title"].format(user=user),
                 description=i18n["until"]["embed_description"].format(
                     progress=progress_count,
-                    time_frame="24 h",
+                    time_frame="48 h",
                     time_needed=get_timedelta_str(time_needed),
-                    goal=goal_gamma,
+                    goal=goal_str,
                 ),
             ),
         )
