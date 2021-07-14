@@ -58,7 +58,7 @@ def get_usernames_from_user_list(
             raise NoUsernameException()
         return [extract_username(author.display_name)]
 
-    return [extract_username(user) for user in raw_names][:5]
+    return [extract_username(user) for user in raw_names][:limit]
 
 
 def extract_sub_name(subreddit: str) -> str:

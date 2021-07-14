@@ -177,7 +177,7 @@ class History(Cog):
         options=[
             create_option(
                 name="users",
-                description="The user to display the history graph for."
+                description="The users to display the history graph for (maximum of 5)."
                 "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
@@ -286,7 +286,7 @@ class History(Cog):
         options=[
             create_option(
                 name="users",
-                description="The users to display the rate graph for."
+                description="The users to display the rate graph for (maximum of 5)."
                 "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
