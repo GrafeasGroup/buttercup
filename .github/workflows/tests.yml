@@ -25,8 +25,8 @@ jobs:
       run: |
         poetry install
     - name: Run Tests
+      run: poetry run pytest
+    - name: Coveralls
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_SECRET }}
-      run: |
-        poetry run pytest
-        poetry run coveralls
+      run: poetry run coveralls
