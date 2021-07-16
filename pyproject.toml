@@ -17,6 +17,7 @@ asyncpraw = "^7.2.0"
 matplotlib = "^3.4.2"
 pandas = "^1.2.5"
 seaborn = "^0.11.1"
+pytest = "^6.2.4"
 
 [tool.poetry.dev-dependencies]
 better-exceptions = "^0.2.2"
