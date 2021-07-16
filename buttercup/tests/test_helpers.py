@@ -7,6 +7,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     extract_utc_offset,
     get_progress_bar,
+    join_items_with_and,
 )
 
 
@@ -82,7 +83,7 @@ def test_get_progress_bar(
     as_code: bool,
     expected: str,
 ) -> None:
-    """Test that the progress bar is generated correctly"""
+    """Test that the progress bar is generated correctly."""
     actual = get_progress_bar(count, total, width, display_count, as_code)
     assert actual == expected
 
@@ -98,4 +99,6 @@ def test_get_progress_bar(
     ],
 )
 def test_join_items_with_and(items: List[str], expected: str) -> None:
-    pass
+    """Test that the items are joined together correctly."""
+    actual = join_items_with_and(items)
+    assert actual == expected
