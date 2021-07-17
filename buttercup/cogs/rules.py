@@ -5,14 +5,18 @@ from xmlrpc.client import Boolean
 import asyncpraw
 from asyncpraw.models import Rule
 from asyncprawcore import Forbidden, NotFound, Redirect
-from discord import Embed
+from discord import Color, Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_sub_name, get_duration_str
+from buttercup.cogs.helpers import (
+    extract_sub_name,
+    get_duration_str,
+    join_items_with_and,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -152,6 +156,74 @@ class Rules(Cog):
     async def _pi_rules(self, ctx: SlashContext, subreddit: str) -> None:
         """Get the rules of the specified subreddit regarding personal information."""
         await self._send_filtered_rules(ctx, subreddit, "pi_rules", is_pi_rule)
+
+    async def _get_partner_list(self) -> List[str]:
+        """Get a list of subreddits that are partnered with us."""
+        # Retrieve the partners from the subreddit wiki
+        sub = await self.reddit_api.subreddit("TranscribersOfReddit")
+        partner_page = await sub.wiki.get_page("subreddits")
+        partners: List[str] = partner_page.content_md.splitlines()
+        # Sort the list alphabetically
+        partners.sort(key=lambda x: x.casefold())
+        return partners
+
+    @cog_ext.cog_slash(
+        name="partners",
+        description="Get the list of partner subreddits.",
+        options=[
+            create_option(
+                name="subreddit",
+                description="Determine if the subreddit is already partnered with us.",
+                option_type=3,
+                required=False,
+            )
+        ],
+    )
+    async def _partners(
+        self, ctx: SlashContext, subreddit: Optional[str] = None
+    ) -> None:
+        """Get the list of all our partner subreddits."""
+        if subreddit is None:
+            msg = await ctx.send("Getting the list of partner subreddits...")
+        else:
+            msg = await ctx.send(f"Checking if r/{subreddit} is partnered with us...")
+
+        partners = await self._get_partner_list()
+
+        if subreddit is None:
+            partner_str = join_items_with_and(partners)
+            await msg.edit(
+                content="Here is the list of our partners!",
+                embed=Embed(
+                    title="Partner Subreddits",
+                    description=f"We are partnered with {len(partners)} subreddits:\n\n"
+                    + partner_str,
+                ),
+            )
+        else:
+            message = f"I have determined if r/{subreddit} is partnered with us!"
+            is_partner = subreddit.casefold() in [
+                partner.casefold() for partner in partners
+            ]
+
+            if is_partner:
+                await msg.edit(
+                    content=message,
+                    embed=Embed(
+                        title=f"r/{subreddit}",
+                        description=f"r/{subreddit} is partnered with us!",
+                        color=Color.green(),
+                    ),
+                )
+            else:
+                await msg.edit(
+                    content=message,
+                    embed=Embed(
+                        title=f"r/{subreddit}",
+                        description=f"r/{subreddit} is not partnered with us yet!",
+                        color=Color.red(),
+                    ),
+                )
 
 
 def setup(bot: ButtercupBot) -> None:
