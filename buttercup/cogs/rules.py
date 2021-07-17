@@ -208,41 +208,67 @@ class Rules(Cog):
                 ),
             )
         else:
+            sub = await self.reddit_api.subreddit(subreddit)
+            is_private = False
+
+            try:
+                await sub.load()
+            except Redirect:
+                # The subreddit does not exist
+                await msg.edit(
+                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
+                )
+                return
+            except NotFound:
+                # A character in the sub name is not allowed
+                await msg.edit(
+                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
+                )
+                return
+            except Forbidden:
+                # The subreddit is private
+                is_private = True
+
             is_partner = subreddit.casefold() in [
                 partner.casefold() for partner in partners
             ]
-            message = (
-                i18n["partner"]["embed_partner_status_message"].format(
-                    subreddit=subreddit, duration=get_duration_str(start)
-                ),
+            message = i18n["partner"]["embed_partner_status_message"].format(
+                subreddit=subreddit, duration=get_duration_str(start)
             )
 
-            if is_partner:
-                await msg.edit(
-                    content=message,
-                    embed=Embed(
-                        title=i18n["partner"]["embed_partner_status_title"].format(
-                            subreddit=subreddit
-                        ),
-                        description=i18n["partner"][
-                            "embed_partner_status_description_yes"
-                        ].format(subreddit=subreddit),
-                        color=Color.green(),
-                    ),
-                )
+            status_message = (
+                i18n["partner"]["status_yes_message"].format(subreddit=subreddit)
+                if is_partner
+                else i18n["partner"]["status_no_message"].format(subreddit=subreddit)
+            )
+
+            if is_private:
+                status_message += i18n["partner"]["private_message"]
             else:
-                await msg.edit(
-                    content=message,
-                    embed=Embed(
-                        title=i18n["partner"]["embed_partner_status_title"].format(
-                            subreddit=subreddit
-                        ),
-                        description=i18n["partner"][
-                            "embed_partner_status_description_no"
-                        ].format(subreddit=subreddit),
-                        color=Color.red(),
-                    ),
+                status_message += "\n" + i18n["partner"]["sub_description"].format(
+                    description=sub.public_description
                 )
+
+            color = (
+                Color.red()
+                if not is_partner
+                else Color.orange()
+                if is_private
+                else Color.green()
+            )
+
+            await msg.edit(
+                content=message,
+                embed=Embed(
+                    title=i18n["partner"]["embed_partner_status_title"].format(
+                        subreddit=subreddit
+                    ),
+                    description=i18n["partner"][
+                        "embed_partner_status_description"
+                    ].format(status=status_message),
+                    color=color,
+                ),
+            )
 
 
 def setup(bot: ButtercupBot) -> None:
