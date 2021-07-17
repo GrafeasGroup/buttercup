@@ -168,7 +168,7 @@ class Rules(Cog):
         return partners
 
     @cog_ext.cog_slash(
-        name="partners",
+        name="partner",
         description="Get the list of partner subreddits.",
         options=[
             create_option(
@@ -179,39 +179,54 @@ class Rules(Cog):
             )
         ],
     )
-    async def _partners(
+    async def _partner(
         self, ctx: SlashContext, subreddit: Optional[str] = None
     ) -> None:
         """Get the list of all our partner subreddits."""
+        start = datetime.now()
+
         if subreddit is None:
-            msg = await ctx.send("Getting the list of partner subreddits...")
+            msg = await ctx.send(i18n["partner"]["getting_partner_list"])
         else:
-            msg = await ctx.send(f"Checking if r/{subreddit} is partnered with us...")
+            msg = await ctx.send(
+                i18n["partner"]["getting_partner_status"].format(subreddit=subreddit)
+            )
 
         partners = await self._get_partner_list()
 
         if subreddit is None:
             partner_str = join_items_with_and(partners)
             await msg.edit(
-                content="Here is the list of our partners!",
+                content=i18n["partner"]["embed_partner_list_message"].format(
+                    duration=get_duration_str(start)
+                ),
                 embed=Embed(
-                    title="Partner Subreddits",
-                    description=f"We are partnered with {len(partners)} subreddits:\n\n"
-                    + partner_str,
+                    title=i18n["partner"]["embed_partner_list_title"],
+                    description=i18n["partner"][
+                        "embed_partner_list_description"
+                    ].format(count=len(partners), partner_list=partner_str),
                 ),
             )
         else:
-            message = f"I have determined if r/{subreddit} is partnered with us!"
             is_partner = subreddit.casefold() in [
                 partner.casefold() for partner in partners
             ]
+            message = (
+                i18n["partner"]["embed_partner_status_message"].format(
+                    subreddit=subreddit, duration=get_duration_str(start)
+                ),
+            )
 
             if is_partner:
                 await msg.edit(
                     content=message,
                     embed=Embed(
-                        title=f"r/{subreddit}",
-                        description=f"r/{subreddit} is partnered with us!",
+                        title=i18n["partner"]["embed_partner_status_title"].format(
+                            subreddit=subreddit
+                        ),
+                        description=i18n["partner"][
+                            "embed_partner_status_description_yes"
+                        ].format(subreddit=subreddit),
                         color=Color.green(),
                     ),
                 )
@@ -219,8 +234,12 @@ class Rules(Cog):
                 await msg.edit(
                     content=message,
                     embed=Embed(
-                        title=f"r/{subreddit}",
-                        description=f"r/{subreddit} is not partnered with us yet!",
+                        title=i18n["partner"]["embed_partner_status_title"].format(
+                            subreddit=subreddit
+                        ),
+                        description=i18n["partner"][
+                            "embed_partner_status_description_no"
+                        ].format(subreddit=subreddit),
                         color=Color.red(),
                     ),
                 )
