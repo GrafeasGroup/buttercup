@@ -23,10 +23,11 @@ jobs:
         virtualenvs-create: true
     - name: Install Dependencies
       run: |
-        poetry install
+        poetry install -v --extras ci
     - name: Run Tests
-      run: poetry run pytest
+      run: |
+        poetry run pytest --cov=buttercup
     - name: Coveralls
       env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_SECRET }}
-      run: poetry run coveralls
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: poetry run coveralls --service=github
