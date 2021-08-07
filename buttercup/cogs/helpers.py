@@ -1,12 +1,13 @@
 import re
 from datetime import datetime
-from typing import List, Union
+from typing import List, Optional, Union
 
+import discord
 from blossom_wrapper import BlossomResponse
 from discord import DiscordException
 from requests import Response
 
-username_regex = re.compile(r"^/?u/(?P<username>\S+)")
+username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 
@@ -36,6 +37,28 @@ def extract_username(display_name: str) -> str:
     if match is None:
         raise NoUsernameException()
     return match.group("username")
+
+
+def get_usernames_from_user_list(
+    user_list: Optional[str], author: Optional[discord.User], limit: int = 5
+) -> List[str]:
+    """Get the individual usernames from a list of users.
+
+    :param user_list: The list of users, separated by spaces.
+    :param author: The author of the message, taken as the default user.
+    :param limit: The maximum number of users to handle.
+    """
+    raw_names = (
+        [user.strip() for user in user_list.split(" ")] if user_list is not None else []
+    )
+
+    if len(raw_names) == 0:
+        # No users provided, fall back to the author of the message
+        if author is None:
+            raise NoUsernameException()
+        return [extract_username(author.display_name)]
+
+    return [extract_username(user) for user in raw_names][:limit]
 
 
 def extract_sub_name(subreddit: str) -> str:

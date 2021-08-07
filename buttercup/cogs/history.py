@@ -1,6 +1,6 @@
 import io
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -16,8 +16,8 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
-    extract_username,
     get_duration_str,
+    get_usernames_from_user_list,
     join_items_with_and,
 )
 from buttercup.strings import translation
@@ -82,13 +82,18 @@ def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
     return data.reindex(new_index, fill_value=0).sort_index()
 
 
-def add_rank_lines(ax: plt.Axes, gamma: int) -> plt.Axes:
-    """Add the rank lines to the given axes."""
-    # Show ranks when you are close to them already
-    threshold_factor = 0.7
-    for rank in ranks:
-        if gamma >= rank["threshold"] * threshold_factor:
-            ax.axhline(y=rank["threshold"], color=rank["color"], zorder=-1)
+def add_milestone_lines(
+    ax: plt.Axes, milestones: List[Dict[str, Union[str, int]]], value: float
+) -> plt.Axes:
+    """Add the lines for the milestones the user reached.
+
+    :param ax: The axis to draw the milestones into.
+    :param milestones: The milestones to consider. Each must have a threshold and color.
+    :param value: The value to determine if a user reached a given milestone.
+    """
+    for milestone in milestones:
+        if value >= milestone["threshold"]:
+            ax.axhline(y=milestone["threshold"], color=milestone["color"], zorder=-1)
     return ax
 
 
@@ -109,24 +114,10 @@ class History(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
-    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
-        """Get a data frame representing the history of the user.
-
-        :returns: The gamma of the user and their history data.
-        """
+    def get_all_rate_data(self, user_id: int, time_frame: str) -> pd.DataFrame:
+        """Get all rate data for the given user."""
         page_size = 500
 
-        # First, get the total gamma for the user
-        user_response = self.blossom_api.get_user(user)
-        if user_response.status != BlossomStatus.ok:
-            raise BlossomException(user_response)
-
-        user_gamma = user_response.data["gamma"]
-        user_id = user_response.data["id"]
-
-        time_frame = get_data_granularity(user_gamma)
-
-        # Get all rate data
         user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
         page = 1
         # Placeholder until we get the real value from the response
@@ -152,7 +143,26 @@ class History(Cog):
             # Continue with the next page
             page += 1
 
+        # Add the missing zero entries
         user_data = add_zero_rates(user_data, time_frame)
+        return user_data
+
+    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
+        """Get a data frame representing the history of the user.
+
+        :returns: The gamma of the user and their history data.
+        """
+        # First, get the total gamma for the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_gamma = user_response.data["gamma"]
+        user_id = user_response.data["id"]
+
+        # Get all rate data
+        time_frame = get_data_granularity(user_gamma)
+        user_data = self.get_all_rate_data(user_id, time_frame)
 
         # Add an up-to-date entry
         user_data.loc[datetime.now(tz=tzutc())] = [0]
@@ -166,43 +176,26 @@ class History(Cog):
         description="Display the history graph.",
         options=[
             create_option(
-                name="user_1",
-                description="The user to display the history graph for.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_2",
-                description="The second user to add to the graph.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="user_3",
-                description="The third user to add to the graph.",
+                name="users",
+                description="The users to display the history graph for (maximum of 5)."
+                "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
             ),
         ],
     )
-    async def _history(
-        self,
-        ctx: SlashContext,
-        user_1: Optional[str] = None,
-        user_2: Optional[str] = None,
-        user_3: Optional[str] = None,
-    ) -> None:
-        """Find the post with the given URL."""
-        # Give a quick response to let the user know we're working on it
-        # We'll later edit this message with the actual content
+    async def _history(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
+        """Get the transcription history of the user."""
         start = datetime.now()
 
-        username_1 = user_1 or extract_username(ctx.author.display_name)
-        users = [user for user in [username_1, user_2, user_3] if user is not None]
+        users = get_usernames_from_user_list(users, ctx.author)
         usernames = join_items_with_and([f"u/{user}" for user in users])
+
+        # Give a quick response to let the user know we're working on it
+        # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["history"]["getting_history_single"].format(user=username_1)
+                i18n["history"]["getting_history_single"].format(user=users[0])
             )
         else:
             msg = await ctx.send(
@@ -225,7 +218,7 @@ class History(Cog):
             label.set_ha("right")
 
         if len(users) == 1:
-            ax.set_title(i18n["history"]["plot_title_single"].format(user=username_1))
+            ax.set_title(i18n["history"]["plot_title_single"].format(user=users[0]))
         else:
             ax.set_title(i18n["history"]["plot_title_multi"])
 
@@ -248,7 +241,9 @@ class History(Cog):
                 color=ranks[index]["color"],
             )
 
-        add_rank_lines(ax, max(user_gammas))
+        # Show ranks when you are close to them already
+        ax = add_milestone_lines(ax, ranks, max(user_gammas) * 1.4)
+
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
 
@@ -256,6 +251,121 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["history"]["response_message"].format(
+                duration=get_duration_str(start)
+            ),
+            file=discord_file,
+        )
+
+    def get_user_rate(self, user: str) -> pd.DataFrame:
+        """Get a data frame representing the transcription rate of the user.
+
+        :returns: The rate data of the user.
+        """
+        # First, get the ID of the user
+        user_response = self.blossom_api.get_user(user)
+        if user_response.status != BlossomStatus.ok:
+            raise BlossomException(user_response)
+
+        user_id = user_response.data["id"]
+
+        # Get all rate data
+        user_data = self.get_all_rate_data(user_id, "day")
+
+        # Add an up-to-date entry
+        today = datetime.now(tz=tzutc()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        if today not in user_data.index:
+            user_data.loc[today] = [0]
+
+        return user_data
+
+    @cog_ext.cog_slash(
+        name="rate",
+        description="Display the rate graph.",
+        options=[
+            create_option(
+                name="users",
+                description="The users to display the rate graph for (maximum of 5)."
+                "Defaults to the user executing the command.",
+                option_type=3,
+                required=False,
+            ),
+        ],
+    )
+    async def _rate(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
+        """Get the transcription rate of the user."""
+        start = datetime.now()
+
+        users = get_usernames_from_user_list(users, ctx.author)
+        usernames = join_items_with_and([f"u/{user}" for user in users])
+
+        # Give a quick response to let the user know we're working on it
+        # We'll later edit this message with the actual content
+        if len(users) == 1:
+            msg = await ctx.send(
+                i18n["rate"]["getting_rate_single"].format(user=users[0])
+            )
+        else:
+            msg = await ctx.send(
+                i18n["rate"]["getting_rate_multi"].format(
+                    users=usernames, count=0, total=len(users)
+                )
+            )
+
+        max_rates = []
+
+        fig: plt.Figure = plt.figure()
+        ax: plt.Axes = fig.gca()
+
+        fig.subplots_adjust(bottom=0.2)
+        ax.set_xlabel(i18n["rate"]["plot_xlabel"])
+        ax.set_ylabel(i18n["rate"]["plot_ylabel"])
+
+        for label in ax.get_xticklabels():
+            label.set_rotation(32)
+            label.set_ha("right")
+
+        if len(users) == 1:
+            ax.set_title(i18n["rate"]["plot_title_single"].format(user=users[0]))
+        else:
+            ax.set_title(i18n["rate"]["plot_title_multi"])
+
+        for index, user in enumerate(users):
+            if len(users) > 1:
+                await msg.edit(
+                    content=i18n["rate"]["getting_rate_multi"].format(
+                        users=usernames, count=index + 1, total=len(users)
+                    )
+                )
+
+            user_data = self.get_user_rate(user)
+
+            max_rates.append(user_data["count"].max())
+
+            # Plot the graph
+            ax.plot(
+                "date",
+                "count",
+                data=user_data.reset_index(),
+                color=ranks[index]["color"],
+            )
+
+        # A milestone at every 100 rate
+        milestones = [
+            dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)
+        ]
+        # Show rate milestones when you are close to them already
+        value = max(max_rates) + 40
+        ax = add_milestone_lines(ax, milestones, value)
+
+        if len(users) > 1:
+            ax.legend([f"u/{user}" for user in users])
+
+        discord_file = create_file_from_figure(fig, "rate_plot.png")
+
+        await msg.edit(
+            content=i18n["rate"]["response_message"].format(
                 duration=get_duration_str(start)
             ),
             file=discord_file,
