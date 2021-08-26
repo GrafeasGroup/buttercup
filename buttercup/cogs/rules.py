@@ -5,14 +5,18 @@ from xmlrpc.client import Boolean
 import asyncpraw
 from asyncpraw.models import Rule
 from asyncprawcore import Forbidden, NotFound, Redirect
-from discord import Embed
+from discord import Color, Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_sub_name, get_duration_str
+from buttercup.cogs.helpers import (
+    extract_sub_name,
+    get_duration_str,
+    join_items_with_and,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -152,6 +156,119 @@ class Rules(Cog):
     async def _pi_rules(self, ctx: SlashContext, subreddit: str) -> None:
         """Get the rules of the specified subreddit regarding personal information."""
         await self._send_filtered_rules(ctx, subreddit, "pi_rules", is_pi_rule)
+
+    async def _get_partner_list(self) -> List[str]:
+        """Get a list of subreddits that are partnered with us."""
+        # Retrieve the partners from the subreddit wiki
+        sub = await self.reddit_api.subreddit("TranscribersOfReddit")
+        partner_page = await sub.wiki.get_page("subreddits")
+        partners: List[str] = partner_page.content_md.splitlines()
+        # Sort the list alphabetically
+        partners.sort(key=lambda x: x.casefold())
+        return partners
+
+    @cog_ext.cog_slash(
+        name="partner",
+        description="Get the list of partner subreddits.",
+        options=[
+            create_option(
+                name="subreddit",
+                description="Determine if the subreddit is already partnered with us.",
+                option_type=3,
+                required=False,
+            )
+        ],
+    )
+    async def _partner(
+        self, ctx: SlashContext, subreddit: Optional[str] = None
+    ) -> None:
+        """Get the list of all our partner subreddits."""
+        start = datetime.now()
+
+        if subreddit is None:
+            msg = await ctx.send(i18n["partner"]["getting_partner_list"])
+        else:
+            msg = await ctx.send(
+                i18n["partner"]["getting_partner_status"].format(subreddit=subreddit)
+            )
+
+        partners = await self._get_partner_list()
+
+        if subreddit is None:
+            partner_str = join_items_with_and(partners)
+            await msg.edit(
+                content=i18n["partner"]["embed_partner_list_message"].format(
+                    duration=get_duration_str(start)
+                ),
+                embed=Embed(
+                    title=i18n["partner"]["embed_partner_list_title"],
+                    description=i18n["partner"][
+                        "embed_partner_list_description"
+                    ].format(count=len(partners), partner_list=partner_str),
+                ),
+            )
+        else:
+            sub = await self.reddit_api.subreddit(subreddit)
+            is_private = False
+
+            try:
+                await sub.load()
+            except Redirect:
+                # The subreddit does not exist
+                await msg.edit(
+                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
+                )
+                return
+            except NotFound:
+                # A character in the sub name is not allowed
+                await msg.edit(
+                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
+                )
+                return
+            except Forbidden:
+                # The subreddit is private
+                is_private = True
+
+            is_partner = subreddit.casefold() in [
+                partner.casefold() for partner in partners
+            ]
+            message = i18n["partner"]["embed_partner_status_message"].format(
+                subreddit=subreddit, duration=get_duration_str(start)
+            )
+
+            status_message = (
+                i18n["partner"]["status_yes_message"].format(subreddit=subreddit)
+                if is_partner
+                else i18n["partner"]["status_no_message"].format(subreddit=subreddit)
+            )
+
+            if is_private:
+                status_message += i18n["partner"]["private_message"]
+            else:
+                status_message += "\n" + i18n["partner"]["sub_description"].format(
+                    description=sub.public_description
+                )
+
+            color = (
+                Color.red()
+                if not is_partner
+                else Color.orange()
+                if is_private
+                else Color.green()
+            )
+
+            await msg.edit(
+                content=message,
+                embed=Embed(
+                    title=i18n["partner"]["embed_partner_status_title"].format(
+                        subreddit=subreddit
+                    ),
+                    description=i18n["partner"][
+                        "embed_partner_status_description"
+                    ].format(status=status_message),
+                    color=color,
+                ),
+            )
 
 
 def setup(bot: ButtercupBot) -> None:
