@@ -202,3 +202,42 @@ history:
     plot_ylabel: Gamma
     response_message:
       Here is the history graph! ({duration})
+partner:
+  getting_partner_list: |
+    Getting the list of our partners...
+  getting_partner_status: |
+    Getting the partner status of r/{subreddit}...
+  sub_not_found: |
+    Sorry, but I couldn't find the subreddit r/{subreddit}. Please check your spelling.
+  private_message: |
+    They are currently set to **private**. :lock:
+  status_yes_message: |
+    We are partnered with r/{subreddit}! :tada:
+  status_no_message: |
+    We are not partnered with r/{subreddit} at this time.
+  sub_description: |
+    __**Description:**__
+    {description}
+  embed_partner_list_message: |
+    Here is the list of our partners! ({duration})
+  embed_partner_list_title: Partner Subreddits
+  embed_partner_list_description: |
+    We are currently partnered with {count} subreddits:
+
+    {partner_list}
+  embed_partner_status_message: |
+    Here is the partner status of r/{subreddit}! ({duration})
+  embed_partner_status_title: Partner Status of r/{subreddit}
+  embed_partner_status_description: |
+    {status}
+rate:
+    getting_rate_single: |
+      Creating the transcription rate graph for u/{user}...
+    getting_rate_multi: |
+      Creating the transcription rate graph for {users} ({count}/{total})...
+    plot_title_single: Transcription Rate of u/{user}
+    plot_title_multi: Transcription Rate of Multiple Users
+    plot_xlabel: Time
+    plot_ylabel: Transcription Rate
+    response_message:
+      Here is the transcription rate graph! ({duration})

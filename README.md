@@ -1,5 +1,6 @@
-![Image of Buttercup, from 1998's Powerpuff Girls](https://i.imgur.com/wx8BXyT.png)
-
+<div align="center">
+  <img align="center" src="https://imgur.com/eoe8Xsv.jpg" height="200px" alt="Image of Buttercup, from 1998's Powerpuff Girls">
+</div>
 <h1 align="center">buttercup</h1>
 
 <p align="center">
