@@ -57,8 +57,8 @@ user_stats:
   embed_description: |
     **Transcriptions**: {gamma:,d}
     **Flair Rank**: {flair_rank}
-    **Date Joined**: {date_joined} ({joined_ago} ago)
-    **Last Active**: {last_active} ({last_ago} ago)
+    **Date Joined**: {date_joined} ({joined_ago})
+    **Last Active**: {last_active} ({last_ago})
 progress:
   getting_progress: |
     Getting progress for u/{user} in the last {hours} hours...

@@ -13,7 +13,12 @@ from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
-from buttercup.cogs.helpers import extract_username, get_duration_str, get_progress_bar
+from buttercup.cogs.helpers import (
+    extract_username,
+    get_discord_time_str,
+    get_duration_str,
+    get_progress_bar,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -145,10 +150,10 @@ class Stats(Cog):
         description = i18n["user_stats"]["embed_description"].format(
             gamma=volunteer_data["gamma"],
             flair_rank=rank["name"],
-            date_joined=date_joined.strftime("%B %d, %Y"),
-            joined_ago=get_duration_str(date_joined),
-            last_active=last_active.strftime("%B %d, %Y"),
-            last_ago=get_duration_str(last_active),
+            date_joined=get_discord_time_str(date_joined),
+            joined_ago=get_discord_time_str(date_joined, "R"),
+            last_active=get_discord_time_str(last_active),
+            last_ago=get_discord_time_str(last_active, "R"),
         )
 
         await msg.edit(

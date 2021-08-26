@@ -1,4 +1,5 @@
 import re
+import time
 from datetime import datetime
 from typing import List, Optional, Union
 
@@ -133,3 +134,14 @@ def join_items_with_and(items: List[str]) -> str:
     if len(items) <= 2:
         return " and ".join(items)
     return "{} and {}".format(", ".join(items[:-1]), items[-1])
+
+
+def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
+    """Get a Discord time string for the given datetime.
+
+    Style should be one of the timestamp styles defined here:
+    https://discord.com/developers/docs/reference#message-formatting-timestamp-styles
+    """
+    timestamp = time.mktime(date_time.timetuple())
+    # https://discord.com/developers/docs/reference#message-formatting-formats
+    return f"<t:{timestamp:0.0f}:{style}>"
