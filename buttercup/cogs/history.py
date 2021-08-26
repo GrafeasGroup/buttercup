@@ -1,4 +1,5 @@
 import io
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -19,7 +20,6 @@ from buttercup.cogs.helpers import (
     InvalidArgumentException,
     extract_username,
     get_duration_str,
-    get_timedelta_str,
     get_usernames_from_user_list,
     join_items_with_and,
 )
@@ -472,51 +472,45 @@ class History(Cog):
             )
             return
 
-        time_frames = [
-            (timedelta(hours=24), "day"),
-            (timedelta(weeks=1), "week"),
-            (timedelta(days=30), "month"),
-            (timedelta(days=365), "year"),
-        ]
+        time_frame = timedelta(weeks=1)
 
-        predictions = []
-
-        for delta, unit in time_frames:
-            # We ask for submission completed by the user in the time frame
-            # The response will contain a count, so we just need 1 result
-            progress_response = self.blossom_api.get(
-                "submission/",
-                params={
-                    "completed_by": volunteer_id,
-                    "from": (start - delta).isoformat(),
-                    "page_size": 1,
-                },
+        # We ask for submission completed by the user in the time frame
+        # The response will contain a count, so we just need 1 result
+        progress_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": volunteer_id,
+                "from": (start - time_frame).isoformat(),
+                "page_size": 1,
+            },
+        )
+        if progress_response.status_code != 200:
+            await msg.edit(
+                content=i18n["until"]["failed_getting_prediction"].format(user=user)
             )
-            if progress_response.status_code != 200:
-                await msg.edit(
-                    content=i18n["until"]["failed_getting_prediction"].format(user=user)
-                )
-                return
-            progress_count = progress_response.json()["count"]
+            return
+        progress_count = progress_response.json()["count"]
 
-            if progress_count == 0:
-                predictions.append(
-                    i18n["until"]["prediction_zero"].format(time_frame=unit,)
-                )
-            else:
-                # Based on the progress in the timeframe, calculate the time needed
-                gamma_needed = goal_gamma - gamma
-                time_needed = timedelta(
-                    seconds=gamma_needed * (delta.total_seconds() / progress_count)
-                )
+        if progress_count == 0:
+            description = i18n["until"]["embed_description_zero"].format(
+                time_frame="week", user=user, cur_gamma=gamma, goal=goal_str
+            )
+        else:
+            # Based on the progress in the timeframe, calculate the time needed
+            gamma_needed = goal_gamma - gamma
+            time_needed = timedelta(
+                seconds=gamma_needed * (time_frame.total_seconds() / progress_count)
+            )
+            target_time = datetime.now() + time_needed
 
-                predictions.append(
-                    i18n["until"]["prediction"].format(
-                        progress=progress_count,
-                        time_frame=unit,
-                        time_needed=get_timedelta_str(time_needed),
-                    )
-                )
+            description = i18n["until"]["embed_description_prediction"].format(
+                time_frame="week",
+                user=user,
+                cur_gamma=gamma,
+                goal=goal_str,
+                progress=progress_count,
+                time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+            )
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
@@ -524,11 +518,7 @@ class History(Cog):
             ),
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=user),
-                description=i18n["until"]["embed_description"].format(
-                    cur_gamma=gamma,
-                    goal_gamma=goal_str,
-                    predictions="\n".join(predictions),
-                ),
+                description=description,
             ),
         )
 

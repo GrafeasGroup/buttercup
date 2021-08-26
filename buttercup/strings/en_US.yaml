@@ -209,16 +209,14 @@ until:
     I couldn't find user u/{user}!
   failed_getting_prediction: |
     I couldn't get the prediction of u/{user}!
-  prediction_zero: "- 0/{time_frame}: never"
-  prediction: "- {progress}/{time_frame}: {time_needed}"
   embed_message: |
     Here is the prediction! ({duration})
   embed_title: |
     Prediction for u/{user}
-  embed_description: |
-    Predictions for getting from {cur_gamma} to {goal_gamma}:
-
-    {predictions}
+  embed_description_prediction: |
+    **u/{user}** will get from {cur_gamma} to **{goal}** {time_needed} if transcribing at a rate of **{progress}/{time_frame}**.
+  embed_description_zero: |
+    **u/{user}** will never get from {cur_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
     Hey u/{user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
