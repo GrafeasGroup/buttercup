@@ -57,7 +57,6 @@ user_stats:
   embed_description: |
     **Transcriptions**: {gamma:,d}
     **Flair Rank**: {flair_rank}
-    **Leaderboard**: #{leaderboard_rank}
     **Date Joined**: {date_joined} ({joined_ago} ago)
     **Last Active**: {last_active} ({last_ago} ago)
 progress:

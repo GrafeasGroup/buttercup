@@ -145,7 +145,6 @@ class Stats(Cog):
         description = i18n["user_stats"]["embed_description"].format(
             gamma=volunteer_data["gamma"],
             flair_rank=rank["name"],
-            leaderboard_rank=22,
             date_joined=date_joined.strftime("%B %d, %Y"),
             joined_ago=get_duration_str(date_joined),
             last_active=last_active.strftime("%B %d, %Y"),
