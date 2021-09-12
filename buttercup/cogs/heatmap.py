@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from blossom_wrapper import BlossomAPI
+from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -99,13 +99,20 @@ class Heatmap(Cog):
         utc_offset = extract_utc_offset(ctx.author.display_name)
         msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
 
-        response = self.blossom_api.get("volunteer/heatmap/", params={"username": user})
+        volunteer_response = self.blossom_api.get_user(user)
+        if not volunteer_response.status == BlossomStatus.ok:
+            await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
+            return
+        volunteer = volunteer_response.data
 
-        if response.status_code != 200:
+        heatmap_response = self.blossom_api.get(
+            "submission/heatmap/", params={"completed_by": volunteer["id"]}
+        )
+        if heatmap_response.status_code != 200:
             await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
             return
 
-        data = response.json()
+        data = heatmap_response.json()
         data = [adjust_with_timezone(hour_data, utc_offset) for hour_data in data]
 
         day_index = pd.Index(range(1, 8))

@@ -125,8 +125,13 @@ class History(Cog):
 
         while next_page is not None:
             response = self.blossom_api.get(
-                f"volunteer/{user_id}/rate",
-                params={"page": page, "page_size": page_size, "time_frame": time_frame},
+                "submission/rate",
+                params={
+                    "completed_by": user_id,
+                    "page": page,
+                    "page_size": page_size,
+                    "time_frame": time_frame,
+                },
             )
             if response.status_code != 200:
                 raise BlossomException(response)
