@@ -16,6 +16,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     extract_utc_offset,
     get_duration_str,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -89,15 +90,35 @@ class Heatmap(Cog):
                 description="The user to get the heatmap for.",
                 option_type=3,
                 required=False,
-            )
+            ),
+            create_option(
+                name="after",
+                description="The start date for the heatmap data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the heatmap data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def _heatmap(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+    async def _heatmap(
+        self,
+        ctx: SlashContext,
+        username: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Generate a heatmap for the given user."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
         utc_offset = extract_utc_offset(ctx.author.display_name)
         msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
+
+        after_time, before_time = parse_time_constraints(after, before)
 
         volunteer_response = self.blossom_api.get_user(user)
         if not volunteer_response.status == BlossomStatus.ok:
@@ -106,7 +127,12 @@ class Heatmap(Cog):
         volunteer = volunteer_response.data
 
         heatmap_response = self.blossom_api.get(
-            "submission/heatmap/", params={"completed_by": volunteer["id"]}
+            "submission/heatmap/",
+            params={
+                "completed_by": volunteer["id"],
+                "from": after_time,
+                "until": before_time,
+            },
         )
         if heatmap_response.status_code != 200:
             await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
@@ -120,7 +146,7 @@ class Heatmap(Cog):
 
         heatmap = (
             # Create a data frame from the data
-            pd.DataFrame.from_records(data)
+            pd.DataFrame.from_records(data, columns=["day", "hour", "count"])
             # Convert it into a table with the days as rows and hours as columns
             .pivot(index="day", columns="hour", values="count")
             # Add the missing days and hours

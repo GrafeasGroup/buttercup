@@ -1,7 +1,10 @@
 import re
 import time
 from datetime import datetime
-from typing import List, Optional, Union
+
+import pytz
+from dateutil import parser
+from typing import List, Optional, Union, Tuple
 
 import discord
 from blossom_wrapper import BlossomResponse
@@ -30,6 +33,15 @@ class BlossomException(RuntimeError):
         else:
             self.status = response.status_code.__str__()
             self.data = response.json()
+
+
+class TimeParseError(DiscordException):
+    """Exception raised when a time string is invalid."""
+
+    def __init__(self, time_str: str) -> None:
+        """Create a new TimeParseError exception."""
+        super().__init__()
+        self.time_str = time_str
 
 
 def extract_username(display_name: str) -> str:
@@ -145,3 +157,25 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
     timestamp = time.mktime(date_time.timetuple())
     # https://discord.com/developers/docs/reference#message-formatting-formats
     return f"<t:{timestamp:0.0f}:{style}>"
+
+
+def try_parse_time(time_str: str) -> Optional[datetime]:
+    try:
+        return parser.parse(time_str)
+    except ValueError:
+        raise TimeParseError(time_str)
+
+
+def parse_time_constraints(
+    after_str: Optional[str], before_str: Optional[str]
+) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """Parse user-given time constraints and convert them to datetimes."""
+    after_time = None
+    before_time = None
+
+    if after_str is not None and after_str not in ["start", "none"]:
+        after_time = try_parse_time(after_str)
+    if before_str is not None and before_str not in ["end", "none"]:
+        before_time = try_parse_time(before_str)
+
+    return after_time, before_time
