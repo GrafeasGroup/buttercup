@@ -1,10 +1,11 @@
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from re import Pattern
 
 import pytz
 from dateutil import parser
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, Dict
 
 import discord
 from blossom_wrapper import BlossomResponse
@@ -13,6 +14,19 @@ from requests import Response
 
 username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
+
+# First an amount and then a unit
+relative_time_regex = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*$")
+# The different time units
+unit_regexes: Dict[str, Pattern] = {
+    "seconds": re.compile(r"^s(?:ec(?:ond)?s?)?$"),
+    "minutes": re.compile(r"^min(?:ute)?s?$"),
+    # Hour is the default, so the whole thing is optional
+    "hours": re.compile(r"^(?:h(?:ours?)?)?$"),
+    "days": re.compile(r"^d(?:ays?)?$"),
+    "months": re.compile(r"^m(?:months?)?$"),
+    "years": re.compile(r"^y(?:ears?)?$"),
+}
 
 
 class NoUsernameException(DiscordException):
@@ -160,6 +174,28 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
 
 
 def try_parse_time(time_str: str) -> Optional[datetime]:
+    # Check for relative time
+    # For example "2.4 years"
+    rel_time_match = relative_time_regex.match(time_str)
+    if rel_time_match is not None:
+        # Extract amount and unit
+        amount = float(rel_time_match.group("amount"))
+        unit = rel_time_match.group("unit")
+        # Determine which unit we are dealing with
+        for unit_key in unit_regexes:
+            match = unit_regexes[unit_key].match(unit)
+            if match is not None:
+                # Construct the time delta from the unit and amount
+                if unit_key == "months":
+                    delta = timedelta(days=30 * amount)
+                elif unit_key == "years":
+                    delta = timedelta(days=365 * amount)
+                else:
+                    delta = timedelta(**{unit_key: amount})
+                return datetime.now(tz=pytz.utc) - delta
+
+    # Check for absolute time
+    # For example "2021-09-03"
     try:
         return parser.parse(time_str)
     except ValueError:
