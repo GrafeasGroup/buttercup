@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
+import pytz
 from pytest import mark
 
 from buttercup.cogs.helpers import (
@@ -8,7 +9,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     extract_utc_offset,
     get_progress_bar,
-    join_items_with_and, format_absolute_datetime, format_relative_datetime,
+    join_items_with_and, format_absolute_datetime, format_relative_datetime, try_parse_time,
 )
 
 
@@ -139,3 +140,42 @@ def test_format_relative_datetime(amount: float, unit_key: str, expected: str):
     """Test that relative date times are formatted correctly."""
     actual = format_relative_datetime(amount, unit_key)
     assert actual == expected
+
+
+@mark.parametrize(
+    "input_str,expected_datetime,expected_str",
+    [
+        ("2020-03-04 10:13", datetime(2020, 3, 4, 10, 13), "2020-03-04 10:13"),
+        ("2020-03-04T10:13", datetime(2020, 3, 4, 10, 13), "2020-03-04 10:13"),
+        ("2020-03-04", datetime(2020, 3, 4), "2020-03-04"),
+        ("10:13", datetime(now.year, now.month, now.day, 10, 13), "10:13"),
+    ]
+)
+def test_parse_absolute_datetime(input_str: str, expected_datetime: datetime, expected_str: str):
+    """Test that absolute date times are formatted correctly."""
+    actual_datetime, actual_str = try_parse_time(input_str)
+    assert actual_datetime == expected_datetime
+    assert actual_str == expected_str
+
+
+@mark.parametrize(
+    "input_str,expected_timedelta,expected_str",
+    [
+        ("3", timedelta(hours=3), "3 hours ago"),
+        ("3.2", timedelta(hours=3.2), "3.2 hours ago"),
+        ("3.0 hours", timedelta(hours=3), "3 hours ago"),
+        ("2.1 years", timedelta(days=766.5), "2.1 years ago"),
+        ("1 minute", timedelta(minutes=1), "1 minute ago"),
+    ]
+)
+def test_parse_relative_datetime(input_str: str, expected_timedelta: timedelta, expected_str: str):
+    """Test that absolute date times are formatted correctly."""
+    start = datetime.now(tz=pytz.utc)
+    expected_datetime = start - expected_timedelta
+    actual_datetime, actual_str = try_parse_time(input_str)
+    duration = datetime.now(tz=pytz.utc) - start
+    epsilon = abs(actual_datetime - expected_datetime)
+    # We can't check for equality because the result depends on the current time
+    # Instead we assert that the difference is small enough, considering execution time
+    assert duration >= epsilon
+    assert actual_str == expected_str

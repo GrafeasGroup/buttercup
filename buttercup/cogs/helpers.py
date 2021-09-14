@@ -208,7 +208,7 @@ def format_relative_datetime(amount: float, unit_key: str) -> str:
     return f"{amount_str} {unit_str} ago"
 
 
-def try_parse_time(time_str: str) -> Tuple[Optional[datetime], str]:
+def try_parse_time(time_str: str) -> Tuple[datetime, str]:
     # Check for relative time
     # For example "2.4 years"
     rel_time_match = relative_time_regex.match(time_str)
