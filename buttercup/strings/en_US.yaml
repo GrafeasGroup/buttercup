@@ -143,7 +143,7 @@ progress:
       - Is that a 500/24 or is the progress bar just happy to see me?
 heatmap:
   getting_heatmap: |
-    Generating a heatmap for u/{0}...
+    Generating a heatmap for u/{user} {time_str}...
   user_not_found: |
     Sorry, I couldn't find the user u/{0}.
   days:

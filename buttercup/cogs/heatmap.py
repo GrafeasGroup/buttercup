@@ -116,9 +116,10 @@ class Heatmap(Cog):
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
         utc_offset = extract_utc_offset(ctx.author.display_name)
-        msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
-
         after_time, before_time, time_str = parse_time_constraints(after, before)
+        msg = await ctx.send(
+            i18n["heatmap"]["getting_heatmap"].format(user=user, time_str=time_str)
+        )
         from_str = after_time.strftime("%Y-%m-%dT%H:%M:%S") if after_time else None
         until_str = before_time.strftime("%Y-%m-%dT%H:%M:%S") if before_time else None
 
