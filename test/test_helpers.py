@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from pytest import mark
@@ -7,7 +8,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     extract_utc_offset,
     get_progress_bar,
-    join_items_with_and,
+    join_items_with_and, format_absolute_datetime, format_relative_datetime,
 )
 
 
@@ -101,4 +102,40 @@ def test_get_progress_bar(
 def test_join_items_with_and(items: List[str], expected: str) -> None:
     """Test that the items are joined together correctly."""
     actual = join_items_with_and(items)
+    assert actual == expected
+
+
+now = datetime.now()
+
+
+@mark.parametrize(
+    "date,expected",
+    [
+        (datetime(2020, 5, 10, 13, 50, 2, 300), "2020-05-10 13:50:02"),
+        (datetime(2020, 5, 10, 13, 50), "2020-05-10 13:50"),
+        (datetime(2020, 5, 10), "2020-05-10"),
+        (datetime(2020, 5, 10), "2020-05-10"),
+        (datetime(now.year, now.month, now.day, 13, 50, 2, 300), "13:50:02"),
+        (datetime(now.year, now.month, now.day, 13, 50), "13:50"),
+    ]
+)
+def test_format_absolute_datetime(date: datetime, expected: str):
+    """Test that absolute date times are formatted correctly."""
+    actual = format_absolute_datetime(date)
+    assert actual == expected
+
+
+@mark.parametrize(
+    "amount,unit_key,expected",
+    [
+        (3.7, "hours", "3.7 hours ago"),
+        (3.0, "hours", "3 hours ago"),
+        (1, "hours", "1 hour ago"),
+        (2, "weeks", "2 weeks ago"),
+        (5.31234, "years", "5.31234 years ago"),
+    ]
+)
+def test_format_relative_datetime(amount: float, unit_key: str, expected: str):
+    """Test that relative date times are formatted correctly."""
+    actual = format_relative_datetime(amount, unit_key)
     assert actual == expected

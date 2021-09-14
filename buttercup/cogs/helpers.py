@@ -174,8 +174,8 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
     return f"<t:{timestamp:0.0f}:{style}>"
 
 
-def format_datetime(date_time: datetime) -> str:
-    """Returns a human-readable time string."""
+def format_absolute_datetime(date_time: datetime) -> str:
+    """Returns a human-readable absolute time string."""
     now = datetime.now(tz=pytz.utc)
     format_str = ""
     if date_time.date() != now.date():
@@ -192,11 +192,20 @@ def format_datetime(date_time: datetime) -> str:
         time_part = date_time.time()
         # Only add the relevant time parts
         if time_part.second != 0:
-            format_str = " %H:%M:%S"
+            format_str = "%H:%M:%S"
         else:
-            format_str = " %H:%M"
+            format_str = "%H:%M"
 
     return date_time.strftime(format_str)
+
+
+def format_relative_datetime(amount: float, unit_key: str) -> str:
+    """Returns a human-readable relative time string."""
+    # Only show relevant decimal places https://stackoverflow.com/a/51227501
+    amount_str = f"{amount:f}".rstrip("0").rstrip(".")
+    # Only show the plural s if needed
+    unit_str = unit_key if amount != 1.0 else unit_key[:-1]
+    return f"{amount_str} {unit_str} ago"
 
 
 def try_parse_time(time_str: str) -> Tuple[Optional[datetime], str]:
@@ -220,19 +229,15 @@ def try_parse_time(time_str: str) -> Tuple[Optional[datetime], str]:
                     delta = timedelta(**{unit_key: amount})
 
                 absolute_time = datetime.now(tz=pytz.utc) - delta
-                # Only show relevant decimal places https://stackoverflow.com/a/51227501
-                amount_str = f"{amount:f}".rstrip("0").rstrip(".")
-                # Only show the plural s if needed
-                unit_str = unit_key if amount != 1 else unit_key[:-1]
-                time_str = f"{amount_str} {unit_str} ago"
+                relative_time_str = format_relative_datetime(amount, unit_key)
 
-                return absolute_time, time_str
+                return absolute_time, relative_time_str
 
     # Check for absolute time
     # For example "2021-09-03"
     try:
         absolute_time = parser.parse(time_str)
-        absolute_time_str = format_datetime(absolute_time)
+        absolute_time_str = format_absolute_datetime(absolute_time)
         return absolute_time, absolute_time_str
     except ValueError:
         raise TimeParseError(time_str)
