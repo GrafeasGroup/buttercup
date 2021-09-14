@@ -16,7 +16,7 @@ username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 # First an amount and then a unit
-relative_time_regex = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*$")
+relative_time_regex = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*(?:ago\s*)?$")
 # The different time units
 unit_regexes: Dict[str, Pattern] = {
     "seconds": re.compile(r"^s(?:ec(?:ond)?s?)?$"),
@@ -25,7 +25,7 @@ unit_regexes: Dict[str, Pattern] = {
     "hours": re.compile(r"^(?:h(?:ours?)?)?$"),
     "days": re.compile(r"^d(?:ays?)?$"),
     "weeks": re.compile(r"^w(?:eeks?)?$"),
-    "months": re.compile(r"^m(?:months?)?$"),
+    "months": re.compile(r"^m(?:onths?)?$"),
     "years": re.compile(r"^y(?:ears?)?$"),
 }
 
@@ -50,12 +50,13 @@ class BlossomException(RuntimeError):
             self.data = response.json()
 
 
-class TimeParseError(DiscordException):
+class TimeParseError(RuntimeError):
     """Exception raised when a time string is invalid."""
 
     def __init__(self, time_str: str) -> None:
         """Create a new TimeParseError exception."""
         super().__init__()
+        self.message = f"Invalid time string: '{time_str}'"
         self.time_str = time_str
 
 

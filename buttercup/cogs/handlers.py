@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException, NoUsernameException
+from buttercup.cogs.helpers import BlossomException, NoUsernameException, TimeParseError
 from buttercup.strings import translation
 
 i18n = translation()
@@ -33,6 +33,9 @@ class Handlers(commands.Cog):
         elif isinstance(error, NoUsernameException):
             logger.warning("Command executed without providing a username.", ctx)
             await ctx.send(i18n["handlers"]["no_username"])
+        elif isinstance(error, TimeParseError):
+            logger.warning(f"Command executed with an invalid time string '{error.time_str}'.", ctx)
+            await ctx.send(i18n["handlers"]["invalid_time_str"].format(time_str=error.time_str))
         elif isinstance(error, BlossomException):
             tracker_id = uuid.uuid4()
             logger.warning(

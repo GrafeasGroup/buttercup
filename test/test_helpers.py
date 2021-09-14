@@ -172,6 +172,8 @@ def test_parse_absolute_datetime(
         ("3.0 hours", timedelta(hours=3), "3 hours ago"),
         ("2.1 years", timedelta(days=766.5), "2.1 years ago"),
         ("1 minute", timedelta(minutes=1), "1 minute ago"),
+        ("2 weeks ago", timedelta(weeks=2), "2 weeks ago"),
+        ("2 months ago", timedelta(days=60), "2 months ago"),
     ],
 )
 def test_parse_relative_datetime(
