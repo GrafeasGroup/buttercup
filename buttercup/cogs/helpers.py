@@ -1,6 +1,6 @@
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from re import Pattern
 
 import pytz
@@ -24,6 +24,7 @@ unit_regexes: Dict[str, Pattern] = {
     # Hour is the default, so the whole thing is optional
     "hours": re.compile(r"^(?:h(?:ours?)?)?$"),
     "days": re.compile(r"^d(?:ays?)?$"),
+    "weeks": re.compile(r"^w(?:eeks?)?$"),
     "months": re.compile(r"^m(?:months?)?$"),
     "years": re.compile(r"^y(?:ears?)?$"),
 }
@@ -173,7 +174,32 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
     return f"<t:{timestamp:0.0f}:{style}>"
 
 
-def try_parse_time(time_str: str) -> Optional[datetime]:
+def format_datetime(date_time: datetime) -> str:
+    """Returns a human-readable time string."""
+    now = datetime.now(tz=pytz.utc)
+    format_str = ""
+    if date_time.date() != now.date():
+        format_str += "%Y-%m-%d"
+
+        time_part = date_time.time()
+        # Only add the relevant time parts
+        if time_part.hour != 0 or time_part.minute != 0 or time_part.second != 0:
+            if time_part.second != 0:
+                format_str += " %H:%M:%S"
+            else:
+                format_str += " %H:%M"
+    else:
+        time_part = date_time.time()
+        # Only add the relevant time parts
+        if time_part.second != 0:
+            format_str = " %H:%M:%S"
+        else:
+            format_str = " %H:%M"
+
+    return date_time.strftime(format_str)
+
+
+def try_parse_time(time_str: str) -> Tuple[Optional[datetime], str]:
     # Check for relative time
     # For example "2.4 years"
     rel_time_match = relative_time_regex.match(time_str)
@@ -192,26 +218,40 @@ def try_parse_time(time_str: str) -> Optional[datetime]:
                     delta = timedelta(days=365 * amount)
                 else:
                     delta = timedelta(**{unit_key: amount})
-                return datetime.now(tz=pytz.utc) - delta
+
+                absolute_time = datetime.now(tz=pytz.utc) - delta
+                # Only show relevant decimal places https://stackoverflow.com/a/51227501
+                amount_str = f"{amount:f}".rstrip("0").rstrip(".")
+                # Only show the plural s if needed
+                unit_str = unit_key if amount != 1 else unit_key[:-1]
+                time_str = f"{amount_str} {unit_str} ago"
+
+                return absolute_time, time_str
 
     # Check for absolute time
     # For example "2021-09-03"
     try:
-        return parser.parse(time_str)
+        absolute_time = parser.parse(time_str)
+        absolute_time_str = format_datetime(absolute_time)
+        return absolute_time, absolute_time_str
     except ValueError:
         raise TimeParseError(time_str)
 
 
 def parse_time_constraints(
     after_str: Optional[str], before_str: Optional[str]
-) -> Tuple[Optional[datetime], Optional[datetime]]:
+) -> Tuple[Optional[datetime], Optional[datetime], str]:
     """Parse user-given time constraints and convert them to datetimes."""
     after_time = None
     before_time = None
+    after_time_str = "the start"
+    before_time_str = "now"
 
     if after_str is not None and after_str not in ["start", "none"]:
-        after_time = try_parse_time(after_str)
+        after_time, after_time_str = try_parse_time(after_str)
     if before_str is not None and before_str not in ["end", "none"]:
-        before_time = try_parse_time(before_str)
+        before_time, before_time_str = try_parse_time(before_str)
 
-    return after_time, before_time
+    time_str = f"from {after_time_str} until {before_time_str}"
+
+    return after_time, before_time, time_str

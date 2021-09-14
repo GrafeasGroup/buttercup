@@ -118,9 +118,9 @@ class Heatmap(Cog):
         utc_offset = extract_utc_offset(ctx.author.display_name)
         msg = await ctx.send(i18n["heatmap"]["getting_heatmap"].format(user))
 
-        after_time, before_time = parse_time_constraints(after, before)
+        after_time, before_time, time_str = parse_time_constraints(after, before)
         from_str = after_time.strftime("%Y-%m-%dT%H:%M:%S") if after_time else None
-        until_str = before_time.isoformat(timespec="seconds") if before_time else None
+        until_str = before_time.strftime("%Y-%m-%dT%H:%M:%S") if before_time else None
 
         volunteer_response = self.blossom_api.get_user(user)
         if not volunteer_response.status == BlossomStatus.ok:
@@ -159,7 +159,7 @@ class Heatmap(Cog):
 
         await msg.edit(
             content=i18n["heatmap"]["response_message"].format(
-                user, get_duration_str(start)
+                user=user, time_str=time_str, duration=get_duration_str(start)
             ),
             file=heatmap_table,
         )
