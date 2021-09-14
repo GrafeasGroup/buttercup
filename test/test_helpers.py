@@ -8,12 +8,12 @@ from buttercup.cogs.helpers import (
     extract_sub_name,
     extract_username,
     extract_utc_offset,
-    get_progress_bar,
-    join_items_with_and,
     format_absolute_datetime,
     format_relative_datetime,
-    try_parse_time,
+    get_progress_bar,
+    join_items_with_and,
     parse_time_constraints,
+    try_parse_time,
 )
 
 
@@ -124,7 +124,7 @@ now = datetime.now()
         (datetime(now.year, now.month, now.day, 13, 50), "13:50"),
     ],
 )
-def test_format_absolute_datetime(date: datetime, expected: str):
+def test_format_absolute_datetime(date: datetime, expected: str) -> None:
     """Test that absolute date times are formatted correctly."""
     actual = format_absolute_datetime(date)
     assert actual == expected
@@ -140,7 +140,7 @@ def test_format_absolute_datetime(date: datetime, expected: str):
         (5.31234, "years", "5.31234 years ago"),
     ],
 )
-def test_format_relative_datetime(amount: float, unit_key: str, expected: str):
+def test_format_relative_datetime(amount: float, unit_key: str, expected: str) -> None:
     """Test that relative date times are formatted correctly."""
     actual = format_relative_datetime(amount, unit_key)
     assert actual == expected
@@ -157,7 +157,7 @@ def test_format_relative_datetime(amount: float, unit_key: str, expected: str):
 )
 def test_parse_absolute_datetime(
     input_str: str, expected_datetime: datetime, expected_str: str
-):
+) -> None:
     """Test that absolute date times are formatted correctly."""
     actual_datetime, actual_str = try_parse_time(input_str)
     assert actual_datetime == expected_datetime
@@ -178,7 +178,7 @@ def test_parse_absolute_datetime(
 )
 def test_parse_relative_datetime(
     input_str: str, expected_timedelta: timedelta, expected_str: str
-):
+) -> None:
     """Test that absolute date times are formatted correctly."""
     start = datetime.now(tz=pytz.utc)
     expected_datetime = start - expected_timedelta
@@ -213,7 +213,8 @@ def test_parse_absolute_time_constraints(
     expected_after: Optional[datetime],
     expected_before: Optional[datetime],
     expected_str: str,
-):
+) -> None:
+    """Test that absolute time constraints are parsed correctly."""
     actual_after, actual_before, actual_str = parse_time_constraints(
         after_str, before_str
     )
@@ -250,7 +251,8 @@ def test_parse_relative_time_constraints(
     expected_after_delta: Optional[timedelta],
     expected_before_delta: Optional[timedelta],
     expected_str: Optional[datetime],
-):
+) -> None:
+    """Test that relative time constraints are parsed correctly."""
     start = datetime.now(tz=pytz.utc)
     expected_after = (
         start - expected_after_delta if expected_after_delta is not None else None

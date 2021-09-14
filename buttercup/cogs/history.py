@@ -22,7 +22,6 @@ from buttercup.cogs.helpers import (
 )
 from buttercup.strings import translation
 
-
 i18n = translation()
 
 

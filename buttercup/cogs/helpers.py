@@ -1,14 +1,11 @@
 import re
-import time
-from datetime import datetime, timedelta, time
-from re import Pattern
-
-import pytz
-from dateutil import parser
-from typing import List, Optional, Union, Tuple, Dict
+from datetime import datetime, time, timedelta
+from typing import Dict, List, Optional, Tuple, Union
 
 import discord
+import pytz
 from blossom_wrapper import BlossomResponse
+from dateutil import parser
 from discord import DiscordException
 from requests import Response
 
@@ -16,9 +13,11 @@ username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 # First an amount and then a unit
-relative_time_regex = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*(?:ago\s*)?$")
+relative_time_regex = re.compile(
+    r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*(?:ago\s*)?$"
+)
 # The different time units
-unit_regexes: Dict[str, Pattern] = {
+unit_regexes: Dict[str, re.Pattern] = {
     "seconds": re.compile(r"^s(?:ec(?:ond)?s?)?$"),
     "minutes": re.compile(r"^min(?:ute)?s?$"),
     # Hour is the default, so the whole thing is optional
@@ -176,7 +175,7 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
 
 
 def format_absolute_datetime(date_time: datetime) -> str:
-    """Returns a human-readable absolute time string."""
+    """Generate a human-readable absolute time string."""
     now = datetime.now(tz=pytz.utc)
     format_str = ""
     if date_time.date() != now.date():
@@ -201,7 +200,7 @@ def format_absolute_datetime(date_time: datetime) -> str:
 
 
 def format_relative_datetime(amount: float, unit_key: str) -> str:
-    """Returns a human-readable relative time string."""
+    """Generate a human-readable relative time string."""
     # Only show relevant decimal places https://stackoverflow.com/a/51227501
     amount_str = f"{amount:f}".rstrip("0").rstrip(".")
     # Only show the plural s if needed
@@ -210,6 +209,11 @@ def format_relative_datetime(amount: float, unit_key: str) -> str:
 
 
 def try_parse_time(time_str: str) -> Tuple[datetime, str]:
+    """Try to parse the given time string.
+
+    Handles absolute times like '2021-09-14' and relative times like '2 hours ago'.
+    If the string cannot be parsed, a TimeParseError is raised.
+    """
     # Check for relative time
     # For example "2.4 years"
     rel_time_match = relative_time_regex.match(time_str)
