@@ -1,5 +1,6 @@
 import re
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
+from time import mktime
 from typing import Dict, List, Optional, Tuple, Union
 
 import discord
@@ -169,7 +170,7 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
     Style should be one of the timestamp styles defined here:
     https://discord.com/developers/docs/reference#message-formatting-timestamp-styles
     """
-    timestamp = time.mktime(date_time.timetuple())
+    timestamp = mktime(date_time.timetuple())
     # https://discord.com/developers/docs/reference#message-formatting-formats
     return f"<t:{timestamp:0.0f}:{style}>"
 
