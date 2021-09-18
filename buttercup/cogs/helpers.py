@@ -266,3 +266,10 @@ def parse_time_constraints(
     time_str = f"from {after_time_str} until {before_time_str}"
 
     return after_time, before_time, time_str
+
+
+def format_api_time(date_time: Optional[datetime]) -> Optional[str]:
+    """Format a date time to be used as an API parameter."""
+    # For some reason Blossom currently returns a normal HTML page
+    # if an ISO string with a timezone is provided
+    return date_time.strftime("%Y-%m-%dT%H:%M:%S") if date_time else None

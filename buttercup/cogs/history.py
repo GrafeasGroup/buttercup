@@ -16,6 +16,7 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
+    format_api_time,
     get_duration_str,
     get_usernames_from_user_list,
     join_items_with_and,
@@ -129,8 +130,8 @@ class History(Cog):
         # Placeholder until we get the real value from the response
         next_page = "1"
 
-        from_str = after_time.strftime("%Y-%m-%dT%H:%M:%S") if after_time else None
-        until_str = before_time.strftime("%Y-%m-%dT%H:%M:%S") if before_time else None
+        from_str = format_api_time(after_time)
+        until_str = format_api_time(before_time)
 
         while next_page is not None:
             response = self.blossom_api.get(
@@ -182,7 +183,25 @@ class History(Cog):
         time_frame = get_data_granularity(user_gamma)
         user_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
 
-        offset = user_gamma - user_data.count()
+        offset = 0
+        # Calculate the gamma offset if needed
+        if after_time is not None:
+            if before_time is None:
+                # We can calculate the offset from the given data
+                offset = user_gamma - user_data.count()
+            else:
+                # We need to get the offset from the API
+                offset_response = self.blossom_api.get(
+                    "submission/",
+                    params={
+                        "completed_by": user_id,
+                        "until": format_api_time(before_time),
+                        "page_size": 1,
+                    },
+                )
+                if offset_response.status_code == 200:
+                    offset = offset_response.json()["count"]
+
         # Add an up-to-date entry
         user_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
