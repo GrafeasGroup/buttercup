@@ -19,6 +19,7 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     get_usernames_from_user_list,
     join_items_with_and,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -113,7 +114,13 @@ class History(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
-    def get_all_rate_data(self, user_id: int, time_frame: str) -> pd.DataFrame:
+    def get_all_rate_data(
+        self,
+        user_id: int,
+        time_frame: str,
+        after_time: Optional[datetime],
+        before_time: Optional[datetime],
+    ) -> pd.DataFrame:
         """Get all rate data for the given user."""
         page_size = 500
 
@@ -121,6 +128,9 @@ class History(Cog):
         page = 1
         # Placeholder until we get the real value from the response
         next_page = "1"
+
+        from_str = after_time.strftime("%Y-%m-%dT%H:%M:%S") if after_time else None
+        until_str = before_time.strftime("%Y-%m-%dT%H:%M:%S") if before_time else None
 
         while next_page is not None:
             response = self.blossom_api.get(
@@ -130,6 +140,8 @@ class History(Cog):
                     "page": page,
                     "page_size": page_size,
                     "time_frame": time_frame,
+                    "from": from_str,
+                    "until": until_str,
                 },
             )
             if response.status_code != 200:
@@ -151,7 +163,9 @@ class History(Cog):
         user_data = add_zero_rates(user_data, time_frame)
         return user_data
 
-    def get_user_history(self, user: str) -> Tuple[int, pd.DataFrame]:
+    def get_user_history(
+        self, user: str, after_time: Optional[datetime], before_time: Optional[datetime]
+    ) -> Tuple[int, pd.DataFrame]:
         """Get a data frame representing the history of the user.
 
         :returns: The gamma of the user and their history data.
@@ -166,12 +180,13 @@ class History(Cog):
 
         # Get all rate data
         time_frame = get_data_granularity(user_gamma)
-        user_data = self.get_all_rate_data(user_id, time_frame)
+        user_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
 
+        offset = user_gamma - user_data.count()
         # Add an up-to-date entry
         user_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
-        user_data = user_data.assign(gamma=user_data.expanding(1).sum())
+        user_data = user_data.assign(gamma=user_data.expanding(1).sum() + offset)
 
         return user_gamma, user_data
 
@@ -186,14 +201,33 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="after",
+                description="The start date for the history data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the history data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def _history(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
+    async def _history(
+        self,
+        ctx: SlashContext,
+        users: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Get the transcription history of the user."""
         start = datetime.now()
 
         users = get_usernames_from_user_list(users, ctx.author)
         usernames = join_items_with_and([f"u/{user}" for user in users])
+        after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
@@ -234,7 +268,7 @@ class History(Cog):
                     )
                 )
 
-            user_gamma, user_data = self.get_user_history(user)
+            user_gamma, user_data = self.get_user_history(user, after_time, before_time)
             user_gammas.append(user_gamma)
 
             # Plot the graph
@@ -260,7 +294,9 @@ class History(Cog):
             file=discord_file,
         )
 
-    def get_user_rate(self, user: str) -> pd.DataFrame:
+    def get_user_rate(
+        self, user: str, after_time: Optional[datetime], before_time: Optional[datetime]
+    ) -> pd.DataFrame:
         """Get a data frame representing the transcription rate of the user.
 
         :returns: The rate data of the user.
@@ -273,7 +309,7 @@ class History(Cog):
         user_id = user_response.data["id"]
 
         # Get all rate data
-        user_data = self.get_all_rate_data(user_id, "day")
+        user_data = self.get_all_rate_data(user_id, "day", after_time, before_time)
 
         # Add an up-to-date entry
         today = datetime.now(tz=tzutc()).replace(
@@ -295,14 +331,33 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="after",
+                description="The start date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def _rate(self, ctx: SlashContext, users: Optional[str] = None,) -> None:
+    async def _rate(
+        self,
+        ctx: SlashContext,
+        users: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Get the transcription rate of the user."""
         start = datetime.now()
 
         users = get_usernames_from_user_list(users, ctx.author)
         usernames = join_items_with_and([f"u/{user}" for user in users])
+        after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
@@ -343,7 +398,7 @@ class History(Cog):
                     )
                 )
 
-            user_data = self.get_user_rate(user)
+            user_data = self.get_user_rate(user, after_time, before_time)
 
             max_rates.append(user_data["count"].max())
 
