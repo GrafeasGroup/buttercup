@@ -192,17 +192,6 @@ pi_rules:
     I automatically detected some rules regarding personal information! ({0})
   embed_title: |
     PI Rules for r/{0}
-history:
-    getting_history_single: |
-      Creating the history graph for u/{user}...
-    getting_history_multi: |
-      Creating the history graph for {users} ({count}/{total})...
-    plot_title_single: History of u/{user}
-    plot_title_multi: History of Multiple Users
-    plot_xlabel: Time
-    plot_ylabel: Gamma
-    response_message:
-      Here is the history graph! ({duration})
 partner:
   getting_partner_list: |
     Getting the list of our partners...
@@ -231,14 +220,25 @@ partner:
   embed_partner_status_title: Partner Status of r/{subreddit}
   embed_partner_status_description: |
     {status}
+history:
+    getting_history_single: |
+      Creating the history graph for u/{user} {time_str}...
+    getting_history_multi: |
+      Creating the history graph for {users} {time_str} ({count}/{total})...
+    plot_title_single: History of u/{user}
+    plot_title_multi: History of Multiple Users
+    plot_xlabel: Time
+    plot_ylabel: Gamma
+    response_message:
+      Here is the history graph for {usernames} {time_str}! ({duration})
 rate:
     getting_rate_single: |
-      Creating the transcription rate graph for u/{user}...
+      Creating the transcription rate graph for u/{user} {time_str}...
     getting_rate_multi: |
-      Creating the transcription rate graph for {users} ({count}/{total})...
+      Creating the transcription rate graph for {users} {time_str} ({count}/{total})...
     plot_title_single: Transcription Rate of u/{user}
     plot_title_multi: Transcription Rate of Multiple Users
     plot_xlabel: Time
     plot_ylabel: Transcription Rate
     response_message:
-      Here is the transcription rate graph! ({duration})
+      Here is the transcription rate graph for {usernames} {time_str}! ({duration})

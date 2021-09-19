@@ -266,12 +266,12 @@ class History(Cog):
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["history"]["getting_history_single"].format(user=users[0])
+                i18n["history"]["getting_history_single"].format(user=users[0], time_str=time_str)
             )
         else:
             msg = await ctx.send(
                 i18n["history"]["getting_history_multi"].format(
-                    users=usernames, count=0, total=len(users)
+                    users=usernames, time_str=time_str, count=0, total=len(users)
                 )
             )
 
@@ -322,6 +322,8 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["history"]["response_message"].format(
+                usernames=usernames,
+                time_str=time_str,
                 duration=get_duration_str(start)
             ),
             file=discord_file,
@@ -396,12 +398,12 @@ class History(Cog):
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["rate"]["getting_rate_single"].format(user=users[0])
+                i18n["rate"]["getting_rate_single"].format(user=users[0], time_str=time_str)
             )
         else:
             msg = await ctx.send(
                 i18n["rate"]["getting_rate_multi"].format(
-                    users=usernames, count=0, total=len(users)
+                    users=usernames, time_str=time_str, count=0, total=len(users)
                 )
             )
 
@@ -458,6 +460,8 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["rate"]["response_message"].format(
+                usernames=usernames,
+                time_str=time_str,
                 duration=get_duration_str(start)
             ),
             file=discord_file,
