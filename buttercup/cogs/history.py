@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from dateutil import parser
 from dateutil.tz import tzutc
@@ -27,23 +28,35 @@ from buttercup.strings import translation
 i18n = translation()
 
 
-def get_data_granularity(total_gamma: int) -> str:
+def get_data_granularity(user: Dict, after: Optional[datetime], before: Optional[datetime]) -> str:
     """Determine granularity of the graph.
 
     It should be as detailed as possible, but only require 1 API call in the best case.
     """
     # TODO: Adjust this when the Blossom dates have been fixed
-    if total_gamma <= 500:
+    now = datetime.now(tz=pytz.utc)
+    date_joined = parser.parse(user["date_joined"])
+    total_delta = now - date_joined
+    total_hours = total_delta.total_seconds() / 60
+    # The time delta that the data is calculated on
+    relevant_delta = (before or now) - (after or date_joined)
+    relevant_hours = relevant_delta.total_seconds() / 60
+    relevant_days = relevant_hours / 24
+    time_factor = relevant_hours / total_hours
+
+    total_gamma: int = user["gamma"]
+    # The expected gamma in the relevant time frame
+    adjusted_gamma = total_gamma * time_factor
+
+    if adjusted_gamma <= 500:
         return "none"
-    if total_gamma <= 1000:
+    if relevant_hours * 0.3 <= 500 or adjusted_gamma <= 1500:
+        # We estimate that the user is only active in one third of the hours
+        # And the user is expected to complete 3 transcriptions within the same hour on average
         return "hour"
-    elif total_gamma <= 5000:
-        return "day"
-    elif total_gamma <= 10000:
-        return "week"
-    elif total_gamma <= 50000:
-        return "month"
-    return "year"
+
+    # Don't be less accurate than a day, it loses too much detail
+    return "day"
 
 
 def get_timedelta_from_time_frame(time_frame: Optional[str]) -> timedelta:
@@ -165,22 +178,23 @@ class History(Cog):
         return user_data
 
     def get_user_history(
-        self, user: str, after_time: Optional[datetime], before_time: Optional[datetime]
+        self, user_data: str, after_time: Optional[datetime], before_time: Optional[datetime]
     ) -> Tuple[int, pd.DataFrame]:
         """Get a data frame representing the history of the user.
 
         :returns: The gamma of the user and their history data.
         """
         # First, get the total gamma for the user
-        user_response = self.blossom_api.get_user(user)
+        user_response = self.blossom_api.get_user(user_data)
         if user_response.status != BlossomStatus.ok:
             raise BlossomException(user_response)
 
-        user_gamma = user_response.data["gamma"]
-        user_id = user_response.data["id"]
+        user_data = user_response.data
+        user_gamma = user_data["gamma"]
+        user_id = user_data["id"]
 
         # Get all rate data
-        time_frame = get_data_granularity(user_gamma)
+        time_frame = get_data_granularity(user_response.data, after_time, before_time)
         user_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
 
         offset = 0
