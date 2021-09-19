@@ -28,7 +28,9 @@ from buttercup.strings import translation
 i18n = translation()
 
 
-def get_data_granularity(user: Dict, after: Optional[datetime], before: Optional[datetime]) -> str:
+def get_data_granularity(
+    user: Dict, after: Optional[datetime], before: Optional[datetime]
+) -> str:
     """Determine granularity of the graph.
 
     It should be as detailed as possible, but only require 1 API call in the best case.
@@ -41,7 +43,6 @@ def get_data_granularity(user: Dict, after: Optional[datetime], before: Optional
     # The time delta that the data is calculated on
     relevant_delta = (before or now) - (after or date_joined)
     relevant_hours = relevant_delta.total_seconds() / 60
-    relevant_days = relevant_hours / 24
     time_factor = relevant_hours / total_hours
 
     total_gamma: int = user["gamma"]
@@ -52,7 +53,7 @@ def get_data_granularity(user: Dict, after: Optional[datetime], before: Optional
         return "none"
     if relevant_hours * 0.3 <= 500 or adjusted_gamma <= 1500:
         # We estimate that the user is only active in one third of the hours
-        # And the user is expected to complete 3 transcriptions within the same hour on average
+        # The user is expected to complete 3 transcriptions within the same hour
         return "hour"
 
     # Don't be less accurate than a day, it loses too much detail
@@ -178,7 +179,10 @@ class History(Cog):
         return user_data
 
     def get_user_history(
-        self, user_data: str, after_time: Optional[datetime], before_time: Optional[datetime]
+        self,
+        user_data: str,
+        after_time: Optional[datetime],
+        before_time: Optional[datetime],
     ) -> Tuple[int, pd.DataFrame]:
         """Get a data frame representing the history of the user.
 
@@ -266,7 +270,9 @@ class History(Cog):
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["history"]["getting_history_single"].format(user=users[0], time_str=time_str)
+                i18n["history"]["getting_history_single"].format(
+                    user=users[0], time_str=time_str
+                )
             )
         else:
             msg = await ctx.send(
@@ -322,9 +328,7 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["history"]["response_message"].format(
-                usernames=usernames,
-                time_str=time_str,
-                duration=get_duration_str(start)
+                usernames=usernames, time_str=time_str, duration=get_duration_str(start)
             ),
             file=discord_file,
         )
@@ -398,7 +402,9 @@ class History(Cog):
         # We'll later edit this message with the actual content
         if len(users) == 1:
             msg = await ctx.send(
-                i18n["rate"]["getting_rate_single"].format(user=users[0], time_str=time_str)
+                i18n["rate"]["getting_rate_single"].format(
+                    user=users[0], time_str=time_str
+                )
             )
         else:
             msg = await ctx.send(
@@ -460,9 +466,7 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["rate"]["response_message"].format(
-                usernames=usernames,
-                time_str=time_str,
-                duration=get_duration_str(start)
+                usernames=usernames, time_str=time_str, duration=get_duration_str(start)
             ),
             file=discord_file,
         )
