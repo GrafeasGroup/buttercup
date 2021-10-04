@@ -149,10 +149,22 @@ def test_format_relative_datetime(amount: float, unit_key: str, expected: str) -
 @mark.parametrize(
     "input_str,expected_datetime,expected_str",
     [
-        ("2020-03-04 10:13", datetime(2020, 3, 4, 10, 13), "2020-03-04 10:13"),
-        ("2020-03-04T10:13", datetime(2020, 3, 4, 10, 13), "2020-03-04 10:13"),
-        ("2020-03-04", datetime(2020, 3, 4), "2020-03-04"),
-        ("10:13", datetime(now.year, now.month, now.day, 10, 13), "10:13"),
+        (
+            "2020-03-04 10:13",
+            datetime(2020, 3, 4, 10, 13, tzinfo=pytz.utc),
+            "2020-03-04 10:13",
+        ),
+        (
+            "2020-03-04T10:13",
+            datetime(2020, 3, 4, 10, 13, tzinfo=pytz.utc),
+            "2020-03-04 10:13",
+        ),
+        ("2020-03-04", datetime(2020, 3, 4, tzinfo=pytz.utc), "2020-03-04"),
+        (
+            "10:13",
+            datetime(now.year, now.month, now.day, 10, 13, tzinfo=pytz.utc),
+            "10:13",
+        ),
     ],
 )
 def test_parse_absolute_datetime(
@@ -197,12 +209,18 @@ def test_parse_relative_datetime(
         (None, None, None, None, "from the start until now"),
         ("none", "none", None, None, "from the start until now"),
         ("start", "end", None, None, "from the start until now"),
-        ("2020-01-08", None, datetime(2020, 1, 8), None, "from 2020-01-08 until now"),
+        (
+            "2020-01-08",
+            None,
+            datetime(2020, 1, 8, tzinfo=pytz.utc),
+            None,
+            "from 2020-01-08 until now",
+        ),
         (
             "2020-01-08",
             "2021-09-13T13:20",
-            datetime(2020, 1, 8),
-            datetime(2021, 9, 13, 13, 20),
+            datetime(2020, 1, 8, tzinfo=pytz.utc),
+            datetime(2021, 9, 13, 13, 20, tzinfo=pytz.utc),
             "from 2020-01-08 until 2021-09-13 13:20",
         ),
     ],

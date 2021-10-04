@@ -120,8 +120,8 @@ class Heatmap(Cog):
         msg = await ctx.send(
             i18n["heatmap"]["getting_heatmap"].format(user=user, time_str=time_str)
         )
-        from_str = after_time.strftime("%Y-%m-%dT%H:%M:%S") if after_time else None
-        until_str = before_time.strftime("%Y-%m-%dT%H:%M:%S") if before_time else None
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
 
         volunteer_response = self.blossom_api.get_user(user)
         if not volunteer_response.status == BlossomStatus.ok:

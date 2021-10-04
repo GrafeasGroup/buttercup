@@ -243,6 +243,8 @@ def try_parse_time(time_str: str) -> Tuple[datetime, str]:
     # For example "2021-09-03"
     try:
         absolute_time = parser.parse(time_str)
+        # Make sure it has a timezone
+        absolute_time = absolute_time.replace(tzinfo=absolute_time.tzinfo or pytz.utc)
         absolute_time_str = format_absolute_datetime(absolute_time)
         return absolute_time, absolute_time_str
     except ValueError:
