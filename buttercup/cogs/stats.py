@@ -126,6 +126,7 @@ class Stats(Cog):
             params={
                 "completed_by": volunteer_data["id"],
                 "ordering": "-complete_time",
+                "complete_time__isnull": False,
                 "page_size": 1,
                 "page": 1,
             },
