@@ -61,10 +61,6 @@ async def send_rules_message(
     """Send an embed containing the rules to the user."""
     embed = Embed(title=i18n[localization_key]["embed_title"].format(subreddit))
 
-    if len(rules) == 0:
-        await msg.edit(content=i18n[localization_key]["no_rules"].format(subreddit))
-        return
-
     for rule in rules:
         # The value field is not allowed to be a blank string
         # So we just repeat the name of the rule if it is not provided
@@ -100,14 +96,26 @@ class Rules(Cog):
         # We will edit this later with the actual content
         msg = await ctx.send(i18n[localization_key]["getting_rules"].format(sub_name))
         try:
+            # Get the subreddit and rules
             sub = await self.reddit_api.subreddit(subreddit)
-            return await send_rules_message(
-                msg,
-                [rule async for rule in sub.rules if filter_function(rule)],
-                sub_name,
-                start,
-                localization_key,
+            rules = [rule async for rule in sub.rules]
+            if len(rules) == 0:
+                await msg.edit(
+                    content=i18n[localization_key]["no_rules"].format(subreddit)
+                )
+                return
+            # Filter out relevant rules
+            filtered_rules = [rule for rule in rules if filter_function(rule)]
+            if len(filtered_rules) == 0:
+                await msg.edit(
+                    content=i18n[localization_key]["no_filter_rules"].format(subreddit)
+                )
+                return
+
+            await send_rules_message(
+                msg, filtered_rules, sub_name, start, localization_key,
             )
+            return
         except Redirect:
             # The subreddit does not exist
             await msg.edit(
