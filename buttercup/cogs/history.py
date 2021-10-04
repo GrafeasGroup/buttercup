@@ -17,7 +17,6 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
-    format_api_time,
     get_duration_str,
     get_usernames_from_user_list,
     join_items_with_and,
@@ -144,8 +143,8 @@ class History(Cog):
         # Placeholder until we get the real value from the response
         next_page = "1"
 
-        from_str = format_api_time(after_time)
-        until_str = format_api_time(before_time)
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
 
         while next_page is not None:
             response = self.blossom_api.get(
@@ -213,7 +212,7 @@ class History(Cog):
                     "submission/",
                     params={
                         "completed_by": user_id,
-                        "until": format_api_time(before_time),
+                        "until": before_time.isoformat(),
                         "page_size": 1,
                     },
                 )

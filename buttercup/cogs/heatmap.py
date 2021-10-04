@@ -15,7 +15,6 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     extract_username,
     extract_utc_offset,
-    format_api_time,
     get_duration_str,
     parse_time_constraints,
 )
@@ -121,8 +120,8 @@ class Heatmap(Cog):
         msg = await ctx.send(
             i18n["heatmap"]["getting_heatmap"].format(user=user, time_str=time_str)
         )
-        from_str = format_api_time(after_time)
-        until_str = format_api_time(before_time)
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
 
         volunteer_response = self.blossom_api.get_user(user)
         if not volunteer_response.status == BlossomStatus.ok:
