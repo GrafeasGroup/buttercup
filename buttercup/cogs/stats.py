@@ -63,9 +63,27 @@ class Stats(Cog):
         self.blossom_api = blossom_api
 
     @cog_ext.cog_slash(
-        name="stats", description="Get stats about all users.",
+        name="stats",
+        description="Get stats about one or all users.",
+        options=[
+            create_option(
+                name="username",
+                description="The username to get the stats for. "
+                + "Use 'all' to get the global stats.",
+                option_type=3,
+                required=False,
+            )
+        ],
     )
-    async def _stats(self, ctx: SlashContext) -> None:
+    async def _stats(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+        """Get the stats about one or all users."""
+        if username is not None and username.strip().casefold() == "all":
+            # If "all" is provided as username, return the global stats
+            await self._all_stats(ctx)
+        else:
+            await self._user_stats(ctx, username)
+
+    async def _all_stats(self, ctx: SlashContext) -> None:
         """Get stats about all users."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
@@ -90,22 +108,10 @@ class Stats(Cog):
             embed=Embed(title=i18n["stats"]["embed_title"], description=description),
         )
 
-    @cog_ext.cog_slash(
-        name="userstats",
-        description="Get stats about a user.",
-        options=[
-            create_option(
-                name="username",
-                description="The username to get the stats for.",
-                option_type=3,
-                required=False,
-            )
-        ],
-    )
     async def _user_stats(
         self, ctx: SlashContext, username: Optional[str] = None
     ) -> None:
-        """Get stats about a user."""
+        """Get stats about a single user."""
         start = datetime.now(tz=pytz.utc)
         user = username or extract_username(ctx.author.display_name)
         # Send a first message to show that the bot is responsive.
