@@ -311,13 +311,22 @@ class History(Cog):
 
             user_gamma, user_data = self.get_user_history(user, after_time, before_time)
             user_gammas.append(user_gamma)
+            color = ranks[index]["color"]
+            last_point = user_data.iloc[-1]
 
             # Plot the graph
             ax.plot(
-                "date",
-                "gamma",
-                data=user_data.reset_index(),
-                color=ranks[index]["color"],
+                "date", "gamma", data=user_data.reset_index(), color=color,
+            )
+            # At a point for the last value
+            ax.scatter(
+                last_point.name, last_point.at["gamma"], color=color, s=4,
+            )
+            # Label the last value
+            ax.annotate(
+                int(last_point.at["gamma"]),
+                xy=(last_point.name, last_point.at["gamma"]),
+                color=color,
             )
 
         # Show ranks when you are close to them already
