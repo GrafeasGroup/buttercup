@@ -1,3 +1,4 @@
+import traceback
 import uuid
 
 from discord.errors import DiscordException
@@ -27,6 +28,10 @@ class Handlers(commands.Cog):
         self, ctx: commands.Context, error: DiscordException
     ) -> None:
         """Log that a command has errored and provide the user with feedback."""
+        trace = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+
         if isinstance(error, commands.CheckFailure):
             logger.warning("An unauthorized Command was performed.", ctx)
             await ctx.send(i18n["handlers"]["not_authorized"])
@@ -50,7 +55,9 @@ class Handlers(commands.Cog):
             )
         else:
             tracker_id = uuid.uuid4()
-            logger.warning(f"[{tracker_id}] {type(error).__name__}: {str(error)}", ctx)
+            logger.warning(
+                f"[{tracker_id}] {type(error).__name__}: {str(error)}\n{trace}", ctx
+            )
             await ctx.send(
                 i18n["handlers"]["unknown_error"].format(tracker_id=tracker_id)
             )
