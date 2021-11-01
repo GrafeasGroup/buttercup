@@ -455,14 +455,26 @@ class History(Cog):
 
             user_data = self.get_user_rate(user, after_time, before_time)
 
-            max_rates.append(user_data["count"].max())
+            max_rate = user_data["count"].max()
+            max_rates.append(max_rate)
+            max_rate_point = user_data[user_data["count"] == max_rate].iloc[0]
+            print(max_rate_point)
+
+            color = ranks[index]["color"]
 
             # Plot the graph
             ax.plot(
-                "date",
-                "count",
-                data=user_data.reset_index(),
-                color=ranks[index]["color"],
+                "date", "count", data=user_data.reset_index(), color=color,
+            )
+            # At a point for the max value
+            ax.scatter(
+                max_rate_point.name, max_rate_point.at["count"], color=color, s=4,
+            )
+            # Label the last value
+            ax.annotate(
+                int(max_rate_point.at["count"]),
+                xy=(max_rate_point.name, max_rate_point.at["count"]),
+                color=color,
             )
 
         # A milestone at every 100 rate
