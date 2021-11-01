@@ -302,7 +302,10 @@ class History(Cog):
             if len(users) > 1:
                 await msg.edit(
                     content=i18n["history"]["getting_history_multi"].format(
-                        users=usernames, count=index + 1, total=len(users)
+                        users=usernames,
+                        count=index + 1,
+                        total=len(users),
+                        time_str=time_str,
                     )
                 )
 
@@ -434,7 +437,10 @@ class History(Cog):
             if len(users) > 1:
                 await msg.edit(
                     content=i18n["rate"]["getting_rate_multi"].format(
-                        users=usernames, count=index + 1, total=len(users)
+                        users=usernames,
+                        count=index + 1,
+                        total=len(users),
+                        time_str=time_str,
                     )
                 )
 
