@@ -205,7 +205,7 @@ class History(Cog):
         if after_time is not None:
             if before_time is None:
                 # We can calculate the offset from the given data
-                offset = user_gamma - user_data.count()
+                offset = user_gamma - user_data.sum()
             else:
                 # We need to get the offset from the API
                 offset_response = self.blossom_api.get(
