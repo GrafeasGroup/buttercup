@@ -122,6 +122,15 @@ def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     return File(history_plot, file_name)
 
 
+def get_history_data_from_rate_data(rate_data: pd.DataFrame, offset: int) -> pd.DataFrame:
+    """Aggregate the rate data to history data.
+
+    :param rate_data: The rate data to calculate the history data from.
+    :param offset: The gamma offset at the first point of the graph.
+    """
+    return rate_data.assign(gamma=rate_data.expanding(1).sum() + offset)
+
+
 class History(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the History cog."""
@@ -235,7 +244,7 @@ class History(Cog):
         # Add an up-to-date entry
         rate_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
-        history_data = rate_data.assign(gamma=rate_data.expanding(1).sum() + offset)
+        history_data = get_history_data_from_rate_data(rate_data, offset)
 
         return user_data["gamma"], history_data
 
