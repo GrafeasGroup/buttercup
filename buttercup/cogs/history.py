@@ -201,23 +201,27 @@ class History(Cog):
         user_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
 
         offset = 0
-        # Calculate the gamma offset if needed
-        if after_time is not None:
-            if before_time is None:
-                # We can calculate the offset from the given data
-                offset = user_gamma - user_data.sum()
-            else:
-                # We need to get the offset from the API
-                offset_response = self.blossom_api.get(
-                    "submission/",
-                    params={
-                        "completed_by": user_id,
-                        "until": before_time.isoformat(),
-                        "page_size": 1,
-                    },
-                )
-                if offset_response.status_code == 200:
-                    offset = offset_response.json()["count"]
+        # Calculate the gamma offset
+        # Note: We always need to do this, because it might be the case that some
+        # transcriptions don't have a date set
+        if before_time is not None:
+            # We need to get the offset from the API
+            offset_response = self.blossom_api.get(
+                "submission/",
+                params={
+                    "completed_by": user_id,
+                    "from": before_time.isoformat(),
+                    "page_size": 1,
+                },
+            )
+            if offset_response.status_code == 200:
+                # We still need to calculate based on the total gamma
+                # It may be the case that not all transcriptions have a date set
+                # Then they are not included in the data nor in the API response
+                offset = user_gamma - user_data.sum() - offset_response.json()["count"]
+        else:
+            # We can calculate the offset from the given data
+            offset = user_gamma - user_data.sum()
 
         # Add an up-to-date entry
         user_data.loc[datetime.now(tz=tzutc())] = [0]
