@@ -138,7 +138,7 @@ class History(Cog):
         """Get all rate data for the given user."""
         page_size = 500
 
-        user_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
+        rate_data = pd.DataFrame(columns=["date", "count"]).set_index("date")
         page = 1
         # Placeholder until we get the real value from the response
         next_page = "1"
@@ -161,25 +161,34 @@ class History(Cog):
             if response.status_code != 200:
                 raise BlossomException(response)
 
-            rate_data = response.json()["results"]
+            new_data = response.json()["results"]
             next_page = response.json()["next"]
 
-            new_frame = pd.DataFrame.from_records(rate_data)
+            new_frame = pd.DataFrame.from_records(new_data)
             # Convert date strings to datetime objects
             new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
             # Add the data to the list
-            user_data = user_data.append(new_frame.set_index("date"))
+            rate_data = rate_data.append(new_frame.set_index("date"))
 
             # Continue with the next page
             page += 1
 
         # Add the missing zero entries
-        user_data = add_zero_rates(user_data, time_frame)
-        return user_data
+        rate_data = add_zero_rates(rate_data, time_frame)
+        return rate_data
+
+    def calculate_history_offset(
+        self,
+        user_data: Dict,
+        rate_data: pd.DataFrame,
+        after_time: Optional[datetime],
+        before_time: Optional[datetime],
+    ):
+        pass
 
     def get_user_history(
         self,
-        user_data: str,
+        username: str,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
     ) -> Tuple[int, pd.DataFrame]:
@@ -188,7 +197,7 @@ class History(Cog):
         :returns: The gamma of the user and their history data.
         """
         # First, get the total gamma for the user
-        user_response = self.blossom_api.get_user(user_data)
+        user_response = self.blossom_api.get_user(username)
         if user_response.status != BlossomStatus.ok:
             raise BlossomException(user_response)
 
@@ -197,8 +206,8 @@ class History(Cog):
         user_id = user_data["id"]
 
         # Get all rate data
-        time_frame = get_data_granularity(user_response.data, after_time, before_time)
-        user_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
+        time_frame = get_data_granularity(user_data, after_time, before_time)
+        rate_data = self.get_all_rate_data(user_id, time_frame, after_time, before_time)
 
         offset = 0
         # Calculate the gamma offset
@@ -218,17 +227,17 @@ class History(Cog):
                 # We still need to calculate based on the total gamma
                 # It may be the case that not all transcriptions have a date set
                 # Then they are not included in the data nor in the API response
-                offset = user_gamma - user_data.sum() - offset_response.json()["count"]
+                offset = user_gamma - rate_data.sum() - offset_response.json()["count"]
         else:
             # We can calculate the offset from the given data
-            offset = user_gamma - user_data.sum()
+            offset = user_gamma - rate_data.sum()
 
         # Add an up-to-date entry
-        user_data.loc[datetime.now(tz=tzutc())] = [0]
+        rate_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
-        user_data = user_data.assign(gamma=user_data.expanding(1).sum() + offset)
+        history_data = rate_data.assign(gamma=rate_data.expanding(1).sum() + offset)
 
-        return user_gamma, user_data
+        return user_gamma, history_data
 
     @cog_ext.cog_slash(
         name="history",
@@ -313,14 +322,14 @@ class History(Cog):
                     )
                 )
 
-            user_gamma, user_data = self.get_user_history(user, after_time, before_time)
+            user_gamma, history_data = self.get_user_history(user, after_time, before_time)
             user_gammas.append(user_gamma)
             color = ranks[index]["color"]
-            last_point = user_data.iloc[-1]
+            last_point = history_data.iloc[-1]
 
             # Plot the graph
             ax.plot(
-                "date", "gamma", data=user_data.reset_index(), color=color,
+                "date", "gamma", data=history_data.reset_index(), color=color,
             )
             # At a point for the last value
             ax.scatter(
@@ -363,16 +372,16 @@ class History(Cog):
         user_id = user_response.data["id"]
 
         # Get all rate data
-        user_data = self.get_all_rate_data(user_id, "day", after_time, before_time)
+        rate_data = self.get_all_rate_data(user_id, "day", after_time, before_time)
 
         # Add an up-to-date entry
         today = datetime.now(tz=tzutc()).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
-        if today not in user_data.index:
-            user_data.loc[today] = [0]
+        if today not in rate_data.index:
+            rate_data.loc[today] = [0]
 
-        return user_data
+        return rate_data
 
     @cog_ext.cog_slash(
         name="rate",
