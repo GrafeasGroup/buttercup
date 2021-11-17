@@ -17,28 +17,11 @@ from buttercup.cogs.helpers import (
     extract_username,
     get_discord_time_str,
     get_duration_str,
-    get_progress_bar,
+    get_progress_bar, get_rank, get_rgb_from_hex,
 )
 from buttercup.strings import translation
 
 i18n = translation()
-
-
-def get_rank(gamma: int) -> Dict[str, Union[str, int]]:
-    """Get the rank matching the gamma score."""
-    for rank in reversed(ranks):
-        if gamma >= rank["threshold"]:
-            return rank
-
-    return {"name": "Visitor", "threshold": 0, "color": "#000000"}
-
-
-def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
-    """Get the rgb values from a hex string."""
-    # Adopted from
-    # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
-    hx = hex_str.lstrip("#")
-    return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
 
 
 def get_motivational_message(user: str, progress_count: int) -> str:

@@ -9,6 +9,8 @@ from dateutil import parser
 from discord import DiscordException, User
 from requests import Response
 
+from buttercup.cogs import ranks
+
 username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
@@ -281,3 +283,20 @@ def parse_time_constraints(
     time_str = f"from {after_time_str} until {before_time_str}"
 
     return after_time, before_time, time_str
+
+
+def get_rank(gamma: int) -> Dict[str, Union[str, int]]:
+    """Get the rank matching the gamma score."""
+    for rank in reversed(ranks):
+        if gamma >= rank["threshold"]:
+            return rank
+
+    return {"name": "Visitor", "threshold": 0, "color": "#000000"}
+
+
+def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
+    """Get the rgb values from a hex string."""
+    # Adopted from
+    # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
+    hx = hex_str.lstrip("#")
+    return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)

@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 
+import discord
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
@@ -23,7 +24,7 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     get_usernames_from_user_list,
     join_items_with_and,
-    parse_time_constraints,
+    parse_time_constraints, get_rank, get_rgb_from_hex,
 )
 from buttercup.strings import translation
 
@@ -638,6 +639,9 @@ class History(Cog):
                 time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
             )
 
+        # Determine the color of the target rank
+        color = get_rank(goal_gamma)["color"]
+
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
                 duration=get_duration_str(start)
@@ -645,6 +649,7 @@ class History(Cog):
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=user),
                 description=description,
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
         )
 
