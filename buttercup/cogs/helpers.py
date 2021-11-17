@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 from time import mktime
 from typing import Dict, List, Optional, Tuple, Union
 
-import discord
 import pytz
 from blossom_wrapper import BlossomResponse
 from dateutil import parser
-from discord import DiscordException
+from discord import DiscordException, User
 from requests import Response
+
+from buttercup.cogs import ranks
 
 username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
@@ -34,6 +35,16 @@ class NoUsernameException(DiscordException):
     """Exception raised when the username was not provided."""
 
     pass
+
+
+class InvalidArgumentException(DiscordException):
+    """Exception raised when an argument has an invalid value."""
+
+    def __init__(self, argument: str, value: str) -> None:
+        """Create a new argument exception."""
+        super().__init__()
+        self.argument = argument
+        self.value = value
 
 
 class BlossomException(RuntimeError):
@@ -69,7 +80,7 @@ def extract_username(display_name: str) -> str:
 
 
 def get_usernames_from_user_list(
-    user_list: Optional[str], author: Optional[discord.User], limit: int = 5
+    user_list: Optional[str], author: Optional[User], limit: int = 5
 ) -> List[str]:
     """Get the individual usernames from a list of users.
 
@@ -110,7 +121,11 @@ def extract_utc_offset(display_name: str) -> int:
 def get_duration_str(start: datetime) -> str:
     """Get the processing duration based on the start time."""
     duration = datetime.now(tz=start.tzinfo) - start
+    return get_timedelta_str(duration)
 
+
+def get_timedelta_str(duration: timedelta) -> str:
+    """Format the given timedelta."""
     if duration.days >= 365:
         duration_years = duration.days / 365
         return f"{duration_years:.1f} years"
@@ -268,3 +283,20 @@ def parse_time_constraints(
     time_str = f"from {after_time_str} until {before_time_str}"
 
     return after_time, before_time, time_str
+
+
+def get_rank(gamma: int) -> Dict[str, Union[str, int]]:
+    """Get the rank matching the gamma score."""
+    for rank in reversed(ranks):
+        if gamma >= rank["threshold"]:
+            return rank
+
+    return {"name": "Visitor", "threshold": 0, "color": "#000000"}
+
+
+def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
+    """Get the rgb values from a hex string."""
+    # Adopted from
+    # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
+    hx = hex_str.lstrip("#")
+    return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)

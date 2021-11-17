@@ -6,7 +6,12 @@ from discord.ext import commands
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException, NoUsernameException, TimeParseError
+from buttercup.cogs.helpers import (
+    BlossomException,
+    InvalidArgumentException,
+    NoUsernameException,
+    TimeParseError,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -44,6 +49,15 @@ class Handlers(commands.Cog):
             )
             await ctx.send(
                 i18n["handlers"]["invalid_time_str"].format(time_str=error.time_str)
+            )
+        elif isinstance(error, InvalidArgumentException):
+            logger.warning(
+                f"Invalid value '{error.value}' for argument '{error.argument}'.", ctx
+            )
+            await ctx.send(
+                i18n["handlers"]["invalid_argument"].format(
+                    argument=error.argument, value=error.value
+                )
             )
         elif isinstance(error, BlossomException):
             tracker_id = uuid.uuid4()
