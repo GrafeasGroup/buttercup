@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from random import choice
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional
 
 import discord
 import pytz
@@ -12,12 +12,13 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     extract_username,
     get_discord_time_str,
     get_duration_str,
-    get_progress_bar, get_rank, get_rgb_from_hex,
+    get_progress_bar,
+    get_rank,
+    get_rgb_from_hex,
 )
 from buttercup.strings import translation
 

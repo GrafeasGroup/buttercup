@@ -22,9 +22,11 @@ from buttercup.cogs.helpers import (
     InvalidArgumentException,
     extract_username,
     get_duration_str,
+    get_rank,
+    get_rgb_from_hex,
     get_usernames_from_user_list,
     join_items_with_and,
-    parse_time_constraints, get_rank, get_rgb_from_hex,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
