@@ -3,6 +3,8 @@ handlers:
     You are not authorized to use this command. This incident will be reported.
   no_username: |
     You did not provide a valid username. Either add it to the command or change your display name to a valid format.
+  invalid_time_str: |
+    "{time_str}" is an invalid date/time. Try something like "2021-08-04", "10:13" or "3 weeks ago".
   invalid_argument: |
     The value '{value}' is invalid for the argument '{argument}'. Please double check that you provided the correct value.
   blossom_error: |
@@ -47,6 +49,20 @@ stats:
     **Volunteers**: {:,d}
     **Transcriptions**: {:,d}
     **Days Since Inception**: {:,d}
+user_stats:
+  getting_stats: |
+    Getting stats for u/{user}...
+  failed_getting_stats: |
+    Failed to get the stats for u/{user}.
+  embed_message: |
+    Here are the stats for u/{user}! ({duration})
+  embed_title: |
+    Stats for u/{user}
+  embed_description: |
+    **Transcriptions**: {gamma:,d}
+    **Flair Rank**: {flair_rank}
+    **Date Joined**: {date_joined} ({joined_ago})
+    **Last Active**: {last_active} ({last_ago})
 progress:
   getting_progress: |
     Getting progress for u/{user} in the last {hours} hours...
@@ -131,7 +147,7 @@ progress:
       - Is that a 500/24 or is the progress bar just happy to see me?
 heatmap:
   getting_heatmap: |
-    Generating a heatmap for u/{0}...
+    Generating a heatmap for u/{user} {time_str}...
   user_not_found: |
     Sorry, I couldn't find the user u/{0}.
   days:
@@ -146,7 +162,7 @@ heatmap:
   plot_xlabel: Time ({0})
   plot_ylabel: Weekday
   response_message: |
-    Here is the heatmap for u/{0}! ({1})
+    Here is the heatmap for u/{user} {time_str}! ({duration})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...
@@ -155,6 +171,8 @@ rules:
   sub_private: |
     Sorry, but it looks like r/{0} has gone private!
   no_rules: |
+    r/{0} doesn't appear to have any rules!
+  no_filter_rules: |
     r/{0} doesn't appear to have any rules!
   embed_message: |
     Here are the rules! ({0})
@@ -169,7 +187,7 @@ pi_rules:
     Sorry, but it looks like r/{0} has gone private!
   no_rules: |
     r/{0} doesn't have any PI rules, because it doesn't have any rules at all!
-  no_pi_rules: |
+  no_filter_rules: |
     I couldn't automatically detect any rules regarding personal information for r/{0}, but I'm not perfect!
 
     You can use the `/rules` command to verify for yourself.
@@ -178,28 +196,6 @@ pi_rules:
     I automatically detected some rules regarding personal information! ({0})
   embed_title: |
     PI Rules for r/{0}
-history:
-    getting_history_single: |
-      Creating the history graph for u/{user}...
-    getting_history_multi: |
-      Creating the history graph for {users} ({count}/{total})...
-    plot_title_single: History of u/{user}
-    plot_title_multi: History of Multiple Users
-    plot_xlabel: Time
-    plot_ylabel: Gamma
-    response_message:
-      Here is the history graph! ({duration})
-rate:
-    getting_rate_single: |
-      Creating the transcription rate graph for u/{user}...
-    getting_rate_multi: |
-      Creating the transcription rate graph for {users} ({count}/{total})...
-    plot_title_single: Transcription Rate of u/{user}
-    plot_title_multi: Transcription Rate of Multiple Users
-    plot_xlabel: Time
-    plot_ylabel: Transcription Rate
-    response_message:
-      Here is the transcription rate graph! ({duration})
 until:
   getting_prediction: |
     Getting prediction for u/{user}...
@@ -249,3 +245,25 @@ partner:
   embed_partner_status_title: Partner Status of r/{subreddit}
   embed_partner_status_description: |
     {status}
+history:
+    getting_history_single: |
+      Creating the history graph for u/{user} {time_str}...
+    getting_history_multi: |
+      Creating the history graph for {users} {time_str} ({count}/{total})...
+    plot_title_single: History of u/{user}
+    plot_title_multi: History of Multiple Users
+    plot_xlabel: Time
+    plot_ylabel: Gamma
+    response_message:
+      Here is the history graph for {usernames} {time_str}! ({duration})
+rate:
+    getting_rate_single: |
+      Creating the transcription rate graph for u/{user} {time_str}...
+    getting_rate_multi: |
+      Creating the transcription rate graph for {users} {time_str} ({count}/{total})...
+    plot_title_single: Transcription Rate of u/{user}
+    plot_title_multi: Transcription Rate of Multiple Users
+    plot_xlabel: Time
+    plot_ylabel: Transcription Rate
+    response_message:
+      Here is the transcription rate graph for {usernames} {time_str}! ({duration})

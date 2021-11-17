@@ -1,18 +1,44 @@
 from datetime import datetime, timedelta
 from random import choice
-from typing import Optional
+from typing import Dict, Optional, Tuple, Union
 
+import discord
+import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
+from dateutil.parser import parse
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import extract_username, get_duration_str, get_progress_bar
+from buttercup.cogs import ranks
+from buttercup.cogs.helpers import (
+    extract_username,
+    get_discord_time_str,
+    get_duration_str,
+    get_progress_bar,
+)
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+def get_rank(gamma: int) -> Dict[str, Union[str, int]]:
+    """Get the rank matching the gamma score."""
+    for rank in reversed(ranks):
+        if gamma >= rank["threshold"]:
+            return rank
+
+    return {"name": "Visitor", "threshold": 0, "color": "#000000"}
+
+
+def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
+    """Get the rgb values from a hex string."""
+    # Adopted from
+    # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
+    hx = hex_str.lstrip("#")
+    return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
 
 
 def get_motivational_message(user: str, progress_count: int) -> str:
@@ -37,9 +63,27 @@ class Stats(Cog):
         self.blossom_api = blossom_api
 
     @cog_ext.cog_slash(
-        name="stats", description="Get stats about all users.",
+        name="stats",
+        description="Get stats about one or all users.",
+        options=[
+            create_option(
+                name="username",
+                description="The username to get the stats for. "
+                + "Use 'all' to get the global stats.",
+                option_type=3,
+                required=False,
+            )
+        ],
     )
-    async def _stats(self, ctx: SlashContext) -> None:
+    async def _stats(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+        """Get the stats about one or all users."""
+        if username is not None and username.strip().casefold() == "all":
+            # If "all" is provided as username, return the global stats
+            await self._all_stats(ctx)
+        else:
+            await self._user_stats(ctx, username)
+
+    async def _all_stats(self, ctx: SlashContext) -> None:
         """Get stats about all users."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
@@ -49,6 +93,7 @@ class Stats(Cog):
 
         if response.status_code != 200:
             await msg.edit(content=i18n["stats"]["failed_getting_stats"])
+            return
 
         data = response.json()
 
@@ -61,6 +106,72 @@ class Stats(Cog):
         await msg.edit(
             content=i18n["stats"]["embed_message"],
             embed=Embed(title=i18n["stats"]["embed_title"], description=description),
+        )
+
+    async def _user_stats(
+        self, ctx: SlashContext, username: Optional[str] = None
+    ) -> None:
+        """Get stats about a single user."""
+        start = datetime.now(tz=pytz.utc)
+        user = username or extract_username(ctx.author.display_name)
+        # Send a first message to show that the bot is responsive.
+        # We will edit this message later with the actual content.
+        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user=user))
+
+        volunteer_response = self.blossom_api.get_user(user)
+        if volunteer_response.status != BlossomStatus.ok:
+            await msg.edit(
+                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
+            )
+            return
+        volunteer_data = volunteer_response.data
+
+        # Get the date of last activity
+        submission_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": volunteer_data["id"],
+                "ordering": "-complete_time",
+                "complete_time__isnull": False,
+                "page_size": 1,
+                "page": 1,
+            },
+        )
+        if submission_response.status_code != 200:
+            await msg.edit(
+                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
+            )
+            return
+        submission_data = submission_response.json()["results"][0]
+
+        date_joined = parse(volunteer_data["date_joined"])
+        # For some reason, the complete_time is sometimes None, so we have to fall back
+        last_active = parse(
+            submission_data["complete_time"]
+            or submission_data["claim_time"]
+            or submission_data["create_time"]
+        )
+
+        rank = get_rank(volunteer_data["gamma"])
+
+        description = i18n["user_stats"]["embed_description"].format(
+            gamma=volunteer_data["gamma"],
+            flair_rank=rank["name"],
+            date_joined=get_discord_time_str(date_joined),
+            joined_ago=get_discord_time_str(date_joined, "R"),
+            last_active=get_discord_time_str(last_active),
+            last_ago=get_discord_time_str(last_active, "R"),
+        )
+
+        await msg.edit(
+            content=i18n["user_stats"]["embed_message"].format(
+                user=user, duration=get_duration_str(start)
+            ),
+            embed=Embed(
+                title=i18n["user_stats"]["embed_title"].format(user=user),
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
+                description=description,
+            ),
         )
 
     @cog_ext.cog_slash(

@@ -24,6 +24,7 @@ plt.rcParams["figure.dpi"] = 200.0
 # but we need to define the colors client-side anyway
 ranks = [
     {"name": "Initiate", "threshold": 1, "color": "#ffffff"},
+    {"name": "Pink", "threshold": 25, "color": "#e696be"},
     {"name": "Green", "threshold": 50, "color": "#00ff00"},
     {"name": "Teal", "threshold": 100, "color": "#00cccc"},
     {"name": "Purple", "threshold": 250, "color": "#ff67ff"},
@@ -32,6 +33,5 @@ ranks = [
     {"name": "Ruby", "threshold": 2500, "color": "#ff7ac2"},
     {"name": "Topaz", "threshold": 5000, "color": "#ff7d4d"},
     {"name": "Jade", "threshold": 10000, "color": "#31c831"},
-    # This rank is not official yet, but we need it for predictions
-    {"name": "Sapphire", "threshold": 25000, "color": "#99afef"},
+    {"name": "Sapphire", "threshold": 20000, "color": "#99afef"},
 ]
