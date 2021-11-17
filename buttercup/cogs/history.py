@@ -122,7 +122,9 @@ def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     return File(history_plot, file_name)
 
 
-def get_history_data_from_rate_data(rate_data: pd.DataFrame, offset: int) -> pd.DataFrame:
+def get_history_data_from_rate_data(
+    rate_data: pd.DataFrame, offset: int
+) -> pd.DataFrame:
     """Aggregate the rate data to history data.
 
     :param rate_data: The rate data to calculate the history data from.
@@ -212,7 +214,11 @@ class History(Cog):
                 # We still need to calculate based on the total gamma
                 # It may be the case that not all transcriptions have a date set
                 # Then they are not included in the data nor in the API response
-                return user_data["gamma"] - rate_data.sum() - offset_response.json()["count"]
+                return (
+                    user_data["gamma"]
+                    - rate_data.sum()
+                    - offset_response.json()["count"]
+                )
         else:
             # We can calculate the offset from the given data
             return user_data["gamma"] - rate_data.sum()
@@ -236,10 +242,14 @@ class History(Cog):
 
         # Get all rate data
         time_frame = get_data_granularity(user_data, after_time, before_time)
-        rate_data = self.get_all_rate_data(user_data["id"], time_frame, after_time, before_time)
+        rate_data = self.get_all_rate_data(
+            user_data["id"], time_frame, after_time, before_time
+        )
 
         # Calculate the offset for all data points
-        offset = self.calculate_history_offset(user_data, rate_data, after_time, before_time)
+        offset = self.calculate_history_offset(
+            user_data, rate_data, after_time, before_time
+        )
 
         # Add an up-to-date entry
         rate_data.loc[datetime.now(tz=tzutc())] = [0]
@@ -331,7 +341,9 @@ class History(Cog):
                     )
                 )
 
-            user_gamma, history_data = self.get_user_history(user, after_time, before_time)
+            user_gamma, history_data = self.get_user_history(
+                user, after_time, before_time
+            )
             user_gammas.append(user_gamma)
             color = ranks[index]["color"]
             last_point = history_data.iloc[-1]
