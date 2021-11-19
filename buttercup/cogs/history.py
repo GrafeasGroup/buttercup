@@ -1,4 +1,5 @@
 import io
+import math
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union, Any
@@ -564,7 +565,9 @@ class History(Cog):
             file=discord_file,
         )
 
-    async def _get_user_progress(self, user: Dict[str, Any], start: datetime, time_frame: timedelta) -> int:
+    async def _get_user_progress(
+        self, user: Dict[str, Any], start: datetime, time_frame: timedelta
+    ) -> int:
         # We ask for submission completed by the user in the time frame
         # The response will contain a count, so we just need 1 result
         progress_response = self.blossom_api.get(
@@ -579,7 +582,8 @@ class History(Cog):
             raise RuntimeError("Failed to get progress")
         return progress_response.json()["count"]
 
-    async def _until_user(self,
+    async def _until_user(
+        self,
         msg: SlashMessage,
         user: Dict[str, Any],
         target_username: str,
@@ -592,12 +596,11 @@ class History(Cog):
 
         target = target_response.data
 
-        if user["gamma"] >= target["gamma"]:
-            # The user is already ahead of the target
-            await msg.edit(
-                content=f"{user['username']} is already ahead of {target['username']}!",
-            )
-            return
+        if user["gamma"] > target["gamma"]:
+            # Swap user and target
+            temp = user
+            user = target
+            target = temp
 
         time_frame = timedelta(weeks=1)
 
@@ -610,21 +613,40 @@ class History(Cog):
             )
             return
 
-        seconds_needed = (target["gamma"] - user["gamma"]) / ((user_progress - target_progress) / time_frame.total_seconds())
+        if user_progress <= target_progress:
+            description = i18n["until"]["embed_description_user_never"].format(
+                user=user["username"],
+                user_gamma=user["gamma"],
+                user_progress=user_progress,
+                target=target["username"],
+                target_gamma=target["gamma"],
+                target_progress=target_progress,
+                time_frame="week",
+            )
+        else:
+            # Calculate time needed
+            seconds_needed = (target["gamma"] - user["gamma"]) / (
+                (user_progress - target_progress) / time_frame.total_seconds()
+            )
+            time_needed = timedelta(seconds=seconds_needed)
+            target_time = start + time_needed
 
-        time_needed = timedelta(
-            seconds=seconds_needed
-        )
-        target_time = start + time_needed
+            intersection_gamma = user["gamma"] + math.ceil(
+                (user_progress / time_frame.total_seconds())
+                * time_needed.total_seconds()
+            )
 
-        description = i18n["until"]["embed_description_prediction"].format(
-            time_frame="week",
-            user=user["username"],
-            cur_gamma=user["gamma"],
-            goal=f"u/{target['username']} ({target['gamma']})",
-            progress=user_progress,
-            time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
-        )
+            description = i18n["until"]["embed_description_user_prediction"].format(
+                user=user["username"],
+                user_gamma=user["gamma"],
+                user_progress=user_progress,
+                target=target["username"],
+                target_gamma=target["gamma"],
+                target_progress=target_progress,
+                intersection_gamma=intersection_gamma,
+                time_frame="week",
+                time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+            )
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
@@ -713,7 +735,9 @@ class History(Cog):
         time_frame = timedelta(weeks=1)
 
         try:
-            progress_count = await self._get_user_progress(volunteer_response.data, start, time_frame)
+            progress_count = await self._get_user_progress(
+                volunteer_response.data, start, time_frame
+            )
         except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(user=user)

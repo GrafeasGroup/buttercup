@@ -217,6 +217,12 @@ until:
     Hey u/{user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
     Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
+  embed_description_user_prediction: |
+    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will catch up with
+    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) {time_needed} at {intersection_gamma} gamma!
+  embed_description_user_never: |
+    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
+    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) at this rate!
 partner:
   getting_partner_list: |
     Getting the list of our partners...
