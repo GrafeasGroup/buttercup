@@ -210,9 +210,9 @@ until:
   embed_title: |
     Prediction for u/{user}
   embed_description_prediction: |
-    **u/{user}** will get from {cur_gamma} to **{goal}** {time_needed} if transcribing at a rate of **{progress}/{time_frame}**.
+    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** {time_needed}!
   embed_description_zero: |
-    **u/{user}** will never get from {cur_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
+    **u/{user}** will never get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
     Hey u/{user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
@@ -222,7 +222,7 @@ until:
     **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) {time_needed} at {intersection_gamma} gamma!
   embed_description_user_never: |
     **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
-    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) at this rate!
+    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) at this pace!
 partner:
   getting_partner_list: |
     Getting the list of our partners...
