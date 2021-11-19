@@ -667,7 +667,7 @@ class History(Cog):
         options=[
             create_option(
                 name="goal",
-                description="The gamma or flair rank to reach. "
+                description="The gamma, flair rank or user to reach. "
                 "Defaults to the next rank.",
                 option_type=3,
                 required=False,
