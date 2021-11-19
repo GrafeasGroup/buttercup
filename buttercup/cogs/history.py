@@ -1,7 +1,7 @@
 import io
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 
 import discord
 import matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ from dateutil.tz import tzutc
 from discord import Embed, File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
@@ -563,6 +564,78 @@ class History(Cog):
             file=discord_file,
         )
 
+    async def _get_user_progress(self, user: Dict[str, Any], start: datetime, time_frame: timedelta) -> int:
+        # We ask for submission completed by the user in the time frame
+        # The response will contain a count, so we just need 1 result
+        progress_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": user["id"],
+                "from": (start - time_frame).isoformat(),
+                "page_size": 1,
+            },
+        )
+        if progress_response.status_code != 200:
+            raise RuntimeError("Failed to get progress")
+        return progress_response.json()["count"]
+
+    async def _until_user(self,
+        msg: SlashMessage,
+        user: Dict[str, Any],
+        target_username: str,
+        start: datetime,
+    ) -> None:
+        # Try to find the target user
+        target_response = self.blossom_api.get_user(target_username)
+        if target_response.status != BlossomStatus.ok:
+            raise InvalidArgumentException("goal", target_username)
+
+        target = target_response.data
+
+        if user["gamma"] >= target["gamma"]:
+            # The user is already ahead of the target
+            await msg.edit(
+                content=f"{user['username']} is already ahead of {target['username']}!",
+            )
+            return
+
+        time_frame = timedelta(weeks=1)
+
+        try:
+            user_progress = await self._get_user_progress(user, start, time_frame)
+            target_progress = await self._get_user_progress(target, start, time_frame)
+        except RuntimeError:
+            await msg.edit(
+                content=i18n["until"]["failed_getting_prediction"].format(user=user)
+            )
+            return
+
+        seconds_needed = (target["gamma"] - user["gamma"]) / ((user_progress - target_progress) / time_frame.total_seconds())
+
+        time_needed = timedelta(
+            seconds=seconds_needed
+        )
+        target_time = start + time_needed
+
+        description = i18n["until"]["embed_description_prediction"].format(
+            time_frame="week",
+            user=user["username"],
+            cur_gamma=user["gamma"],
+            goal=f"u/{target['username']} ({target['gamma']})",
+            progress=user_progress,
+            time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+        )
+
+        await msg.edit(
+            content=i18n["until"]["embed_message"].format(
+                duration=get_duration_str(start)
+            ),
+            embed=Embed(
+                title=i18n["until"]["embed_title"].format(user=user["username"]),
+                description=description,
+            ),
+        )
+
     @cog_ext.cog_slash(
         name="until",
         description="Determines the time required to reach the next milestone.",
@@ -601,11 +674,13 @@ class History(Cog):
         if volunteer_response.status != BlossomStatus.ok:
             await msg.edit(content=i18n["until"]["user_not_found"].format(user))
             return
-        volunteer_id = volunteer_response.data["id"]
         gamma = volunteer_response.data["gamma"]
 
         if goal is not None:
-            goal_gamma, goal_str = parse_goal_str(goal)
+            try:
+                goal_gamma, goal_str = parse_goal_str(goal)
+            except InvalidArgumentException:
+                return await self._until_user(msg, volunteer_response.data, goal, start)
         else:
             # Take the next rank for the user
             next_rank = get_next_rank(gamma)
@@ -637,22 +712,13 @@ class History(Cog):
 
         time_frame = timedelta(weeks=1)
 
-        # We ask for submission completed by the user in the time frame
-        # The response will contain a count, so we just need 1 result
-        progress_response = self.blossom_api.get(
-            "submission/",
-            params={
-                "completed_by": volunteer_id,
-                "from": (start - time_frame).isoformat(),
-                "page_size": 1,
-            },
-        )
-        if progress_response.status_code != 200:
+        try:
+            progress_count = await self._get_user_progress(volunteer_response.data, start, time_frame)
+        except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(user=user)
             )
             return
-        progress_count = progress_response.json()["count"]
 
         if progress_count == 0:
             description = i18n["until"]["embed_description_zero"].format(
