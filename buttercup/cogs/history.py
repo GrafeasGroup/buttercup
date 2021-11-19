@@ -1,8 +1,7 @@
 import io
 import math
-import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 import matplotlib.pyplot as plt
@@ -26,10 +25,10 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     get_rank,
     get_rgb_from_hex,
+    get_timedelta_str,
     get_usernames_from_user_list,
     join_items_with_and,
     parse_time_constraints,
-    get_timedelta_str,
 )
 from buttercup.strings import translation
 
@@ -590,6 +589,7 @@ class History(Cog):
         target_username: str,
         start: datetime,
     ) -> None:
+        """Determine how long it will take the user to catch up with the target user."""
         # Try to find the target user
         target_response = self.blossom_api.get_user(target_username)
         if target_response.status != BlossomStatus.ok:
@@ -606,10 +606,8 @@ class History(Cog):
         time_frame = timedelta(weeks=1)
 
         try:
-            print("getting progress")
             user_progress = await self._get_user_progress(user, start, time_frame)
             target_progress = await self._get_user_progress(target, start, time_frame)
-            print("got progress")
         except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(user=user)
@@ -650,6 +648,8 @@ class History(Cog):
                 time_needed=get_timedelta_str(time_needed),
             )
 
+        color = get_rank(target["gamma"])["color"]
+
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
                 duration=get_duration_str(start)
@@ -657,6 +657,7 @@ class History(Cog):
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=user["username"]),
                 description=description,
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
         )
 
