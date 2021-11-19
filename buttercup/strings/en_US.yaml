@@ -210,7 +210,7 @@ until:
   embed_title: |
     Prediction for u/{user}
   embed_description_prediction: |
-    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** {time_needed}!
+    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** in {time_needed}!
   embed_description_zero: |
     **u/{user}** will never get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
@@ -219,7 +219,7 @@ until:
     Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   embed_description_user_prediction: |
     **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will catch up with
-    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) {time_needed} at {intersection_gamma} gamma!
+    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) in {time_needed} at {intersection_gamma} gamma!
   embed_description_user_never: |
     **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
     **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) at this pace!

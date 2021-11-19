@@ -29,6 +29,7 @@ from buttercup.cogs.helpers import (
     get_usernames_from_user_list,
     join_items_with_and,
     parse_time_constraints,
+    get_timedelta_str,
 )
 from buttercup.strings import translation
 
@@ -605,8 +606,10 @@ class History(Cog):
         time_frame = timedelta(weeks=1)
 
         try:
+            print("getting progress")
             user_progress = await self._get_user_progress(user, start, time_frame)
             target_progress = await self._get_user_progress(target, start, time_frame)
+            print("got progress")
         except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(user=user)
@@ -629,7 +632,6 @@ class History(Cog):
                 (user_progress - target_progress) / time_frame.total_seconds()
             )
             time_needed = timedelta(seconds=seconds_needed)
-            target_time = start + time_needed
 
             intersection_gamma = user["gamma"] + math.ceil(
                 (user_progress / time_frame.total_seconds())
@@ -644,8 +646,8 @@ class History(Cog):
                 target_gamma=target["gamma"],
                 target_progress=target_progress,
                 intersection_gamma=intersection_gamma,
-                time_frame="week",
-                time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+                time_frame=get_timedelta_str(time_frame),
+                time_needed=get_timedelta_str(time_needed),
             )
 
         await msg.edit(
@@ -736,9 +738,7 @@ class History(Cog):
         time_frame = timedelta(weeks=1)
 
         try:
-            user_progress = await self._get_user_progress(
-                user, start, time_frame
-            )
+            user_progress = await self._get_user_progress(user, start, time_frame)
         except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(user=username)
@@ -747,7 +747,10 @@ class History(Cog):
 
         if user_progress == 0:
             description = i18n["until"]["embed_description_zero"].format(
-                time_frame="week", user=username, cur_gamma=user["gamma"], goal=goal_str
+                time_frame=get_timedelta_str(time_frame),
+                user=username,
+                cur_gamma=user["gamma"],
+                goal=goal_str,
             )
         else:
             # Based on the progress in the timeframe, calculate the time needed
@@ -755,7 +758,6 @@ class History(Cog):
             time_needed = timedelta(
                 seconds=gamma_needed * (time_frame.total_seconds() / user_progress)
             )
-            target_time = datetime.now() + time_needed
 
             description = i18n["until"]["embed_description_prediction"].format(
                 time_frame="week",
@@ -763,7 +765,7 @@ class History(Cog):
                 user_gamma=user["gamma"],
                 goal=goal_str,
                 user_progress=user_progress,
-                time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+                time_needed=get_timedelta_str(time_needed),
             )
 
         # Determine the color of the target rank
