@@ -65,7 +65,7 @@ user_stats:
     **Last Active**: {last_active} ({last_ago})
 progress:
   getting_progress: |
-    Getting progress for u/{user} in the last {hours} hours...
+    Getting progress for u/{user} {time_str}...
   user_not_found: |
     I couldn't find user u/{0}!
   failed_getting_progress: |
@@ -75,11 +75,11 @@ progress:
   embed_title: |
     Progress of u/{0}
   embed_description_24: |
-    `{bar}` {count}/{total} transcriptions in the last {hours} hours.
+    `{bar}` {count}/{total} transcriptions {time_str}.
 
     {message}
   embed_description_other: |
-    {count} transcriptions in the last {hours} hours.
+    {count} transcriptions {time_str}.
   embed_description_new: |
     Hey u/{user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
