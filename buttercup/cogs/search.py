@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any, Dict, List
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed
@@ -11,6 +12,35 @@ from buttercup.cogs.helpers import BlossomException
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+def create_result_description(result: Dict[str, Any], num: int, query: str) -> str:
+    """Crates a description for the given result."""
+    transcription: str = result["text"]
+    occurrences = transcription.casefold().count(query.casefold())
+    description = f"{num}. [Transcription]({result['url']}) ({occurrences} occurrence(s))\n```\n"
+
+    for i, line in enumerate(transcription.splitlines()):
+        pos = line.casefold().find(query.casefold())
+        if pos >= 0:
+            # Add the line where the word occurs
+            max_context = 20
+            line_num = "L" + str(i + 1) + ": "
+            before_context = line[:pos]
+            if len(before_context) > max_context:
+                before_context = "..." + before_context[-max_context:]
+            offset = len(line_num) + len(before_context)
+            occurrence = line[pos:pos + len(query)]
+            after_context = line[pos + len(query):]
+            if len(after_context) > max_context:
+                after_context = after_context[:max_context] + "..."
+
+            # Show the occurrence with context
+            description += f"{line_num}{before_context}{occurrence}{after_context}\n"
+            # Underline the occurrence
+            description += " " * offset + "-" * len(query) + "\n"
+    description += "```\n"
+    return description
 
 
 class Search(Cog):
@@ -54,19 +84,7 @@ class Search(Cog):
         description = ""
 
         for i, res in enumerate(page_results):
-            description += f"{i + 1}. [Transcription]({res['url']})\n```\n"
-            text: str = res["text"]
-            lines = text.splitlines()
-            pos = -1
-            for line in lines:
-                pos = line.casefold().find(query.casefold())
-                if pos >= 0:
-                    # Add the line where the word occurs
-                    description += line + "\n"
-                    # Underline the occurrence
-                    description += " " * pos
-                    description += "-" * len(query) + "\n"
-            description += "```\n"
+            description += create_result_description(res, i + 1, query)
 
         await msg.edit(
             content=f"Here are your results!",
