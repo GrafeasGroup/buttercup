@@ -291,7 +291,19 @@ class Find(Cog):
         description = ""
 
         for i, res in enumerate(page_results):
-            description += f"{i + 1}. [Transcription]({res['url']})\n"
+            description += f"{i + 1}. [Transcription]({res['url']})\n```\n"
+            text: str = res["text"]
+            lines = text.splitlines()
+            pos = -1
+            for line in lines:
+                pos = line.casefold().find(query.casefold())
+                if pos >= 0:
+                    # Add the line where the word occurs
+                    description += line + "\n"
+                    # Underline the occurrence
+                    description += " " * pos
+                    description += "-" * len(query) + "\n"
+            description += "```\n"
 
         await msg.edit(
             content=f"Here are your results!",
