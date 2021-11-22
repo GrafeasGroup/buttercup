@@ -136,19 +136,27 @@ class Search(Cog):
             raise BlossomException(response)
         results = response.data
 
+        # Internal pagination of results (on Discord)
+        results_per_page = 5
+        total_pages = len(results) // results_per_page
+        cur_page = 0
+
         if len(results) == 0:
             await msg.edit(content=f"No results for `{query}` found.")
             return
 
-        page_results = results[:5]
+        results_offset = cur_page * 5
+        page_results = results[results_offset : results_offset + results_per_page]
         description = ""
 
         for i, res in enumerate(page_results):
-            description += create_result_description(res, i + 1, query)
+            description += create_result_description(res, results_offset + 1, query)
 
         await msg.edit(
             content=f"Here are your results! ({get_duration_str(start)})",
-            embed=Embed(title=f"Results for `{query}`", description=description,),
+            embed=Embed(
+                title=f"Results for `{query}`", description=description,
+            ).set_footer(text=f"Page {cur_page + 1}/{total_pages} ({len(results)} results)"),
         )
 
 
