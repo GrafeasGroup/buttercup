@@ -39,6 +39,13 @@ def get_transcription_type(transcription: Dict[str, Any]) -> str:
     return tr_type or tr_format
 
 
+def get_transcription_source(transcription: Dict[str, Any]) -> str:
+    """Try to determine the source (subreddit) of the transcription."""
+    # E.g. https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/
+    url: str = transcription["url"]
+    return "r/" + url.split("/")[4]
+
+
 def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> str:
     """Format a single occurrence of the query."""
     max_context = 20
@@ -64,7 +71,8 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     transcription: str = result["text"]
     total_occurrences = transcription.casefold().count(query.casefold())
     tr_type = get_transcription_type(result)
-    description = f"{num}. [{tr_type}]({result['url']}) ({total_occurrences} occurrence(s))\n```\n"
+    tr_source = get_transcription_source(result)
+    description = f"{num}. [{tr_type} on {tr_source}]({result['url']})\n```\n"
 
     # The maximum number of occurrences to show
     max_occurrences = 4
