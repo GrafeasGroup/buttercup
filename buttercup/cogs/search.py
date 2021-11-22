@@ -14,8 +14,28 @@ from buttercup.strings import translation
 i18n = translation()
 
 
+def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> str:
+    """Format a single occurrence of the query."""
+    max_context = 20
+    line_num_str = "L" + str(line_num) + ": "
+    before_context = line[:pos]
+    if len(before_context) > max_context:
+        before_context = "..." + before_context[-max_context:]
+    offset = len(line_num_str) + len(before_context)
+    occurrence = line[pos:pos + len(query)]
+    after_context = line[pos + len(query):]
+    if len(after_context) > max_context:
+        after_context = after_context[:max_context] + "..."
+
+    # Show the occurrence with context
+    context = f"{line_num_str}{before_context}{occurrence}{after_context}\n"
+    # Underline the occurrence
+    underline = " " * offset + "-" * len(query) + "\n"
+    return context + underline
+
+
 def create_result_description(result: Dict[str, Any], num: int, query: str) -> str:
-    """Crates a description for the given result."""
+    """Crate a description for the given result."""
     transcription: str = result["text"]
     occurrences = transcription.casefold().count(query.casefold())
     description = f"{num}. [Transcription]({result['url']}) ({occurrences} occurrence(s))\n```\n"
@@ -24,21 +44,8 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
         pos = line.casefold().find(query.casefold())
         if pos >= 0:
             # Add the line where the word occurs
-            max_context = 20
-            line_num = "L" + str(i + 1) + ": "
-            before_context = line[:pos]
-            if len(before_context) > max_context:
-                before_context = "..." + before_context[-max_context:]
-            offset = len(line_num) + len(before_context)
-            occurrence = line[pos:pos + len(query)]
-            after_context = line[pos + len(query):]
-            if len(after_context) > max_context:
-                after_context = after_context[:max_context] + "..."
+            description += format_query_occurrence(line, i + i, pos, query)
 
-            # Show the occurrence with context
-            description += f"{line_num}{before_context}{occurrence}{after_context}\n"
-            # Underline the occurrence
-            description += " " * offset + "-" * len(query) + "\n"
     description += "```\n"
     return description
 
