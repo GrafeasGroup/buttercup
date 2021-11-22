@@ -37,16 +37,30 @@ def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> s
 def create_result_description(result: Dict[str, Any], num: int, query: str) -> str:
     """Crate a description for the given result."""
     transcription: str = result["text"]
-    occurrences = transcription.casefold().count(query.casefold())
-    description = f"{num}. [Transcription]({result['url']}) ({occurrences} occurrence(s))\n```\n"
+    total_occurrences = transcription.casefold().count(query.casefold())
+    description = f"{num}. [Transcription]({result['url']}) ({total_occurrences} occurrence(s))\n```\n"
+
+    # The maximum number of occurrences to show
+    max_occurrences = 4
+    cur_count = 0
 
     for i, line in enumerate(transcription.splitlines()):
+        start = 0
         pos = line.casefold().find(query.casefold())
-        if pos >= 0:
+        while pos >= 0 and cur_count < max_occurrences:
             # Add the line where the word occurs
-            description += format_query_occurrence(line, i + i, pos, query)
+            description += format_query_occurrence(line, i + 1, pos, query)
+            # Move to the next occurrence in the line
+            cur_count += 1
+            start = pos + len(query)
+            pos = line.casefold().find(query.casefold(), start)
+
+        if cur_count >= max_occurrences:
+            break
 
     description += "```\n"
+    if cur_count < total_occurrences:
+        description += f"... and {total_occurrences - cur_count} more occurrence(s).\n\n"
     return description
 
 
