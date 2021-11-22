@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from typing import Any, Dict, List
 
 from blossom_wrapper import BlossomAPI, BlossomStatus
@@ -14,6 +15,30 @@ from buttercup.strings import translation
 i18n = translation()
 
 
+header_regex = re.compile(
+    r"^\s*\*(?P<format>\w+)\s*Transcription:?(?:\s*(?P<type>[\w ]+))?\*", re.IGNORECASE
+)
+
+
+def get_transcription_type(transcription: Dict[str, Any]) -> str:
+    """Try to determine the type of the transcription."""
+    text: str = transcription["text"]
+    header = text.split("---")[0]
+
+    match = header_regex.search(header)
+    if match is None:
+        return "Post"
+
+    tr_format = match.group("format")
+    if tr_format:
+        tr_format = tr_format.strip()
+    tr_type = match.group("type")
+    if tr_type:
+        tr_type = tr_type.strip()
+
+    return tr_type or tr_format
+
+
 def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> str:
     """Format a single occurrence of the query."""
     max_context = 20
@@ -22,8 +47,8 @@ def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> s
     if len(before_context) > max_context:
         before_context = "..." + before_context[-max_context:]
     offset = len(line_num_str) + len(before_context)
-    occurrence = line[pos:pos + len(query)]
-    after_context = line[pos + len(query):]
+    occurrence = line[pos : pos + len(query)]
+    after_context = line[pos + len(query) :]
     if len(after_context) > max_context:
         after_context = after_context[:max_context] + "..."
 
@@ -38,7 +63,8 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     """Crate a description for the given result."""
     transcription: str = result["text"]
     total_occurrences = transcription.casefold().count(query.casefold())
-    description = f"{num}. [Transcription]({result['url']}) ({total_occurrences} occurrence(s))\n```\n"
+    tr_type = get_transcription_type(result)
+    description = f"{num}. [{tr_type}]({result['url']}) ({total_occurrences} occurrence(s))\n```\n"
 
     # The maximum number of occurrences to show
     max_occurrences = 4
@@ -60,7 +86,9 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
 
     description += "```\n"
     if cur_count < total_occurrences:
-        description += f"... and {total_occurrences - cur_count} more occurrence(s).\n\n"
+        description += (
+            f"... and {total_occurrences - cur_count} more occurrence(s).\n\n"
+        )
     return description
 
 
