@@ -9,7 +9,7 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException
+from buttercup.cogs.helpers import BlossomException, get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
@@ -127,7 +127,10 @@ class Search(Cog):
         msg = await ctx.send(f"Searching for `{query}`...")
 
         response = self.blossom_api.get_transcription(
-            text__icontains=query, url__isnull=False, ordering="-create_time"
+            text__icontains=query,
+            url__isnull=False,
+            ordering="-create_time",
+            page_size=100,
         )
         if response.status != BlossomStatus.ok:
             raise BlossomException(response)
@@ -144,7 +147,7 @@ class Search(Cog):
             description += create_result_description(res, i + 1, query)
 
         await msg.edit(
-            content=f"Here are your results!",
+            content=f"Here are your results! ({get_duration_str(start)})",
             embed=Embed(title=f"Results for `{query}`", description=description,),
         )
 

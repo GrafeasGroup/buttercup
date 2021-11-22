@@ -47,8 +47,8 @@ def test_get_transcription_type(transcription: str, expected: str) -> None:
         ),
         (
             "https://reddit.com/r/CasualUK/comments/qzhsco/found_this_bag_of_mints_on_the_floor_which_is/hlmjpoa/",
-            "r/CasualUK"
-        )
+            "r/CasualUK",
+        ),
     ],
 )
 def test_get_transcription_source(transcription: str, expected: str) -> None:
