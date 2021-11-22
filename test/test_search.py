@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from pytest import mark
 
-from buttercup.cogs.search import get_transcription_type, get_transcription_source
+from buttercup.cogs.search import get_transcription_type, get_transcription_source, SearchCache
 
 
 def get_sample_transcription_from_header(header: str) -> str:
@@ -39,7 +41,7 @@ def test_get_transcription_type(transcription: str, expected: str) -> None:
 
 
 @mark.parametrize(
-    "transcription,expected",
+    "url,expected",
     [
         (
             "https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/",
@@ -51,6 +53,16 @@ def test_get_transcription_type(transcription: str, expected: str) -> None:
         ),
     ],
 )
-def test_get_transcription_source(transcription: str, expected: str) -> None:
-    tr_type = get_transcription_source({"text": transcription})
+def test_get_transcription_source(url: str, expected: str) -> None:
+    tr_type = get_transcription_source({"url": url})
     assert tr_type == expected
+
+
+class TestSearchCache:
+    def test_search_cache_clean(self):
+        cache = SearchCache(1)
+        cache.set("abc", {"query": "aaa", "cur_page": 0}, datetime(2021, 1, 3))
+        cache.set("def", {"query": "ddd", "cur_page": 0}, datetime(2021, 1, 4))
+
+        assert cache.get("abc") is None
+        assert cache.get("def")["query"] == "ddd"

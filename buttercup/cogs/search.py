@@ -1,7 +1,8 @@
 from datetime import datetime
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, TypedDict, Optional
 
+import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed
 from discord.ext.commands import Cog
@@ -98,6 +99,43 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
             f"... and {total_occurrences - cur_count} more occurrence(s).\n\n"
         )
     return description
+
+
+class SearchCacheElement(TypedDict):
+    query: str
+    cur_page: int
+
+
+class SearchCacheEntry(TypedDict):
+    last_modified: datetime
+    element: SearchCacheElement
+
+
+class SearchCache:
+    def __init__(self, size: int) -> None:
+        self.size = size
+        self.cache = {}
+
+    def _clean(self) -> None:
+        """Ensure that the cache size isn't exceeded."""
+        if len(self.cache) > self.size:
+            # Delete the oldest entry
+            sorted_entries = sorted(self.cache.items(), key=lambda x: x[1]["last_modified"])
+            self.cache.pop(sorted_entries[0][0])
+
+    def set(self, msg_id: str, entry: SearchCacheElement, time: datetime = datetime.now(tz=pytz.utc)):
+        self.cache[msg_id] = {
+            "last_modified": time,
+            "element": entry,
+        }
+        self._clean()
+
+    def get(self, msg_id: str) -> Optional[SearchCacheElement]:
+        item = self.cache.get(msg_id)
+        if item is not None:
+            return item["element"]
+        else:
+            return None
 
 
 class Search(Cog):
