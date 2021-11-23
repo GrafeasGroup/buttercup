@@ -130,13 +130,13 @@ class SearchCacheEntry(TypedDict):
 
 
 class SearchCache:
-    def __init__(self, size: int) -> None:
-        self.size = size
+    def __init__(self, capacity: int) -> None:
+        self.capacity = capacity
         self.cache = {}
 
     def _clean(self) -> None:
-        """Ensure that the cache size isn't exceeded."""
-        if len(self.cache) > self.size:
+        """Ensure that the cache capacity isn't exceeded."""
+        if len(self.cache) > self.capacity:
             # Delete the oldest entry
             sorted_entries = sorted(
                 self.cache.items(), key=lambda x: x[1]["last_modified"]
@@ -149,13 +149,26 @@ class SearchCache:
         entry: SearchCacheItem,
         time: datetime = datetime.now(tz=pytz.utc),
     ):
+        """Set an entry of the cache.
+
+        :param msg_id: The ID of the message where the search results are displayed.
+        :param entry: The cache item for the corresponding message.
+        :param time: The time when the message was last interacted with.
+            This should only be set directly in tests, keep it as the default value.
+        """
         self.cache[msg_id] = {
             "last_modified": time,
             "element": entry,
         }
+        # Make sure the capacity is not exceeded
         self._clean()
 
     def get(self, msg_id: str) -> Optional[SearchCacheItem]:
+        """Get the cache entry for the corresponding message.
+
+        Note that this might return no message, even if it has been added at some point.
+        When the capacity of the cache is exceeded, old items get deleted.
+        """
         item = self.cache.get(msg_id)
         if item is not None:
             return item["element"]
@@ -226,6 +239,7 @@ class Search(Cog):
         )
 
         # Calculate the offset within the response
+        # The requested pages are larger than the pages displayed on Discord
         request_offset = request_page * self.request_page_size
         discord_offset = discord_page * self.discord_page_size
         result_offset = discord_offset - request_offset
@@ -290,6 +304,7 @@ class Search(Cog):
             "request_page": 0,
         }
 
+        # Display the first page
         await self._search_from_cache(msg, start, cache_item, 0)
 
     @commands.Cog.listener()
@@ -312,6 +327,7 @@ class Search(Cog):
         else:
             last_page = 0
 
+        # Determine which action should be executed
         if emoji == first_page_emoji and discord_page > 0:
             page_mod = -cache_item["cur_page"]
         elif emoji == previous_page_emoji and discord_page > 0:
@@ -324,6 +340,7 @@ class Search(Cog):
             # Invalid control emoji
             return
 
+        # Display the new page
         await self._search_from_cache(msg, start, cache_item, page_mod)
 
 
