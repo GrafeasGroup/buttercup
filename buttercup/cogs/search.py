@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import re
 from typing import Any, Dict, TypedDict, Optional, List
@@ -16,6 +17,13 @@ from buttercup.cogs.helpers import BlossomException, get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+# Unicode characters for control emojis
+first_page_emoji = "\u23EE\uFE0F"  # Previous track button
+previous_page_emoji = "\u25C0\uFE0F"  # Left triangle button
+next_page_emoji = "\u25B6\uFE0F"  # Right triangle button
+last_page_emoji = "\u23ED\uFE0F"  # Next track button
 
 
 header_regex = re.compile(
@@ -106,6 +114,7 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
 class SearchCacheItem(TypedDict):
     query: str
     cur_page: int
+    discord_user_id: str
 
 
 class SearchCacheEntry(TypedDict):
@@ -162,6 +171,9 @@ class Search(Cog):
         page_mod: int,
     ) -> None:
         """Executes the search with the given cache."""
+        # Clear previous control emojis
+        await msg.clear_reactions()
+
         discord_page_size = 5
 
         discord_page = cache_item["cur_page"] + page_mod
@@ -186,7 +198,14 @@ class Search(Cog):
             return
 
         # Update the cache
-        self.cache.set(msg.id, {"query": query, "cur_page": discord_page,})
+        self.cache.set(
+            msg.id,
+            {
+                "query": query,
+                "cur_page": discord_page,
+                "discord_user_id": cache_item["discord_user_id"],
+            },
+        )
 
         results_offset = discord_page * discord_page_size
         page_results: List[Dict[str, Any]] = results
@@ -202,6 +221,14 @@ class Search(Cog):
             ).set_footer(
                 text=f"Page {discord_page + 1}/{total_discord_pages} ({len(results)} results)"
             ),
+        )
+
+        # Add control emojis to message
+        await asyncio.gather(
+            msg.add_reaction(first_page_emoji),
+            msg.add_reaction(previous_page_emoji),
+            msg.add_reaction(next_page_emoji),
+            msg.add_reaction(last_page_emoji),
         )
 
     @cog_ext.cog_slash(
@@ -228,6 +255,7 @@ class Search(Cog):
         cache_item: SearchCacheItem = {
             "query": query,
             "cur_page": 0,
+            "discord_user_id": ctx.author_id,
         }
 
         await self._search_from_cache(msg, start, cache_item, 0)
@@ -240,20 +268,20 @@ class Search(Cog):
         if cache_item is None:
             return
 
+        # Only process controls by the user who executed the query
+        if cache_item["discord_user_id"] != user.id:
+            return
+
         discord_page = cache_item["cur_page"]
         emoji = reaction.emoji
 
-        if emoji == "\u23EE\uFE0F" and discord_page != 0:
-            # Previous track button: Skip to start
+        if emoji == first_page_emoji and discord_page != 0:
             page_mod = -cache_item["cur_page"]
-        elif emoji == "\u25C0\uFE0F" and discord_page != 0:
-            # Left triangle: Previous page
+        elif emoji == previous_page_emoji and discord_page != 0:
             page_mod = -1
-        elif emoji == "\u25B6\uFE0F":
-            # Right triangle: Next page
+        elif emoji == next_page_emoji:
             page_mod = 1
-        elif emoji == "\u23ED\uFE0F":
-            # Next track button: Skip to end
+        elif emoji == last_page_emoji:
             page_mod = 1
         else:
             # No control emoji
