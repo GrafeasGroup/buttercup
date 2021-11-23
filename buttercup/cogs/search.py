@@ -169,6 +169,10 @@ class Search(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
         self.cache = SearchCache(10)
+        # Size of a search result page on Discord
+        self.discord_page_size = 5
+        # Size of the fetched result pages from Blossom
+        self.request_page_size = self.discord_page_size * 5
 
     async def _search_from_cache(
         self,
@@ -181,13 +185,10 @@ class Search(Cog):
         # Clear previous control emojis
         await msg.clear_reactions()
 
-        discord_page_size = 5
-        request_page_size = discord_page_size * 5
-
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
 
-        request_page = (discord_page * discord_page_size) // request_page_size
+        request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
         if (
             not cache_item["response_data"]
@@ -198,7 +199,7 @@ class Search(Cog):
                 text__icontains=cache_item["query"],
                 url__isnull=False,
                 ordering="-create_time",
-                page_size=request_page_size,
+                page_size=self.request_page_size,
                 page=request_page + 1,
             )
             response = self.blossom_api.get(path="transcription", params=data)
@@ -207,9 +208,6 @@ class Search(Cog):
             response_data = response.json()
         else:
             response_data = cache_item["response_data"]
-
-        # Internal pagination of results (on Discord)
-        total_discord_pages = response_data["count"] // discord_page_size
 
         if response_data["count"] == 0:
             await msg.edit(content=f"No results for `{query}` found.")
@@ -228,32 +226,35 @@ class Search(Cog):
         )
 
         # Calculate the offset within the response
-        request_offset = request_page * request_page_size
-        discord_offset = discord_page * discord_page_size
-        response_offset = discord_offset - request_offset
+        request_offset = request_page * self.request_page_size
+        discord_offset = discord_page * self.discord_page_size
+        result_offset = discord_offset - request_offset
         page_results: List[Dict[str, Any]] = response_data["results"][
-            response_offset : response_offset + discord_page_size
+            result_offset : result_offset + self.discord_page_size
         ]
         description = ""
 
         for i, res in enumerate(page_results):
             description += create_result_description(res, discord_offset + i + 1, query)
 
+        last_discord_page = response_data["count"] // self.discord_page_size
+
         await msg.edit(
             content=f"Here are your results! ({get_duration_str(start)})",
             embed=Embed(
                 title=f"Results for `{query}`", description=description,
             ).set_footer(
-                text=f"Page {discord_page + 1}/{total_discord_pages} ({response_data['count']} results)"
+                text=f"Page {discord_page + 1}/{last_discord_page + 1} ({response_data['count']} results)"
             ),
         )
 
         emoji_controls = []
 
+        # Determine which controls are appropriate
         if discord_page > 0:
             emoji_controls.append(first_page_emoji)
             emoji_controls.append(previous_page_emoji)
-        if discord_page < total_discord_pages - 1:
+        if discord_page < last_discord_page - 1:
             emoji_controls.append(next_page_emoji)
             emoji_controls.append(last_page_emoji)
 
@@ -306,16 +307,21 @@ class Search(Cog):
         discord_page = cache_item["cur_page"]
         emoji = reaction.emoji
 
-        if emoji == first_page_emoji and discord_page != 0:
-            page_mod = -cache_item["cur_page"]
-        elif emoji == previous_page_emoji and discord_page != 0:
-            page_mod = -1
-        elif emoji == next_page_emoji:
-            page_mod = 1
-        elif emoji == last_page_emoji:
-            page_mod = 1
+        if response_data := cache_item["response_data"]:
+            last_page = response_data["count"] // self.discord_page_size
         else:
-            # No control emoji
+            last_page = 0
+
+        if emoji == first_page_emoji and discord_page > 0:
+            page_mod = -cache_item["cur_page"]
+        elif emoji == previous_page_emoji and discord_page > 0:
+            page_mod = -1
+        elif emoji == next_page_emoji and discord_page < last_page:
+            page_mod = 1
+        elif emoji == last_page_emoji and discord_page < last_page:
+            page_mod = last_page - discord_page
+        else:
+            # Invalid control emoji
             return
 
         await self._search_from_cache(msg, start, cache_item, page_mod)
