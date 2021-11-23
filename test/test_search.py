@@ -69,8 +69,28 @@ class TestSearchCache:
     def test_search_cache_clean(self) -> None:
         """Verify that the cache is cleaned when the capacity is exceeded."""
         cache = SearchCache(1)
-        cache.set("abc", {"query": "aaa", "cur_page": 0}, datetime(2021, 1, 3))
-        cache.set("def", {"query": "ddd", "cur_page": 0}, datetime(2021, 1, 4))
+        cache.set(
+            "abc",
+            {
+                "query": "aaa",
+                "cur_page": 0,
+                "response_data": None,
+                "request_page": 0,
+                "discord_user_id": "user",
+            },
+            datetime(2021, 1, 3),
+        )
+        cache.set(
+            "def",
+            {
+                "query": "ddd",
+                "cur_page": 0,
+                "response_data": None,
+                "request_page": 0,
+                "discord_user_id": "user",
+            },
+            datetime(2021, 1, 4),
+        )
 
         assert cache.get("abc") is None
         assert cache.get("def")["query"] == "ddd"
