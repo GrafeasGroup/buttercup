@@ -179,21 +179,22 @@ class Search(Cog):
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
 
-        response = self.blossom_api.get_transcription(
+        data = dict(
             text__icontains=cache_item["query"],
             url__isnull=False,
             ordering="-create_time",
             page_size=discord_page_size,
             page=discord_page + 1,
         )
-        if response.status != BlossomStatus.ok:
+        response = self.blossom_api.get(path="transcription", params=data)
+        if response.status_code != 200:
             raise BlossomException(response)
-        results = response.data
+        response_data = response.json()
 
         # Internal pagination of results (on Discord)
-        total_discord_pages = len(results) // discord_page_size
+        total_discord_pages = response_data["count"] // discord_page_size
 
-        if len(results) == 0:
+        if response_data["count"] == 0:
             await msg.edit(content=f"No results for `{query}` found.")
             return
 
@@ -208,18 +209,18 @@ class Search(Cog):
         )
 
         results_offset = discord_page * discord_page_size
-        page_results: List[Dict[str, Any]] = results
+        page_results: List[Dict[str, Any]] = response_data["results"]
         description = ""
 
         for i, res in enumerate(page_results):
-            description += create_result_description(res, results_offset + 1, query)
+            description += create_result_description(res, results_offset + i + 1, query)
 
         await msg.edit(
             content=f"Here are your results! ({get_duration_str(start)})",
             embed=Embed(
                 title=f"Results for `{query}`", description=description,
             ).set_footer(
-                text=f"Page {discord_page + 1}/{total_discord_pages} ({len(results)} results)"
+                text=f"Page {discord_page + 1}/{total_discord_pages} ({response_data['count']} results)"
             ),
         )
 
