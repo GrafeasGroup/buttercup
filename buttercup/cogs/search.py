@@ -1,12 +1,13 @@
 from datetime import datetime
 import re
-from typing import Any, Dict, TypedDict, Optional
+from typing import Any, Dict, TypedDict, Optional, List
 
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
@@ -101,14 +102,14 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     return description
 
 
-class SearchCacheElement(TypedDict):
+class SearchCacheItem(TypedDict):
     query: str
     cur_page: int
 
 
 class SearchCacheEntry(TypedDict):
     last_modified: datetime
-    element: SearchCacheElement
+    element: SearchCacheItem
 
 
 class SearchCache:
@@ -120,17 +121,24 @@ class SearchCache:
         """Ensure that the cache size isn't exceeded."""
         if len(self.cache) > self.size:
             # Delete the oldest entry
-            sorted_entries = sorted(self.cache.items(), key=lambda x: x[1]["last_modified"])
+            sorted_entries = sorted(
+                self.cache.items(), key=lambda x: x[1]["last_modified"]
+            )
             self.cache.pop(sorted_entries[0][0])
 
-    def set(self, msg_id: str, entry: SearchCacheElement, time: datetime = datetime.now(tz=pytz.utc)):
+    def set(
+        self,
+        msg_id: str,
+        entry: SearchCacheItem,
+        time: datetime = datetime.now(tz=pytz.utc),
+    ):
         self.cache[msg_id] = {
             "last_modified": time,
             "element": entry,
         }
         self._clean()
 
-    def get(self, msg_id: str) -> Optional[SearchCacheElement]:
+    def get(self, msg_id: str) -> Optional[SearchCacheItem]:
         item = self.cache.get(msg_id)
         if item is not None:
             return item["element"]
@@ -143,6 +151,60 @@ class Search(Cog):
         """Initialize the Search cog."""
         self.bot = bot
         self.blossom_api = blossom_api
+        self.cache = SearchCache(10)
+
+    async def _search_from_cache(
+        self,
+        msg: SlashMessage,
+        start: datetime,
+        cache_item: SearchCacheItem,
+        page_mod: int,
+    ) -> None:
+        """Executes the search with the given cache."""
+        discord_page_size = 5
+
+        discord_page = cache_item["cur_page"] + page_mod
+        query = cache_item["query"]
+
+        response = self.blossom_api.get_transcription(
+            text__icontains=cache_item["query"],
+            url__isnull=False,
+            ordering="-create_time",
+            page_size=discord_page_size,
+            page=discord_page + 1,
+        )
+        if response.status != BlossomStatus.ok:
+            raise BlossomException(response)
+        results = response.data
+
+        # Internal pagination of results (on Discord)
+        total_discord_pages = len(results) // discord_page_size
+
+        if len(results) == 0:
+            await msg.edit(content=f"No results for `{query}` found.")
+            return
+
+        # Update the cache
+        self.cache.set(msg.id, {
+            "query": query,
+            "cur_page": discord_page,
+        })
+
+        results_offset = discord_page * discord_page_size
+        page_results: List[Dict[str, Any]] = results
+        description = ""
+
+        for i, res in enumerate(page_results):
+            description += create_result_description(res, results_offset + 1, query)
+
+        await msg.edit(
+            content=f"Here are your results! ({get_duration_str(start)})",
+            embed=Embed(
+                title=f"Results for `{query}`", description=description,
+            ).set_footer(
+                text=f"Page {discord_page + 1}/{total_discord_pages} ({len(results)} results)"
+            ),
+        )
 
     @cog_ext.cog_slash(
         name="search",
@@ -164,38 +226,13 @@ class Search(Cog):
         # We will edit this message later with the actual content.
         msg = await ctx.send(f"Searching for `{query}`...")
 
-        response = self.blossom_api.get_transcription(
-            text__icontains=query,
-            url__isnull=False,
-            ordering="-create_time",
-            page_size=100,
-        )
-        if response.status != BlossomStatus.ok:
-            raise BlossomException(response)
-        results = response.data
+        # Simulate an initial cache item
+        cache_item: SearchCacheItem = {
+            "query": query,
+            "cur_page": 0,
+        }
 
-        # Internal pagination of results (on Discord)
-        results_per_page = 5
-        total_pages = len(results) // results_per_page
-        cur_page = 0
-
-        if len(results) == 0:
-            await msg.edit(content=f"No results for `{query}` found.")
-            return
-
-        results_offset = cur_page * 5
-        page_results = results[results_offset : results_offset + results_per_page]
-        description = ""
-
-        for i, res in enumerate(page_results):
-            description += create_result_description(res, results_offset + 1, query)
-
-        await msg.edit(
-            content=f"Here are your results! ({get_duration_str(start)})",
-            embed=Embed(
-                title=f"Results for `{query}`", description=description,
-            ).set_footer(text=f"Page {cur_page + 1}/{total_pages} ({len(results)} results)"),
-        )
+        await self._search_from_cache(msg, start, cache_item, 0)
 
 
 def setup(bot: ButtercupBot) -> None:

@@ -2,7 +2,11 @@ from datetime import datetime
 
 from pytest import mark
 
-from buttercup.cogs.search import get_transcription_type, get_transcription_source, SearchCache
+from buttercup.cogs.search import (
+    get_transcription_type,
+    get_transcription_source,
+    SearchCache,
+)
 
 
 def get_sample_transcription_from_header(header: str) -> str:
