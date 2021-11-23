@@ -81,9 +81,16 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     """Crate a description for the given result."""
     transcription: str = result["text"]
     total_occurrences = transcription.casefold().count(query.casefold())
+    # Determine meta info about the post/transcription
     tr_type = get_transcription_type(result)
     tr_source = get_transcription_source(result)
-    description = f"{num}. [{tr_type} on {tr_source}]({result['url']})\n```\n"
+    description = (
+        i18n["search"]["description"]["item"].format(
+            num=num, tr_type=tr_type, tr_source=tr_source, url=result["url"],
+        )
+        # Start code block for occurrences
+        + "\n```\n"
+    )
 
     # The maximum number of occurrences to show
     max_occurrences = 4
@@ -106,7 +113,10 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     description += "```\n"
     if cur_count < total_occurrences:
         description += (
-            f"... and {total_occurrences - cur_count} more occurrence(s).\n\n"
+            i18n["search"]["description"]["more_occurrences"].format(
+                count=total_occurrences - cur_count
+            )
+            + "\n\n"
         )
     return description
 
@@ -223,7 +233,11 @@ class Search(Cog):
             response_data = cache_item["response_data"]
 
         if response_data["count"] == 0:
-            await msg.edit(content=f"No results for `{query}` found.")
+            await msg.edit(
+                content=i18n["search"]["no_results"].format(
+                    query=query, duration_str=get_duration_str(start)
+                )
+            )
             return
 
         # Update the cache
@@ -254,11 +268,18 @@ class Search(Cog):
         last_discord_page = response_data["count"] // self.discord_page_size
 
         await msg.edit(
-            content=f"Here are your results! ({get_duration_str(start)})",
+            content=i18n["search"]["embed_message"].format(
+                query=query, duration_str=get_duration_str(start)
+            ),
             embed=Embed(
-                title=f"Results for `{query}`", description=description,
+                title=i18n["search"]["embed_title"].format(query=query),
+                description=description,
             ).set_footer(
-                text=f"Page {discord_page + 1}/{last_discord_page + 1} ({response_data['count']} results)"
+                text=i18n["search"]["embed_footer"].format(
+                    cur_page=discord_page + 1,
+                    total_pages=last_discord_page + 1,
+                    total_results=response_data["count"],
+                ),
             ),
         )
 
@@ -293,7 +314,7 @@ class Search(Cog):
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(f"Searching for `{query}`...")
+        msg = await ctx.send(i18n["search"]["getting_search"].format(query=query))
 
         # Simulate an initial cache item
         cache_item: SearchCacheItem = {

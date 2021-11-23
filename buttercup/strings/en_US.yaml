@@ -269,3 +269,19 @@ leaderboard:
     Here is the leaderboard for u/{user} {time_str}! ({duration})
   embed_title: |
     Leaderboard for u/{user} ({time_frame})
+search:
+  getting_search: |-
+    Searching for `{query}`...
+  no_results: |-
+    No results found for `{query}`. ({duration_str})
+  description:
+    item: |-
+      {num}. [{tr_type} on {tr_source}]({url})
+    more_occurrences: |-
+      ... and {count} more occurrence(s).
+  embed_message: |-
+    Here are your results for `{query}`! ({duration_str})
+  embed_title: |-
+    Results for `{query}`
+  embed_footer: |-
+    Page {cur_page}/{total_pages} ({total_results} result(s))
