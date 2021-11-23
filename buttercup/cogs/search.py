@@ -1,4 +1,5 @@
 import asyncio
+import math
 from datetime import datetime
 import re
 from typing import Any, Dict, TypedDict, Optional, List
@@ -265,7 +266,7 @@ class Search(Cog):
         for i, res in enumerate(page_results):
             description += create_result_description(res, discord_offset + i + 1, query)
 
-        last_discord_page = response_data["count"] // self.discord_page_size
+        total_discord_pages = math.ceil(response_data["count"] / self.discord_page_size)
 
         await msg.edit(
             content=i18n["search"]["embed_message"].format(
@@ -277,7 +278,7 @@ class Search(Cog):
             ).set_footer(
                 text=i18n["search"]["embed_footer"].format(
                     cur_page=discord_page + 1,
-                    total_pages=last_discord_page + 1,
+                    total_pages=total_discord_pages,
                     total_results=response_data["count"],
                 ),
             ),
@@ -289,7 +290,7 @@ class Search(Cog):
         if discord_page > 0:
             emoji_controls.append(first_page_emoji)
             emoji_controls.append(previous_page_emoji)
-        if discord_page < last_discord_page - 1:
+        if discord_page < total_discord_pages - 1:
             emoji_controls.append(next_page_emoji)
             emoji_controls.append(last_page_emoji)
 
@@ -344,7 +345,7 @@ class Search(Cog):
         emoji = reaction.emoji
 
         if response_data := cache_item["response_data"]:
-            last_page = response_data["count"] // self.discord_page_size
+            last_page = math.ceil(response_data["count"] / self.discord_page_size) - 1
         else:
             last_page = 0
 
