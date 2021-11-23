@@ -4,7 +4,7 @@ import re
 from typing import Any, Dict, TypedDict, Optional, List
 
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from discord import Embed, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -112,9 +112,16 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
 
 
 class SearchCacheItem(TypedDict):
+    # The query that the user searched for
     query: str
+    # The current Discord page for the query
     cur_page: int
+    # The id of the user who executed the query
     discord_user_id: str
+    # The cached response data from previous requests
+    response_data: Optional[Dict[str, Any]]
+    # The offset of the results in the response data
+    response_data_offset: int
 
 
 class SearchCacheEntry(TypedDict):
@@ -205,6 +212,8 @@ class Search(Cog):
                 "query": query,
                 "cur_page": discord_page,
                 "discord_user_id": cache_item["discord_user_id"],
+                "response_data": response_data,
+                "response_data_offset": 0,
             },
         )
 
@@ -224,13 +233,17 @@ class Search(Cog):
             ),
         )
 
+        emoji_controls = []
+
+        if discord_page > 0:
+            emoji_controls.append(first_page_emoji)
+            emoji_controls.append(previous_page_emoji)
+        if discord_page < total_discord_pages - 1:
+            emoji_controls.append(next_page_emoji)
+            emoji_controls.append(last_page_emoji)
+
         # Add control emojis to message
-        await asyncio.gather(
-            msg.add_reaction(first_page_emoji),
-            msg.add_reaction(previous_page_emoji),
-            msg.add_reaction(next_page_emoji),
-            msg.add_reaction(last_page_emoji),
-        )
+        await asyncio.gather(*[msg.add_reaction(emoji) for emoji in emoji_controls])
 
     @cog_ext.cog_slash(
         name="search",
@@ -257,6 +270,8 @@ class Search(Cog):
             "query": query,
             "cur_page": 0,
             "discord_user_id": ctx.author_id,
+            "response_data": None,
+            "response_data_offset": 0,
         }
 
         await self._search_from_cache(msg, start, cache_item, 0)
