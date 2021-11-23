@@ -4,7 +4,8 @@ from typing import Any, Dict, TypedDict, Optional, List
 
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
-from discord import Embed
+from discord import Embed, Reaction, User
+from discord.ext import commands
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
@@ -185,10 +186,7 @@ class Search(Cog):
             return
 
         # Update the cache
-        self.cache.set(msg.id, {
-            "query": query,
-            "cur_page": discord_page,
-        })
+        self.cache.set(msg.id, {"query": query, "cur_page": discord_page,})
 
         results_offset = discord_page * discord_page_size
         page_results: List[Dict[str, Any]] = results
@@ -233,6 +231,35 @@ class Search(Cog):
         }
 
         await self._search_from_cache(msg, start, cache_item, 0)
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction: Reaction, user: User):
+        start = datetime.now()
+        msg: SlashMessage = reaction.message
+        cache_item = self.cache.get(msg.id)
+        if cache_item is None:
+            return
+
+        discord_page = cache_item["cur_page"]
+        emoji = reaction.emoji
+
+        if emoji == "\u23EE\uFE0F" and discord_page != 0:
+            # Previous track button: Skip to start
+            page_mod = -cache_item["cur_page"]
+        elif emoji == "\u25C0\uFE0F" and discord_page != 0:
+            # Left triangle: Previous page
+            page_mod = -1
+        elif emoji == "\u25B6\uFE0F":
+            # Right triangle: Next page
+            page_mod = 1
+        elif emoji == "\u23ED\uFE0F":
+            # Next track button: Skip to end
+            page_mod = 1
+        else:
+            # No control emoji
+            return
+
+        await self._search_from_cache(msg, start, cache_item, page_mod)
 
 
 def setup(bot: ButtercupBot) -> None:
