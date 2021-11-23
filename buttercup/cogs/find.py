@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Dict, Optional
 from urllib.parse import urlparse
 
@@ -9,7 +8,6 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException
 from buttercup.strings import translation
 
 i18n = translation()

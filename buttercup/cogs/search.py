@@ -1,8 +1,8 @@
 import asyncio
 import math
-from datetime import datetime
 import re
-from typing import Any, Dict, TypedDict, Optional, List
+from datetime import datetime
+from typing import Any, Dict, List, Optional, TypedDict
 
 import pytz
 from blossom_wrapper import BlossomAPI
@@ -53,7 +53,7 @@ def get_transcription_type(transcription: Dict[str, Any]) -> str:
 
 def get_transcription_source(transcription: Dict[str, Any]) -> str:
     """Try to determine the source (subreddit) of the transcription."""
-    # E.g. https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/
+    # https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/
     url: str = transcription["url"]
     return "r/" + url.split("/")[4]
 
@@ -142,6 +142,7 @@ class SearchCacheEntry(TypedDict):
 
 class SearchCache:
     def __init__(self, capacity: int) -> None:
+        """Initialize a new cache."""
         self.capacity = capacity
         self.cache = {}
 
@@ -159,7 +160,7 @@ class SearchCache:
         msg_id: str,
         entry: SearchCacheItem,
         time: datetime = datetime.now(tz=pytz.utc),
-    ):
+    ) -> None:
         """Set an entry of the cache.
 
         :param msg_id: The ID of the message where the search results are displayed.
@@ -205,7 +206,7 @@ class Search(Cog):
         cache_item: SearchCacheItem,
         page_mod: int,
     ) -> None:
-        """Executes the search with the given cache."""
+        """Execute the search with the given cache."""
         # Clear previous control emojis
         await msg.clear_reactions()
 
@@ -310,7 +311,7 @@ class Search(Cog):
         ],
     )
     async def search(self, ctx: SlashContext, query: str) -> None:
-        """Searches for transcriptions containing the given text."""
+        """Search for transcriptions containing the given text."""
         start = datetime.now()
 
         # Send a first message to show that the bot is responsive.
@@ -330,7 +331,8 @@ class Search(Cog):
         await self._search_from_cache(msg, start, cache_item, 0)
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: Reaction, user: User):
+    async def on_reaction_add(self, reaction: Reaction, user: User) -> None:
+        """Process reactions to go through the result pages."""
         start = datetime.now()
         msg: SlashMessage = reaction.message
         cache_item = self.cache.get(msg.id)
