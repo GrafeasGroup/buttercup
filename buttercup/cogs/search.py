@@ -120,8 +120,8 @@ class SearchCacheItem(TypedDict):
     discord_user_id: str
     # The cached response data from previous requests
     response_data: Optional[Dict[str, Any]]
-    # The offset of the results in the response data
-    response_data_offset: int
+    # The page of the cached response data
+    request_page: int
 
 
 class SearchCacheEntry(TypedDict):
@@ -182,21 +182,31 @@ class Search(Cog):
         await msg.clear_reactions()
 
         discord_page_size = 5
+        request_page_size = discord_page_size * 5
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
 
-        data = dict(
-            text__icontains=cache_item["query"],
-            url__isnull=False,
-            ordering="-create_time",
-            page_size=discord_page_size,
-            page=discord_page + 1,
-        )
-        response = self.blossom_api.get(path="transcription", params=data)
-        if response.status_code != 200:
-            raise BlossomException(response)
-        response_data = response.json()
+        request_page = (discord_page * discord_page_size) // request_page_size
+
+        if (
+            not cache_item["response_data"]
+            or request_page != cache_item["request_page"]
+        ):
+            # A new request has to be made
+            data = dict(
+                text__icontains=cache_item["query"],
+                url__isnull=False,
+                ordering="-create_time",
+                page_size=request_page_size,
+                page=request_page + 1,
+            )
+            response = self.blossom_api.get(path="transcription", params=data)
+            if response.status_code != 200:
+                raise BlossomException(response)
+            response_data = response.json()
+        else:
+            response_data = cache_item["response_data"]
 
         # Internal pagination of results (on Discord)
         total_discord_pages = response_data["count"] // discord_page_size
@@ -213,16 +223,21 @@ class Search(Cog):
                 "cur_page": discord_page,
                 "discord_user_id": cache_item["discord_user_id"],
                 "response_data": response_data,
-                "response_data_offset": 0,
+                "request_page": request_page,
             },
         )
 
-        results_offset = discord_page * discord_page_size
-        page_results: List[Dict[str, Any]] = response_data["results"]
+        # Calculate the offset within the response
+        request_offset = request_page * request_page_size
+        discord_offset = discord_page * discord_page_size
+        response_offset = discord_offset - request_offset
+        page_results: List[Dict[str, Any]] = response_data["results"][
+            response_offset : response_offset + discord_page_size
+        ]
         description = ""
 
         for i, res in enumerate(page_results):
-            description += create_result_description(res, results_offset + i + 1, query)
+            description += create_result_description(res, discord_offset + i + 1, query)
 
         await msg.edit(
             content=f"Here are your results! ({get_duration_str(start)})",
@@ -271,7 +286,7 @@ class Search(Cog):
             "cur_page": 0,
             "discord_user_id": ctx.author_id,
             "response_data": None,
-            "response_data_offset": 0,
+            "request_page": 0,
         }
 
         await self._search_from_cache(msg, start, cache_item, 0)
