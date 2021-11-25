@@ -32,7 +32,7 @@ def format_leaderboard_user(user: Dict[str, Any]) -> str:
     username = user["username"]
     gamma = user["gamma"]
 
-    return f"{rank}. {username} ({gamma})"
+    return f"{rank}. {username} ({gamma:,})"
 
 
 class Leaderboard(Cog):
@@ -85,20 +85,34 @@ class Leaderboard(Cog):
         if leaderboard_response.status_code != 200:
             raise BlossomException(leaderboard_response)
         leaderboard = leaderboard_response.json()
+        # Extract needed data
+        top_users = leaderboard["top"]
+        above_users = leaderboard["above"]
+        lb_user = leaderboard["user"]
+        below_users = leaderboard["below"]
 
         description = ""
 
-        for top_user in leaderboard["top"]:
+        # Only show the top users if they are not already included
+        top_user_limit = above_users[0]["rank"] if len(above_users) > 0 else lb_user["rank"]
+
+        # Show top users
+        for top_user in top_users[:top_user_limit - 1]:
             description += format_leaderboard_user(top_user) + "\n"
 
-        description += "...\n"
+        # Add separator if necessary
+        if top_user_limit > top_count + 1:
+            description += "...\n"
 
-        for above_user in leaderboard["above"]:
+        # Show users with more gamma than the current user
+        for above_user in above_users:
             description += format_leaderboard_user(above_user) + "\n"
 
-        description += "**" + format_leaderboard_user(leaderboard["user"]) + "**\n"
+        # Show the current user
+        description += "**" + format_leaderboard_user(lb_user) + "**\n"
 
-        for below_user in leaderboard["below"]:
+        # Show users with less gamma than the current user
+        for below_user in below_users:
             description += format_leaderboard_user(below_user) + "\n"
 
         await msg.edit(
