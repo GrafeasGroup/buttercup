@@ -598,10 +598,9 @@ class History(Cog):
         target = target_response.data
 
         if user["gamma"] > target["gamma"]:
-            # Swap user and target
-            temp = user
-            user = target
-            target = temp
+            # Swap user and target, the target has to have more gamma
+            # Otherwise the goal would have already been reached
+            user, target = target, user
 
         time_frame = timedelta(weeks=1)
 
