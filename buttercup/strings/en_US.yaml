@@ -267,3 +267,10 @@ rate:
     plot_ylabel: Transcription Rate
     response_message:
       Here is the transcription rate graph for {usernames} {time_str}! ({duration})
+leaderboard:
+  getting_leaderboard: |
+    Getting prediction for u/{user}...
+  embed_message: |
+    Here is the prediction! ({duration})
+  embed_title: |
+    Leaderboard for u/{user}
