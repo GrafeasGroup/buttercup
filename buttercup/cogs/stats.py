@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from random import choice
 from typing import Optional
 
@@ -19,6 +19,7 @@ from buttercup.cogs.helpers import (
     get_progress_bar,
     get_rank,
     get_rgb_from_hex,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -170,24 +171,40 @@ class Stats(Cog):
                 required=False,
             ),
             create_option(
-                name="hours",
-                description="The time frame of the progress in hours. "
-                "Defaults to 24 hours.",
-                option_type=4,
+                name="after",
+                description="The start time for the progress."
+                "Defaults to 24 hours ago.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the progress."
+                "Defaults to the current time.",
+                option_type=3,
                 required=False,
             ),
         ],
     )
     async def _progress(
-        self, ctx: SlashContext, username: Optional[str] = None, hours: int = 24,
+        self,
+        ctx: SlashContext,
+        username: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
     ) -> None:
         """Get the transcribing progress of a user in the given time frame."""
         start = datetime.now()
         user = username or extract_username(ctx.author.display_name)
+        # Parse time frame. Defaults to 24 hours ago
+        after_time, before_time, time_str = parse_time_constraints(
+            after or "24", before
+        )
+
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
-            i18n["progress"]["getting_progress"].format(user=user, hours=hours)
+            i18n["progress"]["getting_progress"].format(user=user, time_str=time_str)
         )
 
         volunteer_response = self.blossom_api.get_user(user)
@@ -211,15 +228,17 @@ class Stats(Cog):
             )
             return
 
-        from_date = start - timedelta(hours=hours)
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
 
-        # We ask for submission completed by the user in the last 24 hours
+        # We ask for submission completed by the user in the given time frame
         # The response will contain a count, so we just need 1 result
         progress_response = self.blossom_api.get(
             "submission/",
             params={
                 "completed_by": volunteer_id,
-                "from": from_date.isoformat(),
+                "from": from_str,
+                "until": until_str,
                 "page_size": 1,
             },
         )
@@ -230,7 +249,17 @@ class Stats(Cog):
             return
         progress_count = progress_response.json()["count"]
 
-        if hours != 24:
+        # The progress bar only makes sense for a 24 hour time frame
+        is_24_hours = (
+            after_time is not None
+            and (
+                (before_time or datetime.now(tz=pytz.utc)) - after_time
+            ).total_seconds()
+            # Up to 2 seconds difference are allowed
+            <= 60 * 60 * 24 + 2
+        )
+
+        if not is_24_hours:
             # If it isn't 24, we can't really display a progress bar
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
@@ -239,7 +268,7 @@ class Stats(Cog):
                 embed=Embed(
                     title=i18n["progress"]["embed_title"].format(user),
                     description=i18n["progress"]["embed_description_other"].format(
-                        count=progress_count, hours=hours,
+                        count=progress_count, time_str=time_str,
                     ),
                 ),
             )
@@ -255,7 +284,7 @@ class Stats(Cog):
                     bar=get_progress_bar(progress_count, 100),
                     count=progress_count,
                     total=100,
-                    hours=hours,
+                    time_str=time_str,
                     message=motivational_message,
                 ),
             ),
