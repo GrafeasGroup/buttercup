@@ -1,22 +1,23 @@
 from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
-import discord
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
-from discord import Embed
+from discord import Colour, Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
+    BlossomException,
+    InvalidArgumentException,
     extract_username,
     get_duration_str,
-    BlossomException,
-    get_rgb_from_hex,
     get_rank,
-    parse_time_constraints, InvalidArgumentException, get_timedelta_str,
+    get_rgb_from_hex,
+    get_timedelta_str,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -32,7 +33,9 @@ def format_leaderboard_user(user: Dict[str, Any]) -> str:
     return f"{rank}. {username} ({gamma:,})"
 
 
-def format_leaderboard_timeframe(after: Optional[datetime], before: Optional[datetime]) -> str:
+def format_leaderboard_timeframe(
+    after: Optional[datetime], before: Optional[datetime]
+) -> str:
     """Format the time frame that the leaderboard is calculated on."""
     if not after and not before:
         return "all time"
@@ -158,14 +161,14 @@ class Leaderboard(Cog):
 
         await msg.edit(
             content=i18n["leaderboard"]["embed_message"].format(
-                user=username,
-                time_str=time_str,
-                duration=get_duration_str(start)
+                user=username, time_str=time_str, duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["leaderboard"]["embed_title"].format(user=username, time_frame=time_frame),
+                title=i18n["leaderboard"]["embed_title"].format(
+                    user=username, time_frame=time_frame
+                ),
                 description=description,
-                color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
+                color=Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
             ),
         )
 
