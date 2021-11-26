@@ -6,6 +6,7 @@ from buttercup.bot import ButtercupBot
 EXTENSIONS = [
     "admin",
     "handlers",
+    "welcome",
     "name_validator",
     "find",
     "stats",
