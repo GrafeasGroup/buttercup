@@ -1,11 +1,9 @@
 from datetime import datetime
-from random import choice
 from typing import Optional, Any, Dict
 
 import discord
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
-from dateutil.parser import parse
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -14,12 +12,8 @@ from discord_slash.utils.manage_commands import create_option
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     extract_username,
-    get_discord_time_str,
     get_duration_str,
-    get_progress_bar,
-    get_rank,
-    get_rgb_from_hex,
-    parse_time_constraints, BlossomException,
+    BlossomException, get_rgb_from_hex, get_rank,
 )
 from buttercup.strings import translation
 
@@ -115,6 +109,8 @@ class Leaderboard(Cog):
         for below_user in below_users:
             description += format_leaderboard_user(below_user) + "\n"
 
+        rank = get_rank(user["gamma"])
+
         await msg.edit(
             content=i18n["leaderboard"]["embed_message"].format(
                 duration=get_duration_str(start)
@@ -122,6 +118,7 @@ class Leaderboard(Cog):
             embed=Embed(
                 title=i18n["leaderboard"]["embed_title"].format(user=username),
                 description=description,
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
             ),
         )
 
