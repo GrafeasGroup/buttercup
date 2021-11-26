@@ -16,7 +16,7 @@ from buttercup.cogs.helpers import (
     BlossomException,
     get_rgb_from_hex,
     get_rank,
-    parse_time_constraints, InvalidArgumentException,
+    parse_time_constraints, InvalidArgumentException, get_timedelta_str,
 )
 from buttercup.strings import translation
 
@@ -30,6 +30,16 @@ def format_leaderboard_user(user: Dict[str, Any]) -> str:
     gamma = user["gamma"]
 
     return f"{rank}. {username} ({gamma:,})"
+
+
+def format_leaderboard_timeframe(after: Optional[datetime], before: Optional[datetime]) -> str:
+    """Format the time frame that the leaderboard is calculated on."""
+    if not after and not before:
+        return "all time"
+
+    delta = (before or datetime.now(tz=pytz.utc)) - (after or datetime(2017, 4, 1))
+
+    return get_timedelta_str(delta)
 
 
 class Leaderboard(Cog):
@@ -144,6 +154,7 @@ class Leaderboard(Cog):
             description += format_leaderboard_user(below_user) + "\n"
 
         rank = get_rank(user["gamma"])
+        time_frame = format_leaderboard_timeframe(after_time, before_time)
 
         await msg.edit(
             content=i18n["leaderboard"]["embed_message"].format(
@@ -152,7 +163,7 @@ class Leaderboard(Cog):
                 duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["leaderboard"]["embed_title"].format(user=username),
+                title=i18n["leaderboard"]["embed_title"].format(user=username, time_frame=time_frame),
                 description=description,
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
             ),
