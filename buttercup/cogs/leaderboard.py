@@ -16,7 +16,7 @@ from buttercup.cogs.helpers import (
     BlossomException,
     get_rgb_from_hex,
     get_rank,
-    parse_time_constraints,
+    parse_time_constraints, InvalidArgumentException,
 )
 from buttercup.strings import translation
 
@@ -86,7 +86,7 @@ class Leaderboard(Cog):
 
         volunteer_response = self.blossom_api.get_user(username)
         if volunteer_response.status != BlossomStatus.ok:
-            raise BlossomException(volunteer_response)
+            raise InvalidArgumentException("username", username)
         user = volunteer_response.data
         username = user["username"]
 
