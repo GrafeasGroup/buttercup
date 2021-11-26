@@ -1,7 +1,7 @@
 from typing import Optional
 
 from blossom_wrapper import BlossomAPI
-from discord import Member, Guild, TextChannel
+from discord import Member, TextChannel
 from discord.ext.commands import Cog
 
 from buttercup.bot import ButtercupBot
@@ -19,12 +19,20 @@ class Welcome(Cog):
     @Cog.listener()
     async def on_member_join(self, member: Member) -> None:
         """Welcome new members to the server."""
+        # TODO: Trigger this when the rules have been accepted
+        # This event is triggered when the user joins, but they don't have
+        # access to all channels at this point. A pop-up with the rules are
+        # shown and they have to accept that first.
+        # However, Discord currently doesn't seem to provide an event for that.
+        # This causes many to miss the initial welcome message.
         welcome_channel: Optional[TextChannel] = member.guild.system_channel
 
         if not welcome_channel:
             return
 
-        await welcome_channel.send(content=f"Welcome {member.display_name}!")
+        await welcome_channel.send(
+            content=i18n["welcome"]["new_member"].format(user_id=member.id)
+        )
 
 
 def setup(bot: ButtercupBot) -> None:

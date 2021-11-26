@@ -20,6 +20,13 @@ name_validator:
     It must have the format `/u/<reddit_username>`, where you replace `<reddit_username>` with your actual username.
   missing_slash_missing_permissions: |
     Hey <@{user_id}>, you seem to be missing the leading slash in your server nickname, but I don't have sufficient permissions to fix it for you!
+welcome:
+  new_member: |
+    Hello, <@{user_id}>! Welcome to the Transcribers of Reddit chill room! :wave:
+    Please **adjust your server nickname** to match your Reddit username. This makes it easier for us to moderate the server.
+
+    To do this on PC, **type `/nick /u/<reddit_username>`** in the chat.
+    On mobile, tap the **hamburger menu** button on the upper left,  tap the **server name**,  tap "**Edit Server Profile**". Cheers!
 find:
   please_check_url: |
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
