@@ -13,7 +13,10 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     extract_username,
     get_duration_str,
-    BlossomException, get_rgb_from_hex, get_rank,
+    BlossomException,
+    get_rgb_from_hex,
+    get_rank,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -45,17 +48,41 @@ class Leaderboard(Cog):
                 "Defaults to the user executing the command.",
                 option_type=3,
                 required=False,
-            )
+            ),
+            create_option(
+                name="after",
+                description="The start date for the leaderboard.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the leaderboard.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def leaderboard(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+    async def leaderboard(
+        self,
+        ctx: SlashContext,
+        username: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Get the leaderboard for the given user."""
         start = datetime.now(tz=pytz.utc)
 
         username = username or extract_username(ctx.author.display_name)
+        after_time, before_time, time_str = parse_time_constraints(after, before)
+
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["leaderboard"]["getting_leaderboard"].format(user=username))
+        msg = await ctx.send(
+            i18n["leaderboard"]["getting_leaderboard"].format(
+                user=username, time_str=time_str
+            )
+        )
 
         volunteer_response = self.blossom_api.get_user(username)
         if volunteer_response.status != BlossomStatus.ok:
@@ -66,6 +93,9 @@ class Leaderboard(Cog):
         top_count = 5
         context_count = 5
 
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
+
         # Get the leaderboard data
         leaderboard_response = self.blossom_api.get(
             "submission/leaderboard",
@@ -74,6 +104,8 @@ class Leaderboard(Cog):
                 "top_count": top_count,
                 "below_count": context_count,
                 "above_count": context_count,
+                "from": from_str,
+                "until": until_str,
             },
         )
         if leaderboard_response.status_code != 200:
@@ -88,10 +120,12 @@ class Leaderboard(Cog):
         description = ""
 
         # Only show the top users if they are not already included
-        top_user_limit = above_users[0]["rank"] if len(above_users) > 0 else lb_user["rank"]
+        top_user_limit = (
+            above_users[0]["rank"] if len(above_users) > 0 else lb_user["rank"]
+        )
 
         # Show top users
-        for top_user in top_users[:top_user_limit - 1]:
+        for top_user in top_users[: top_user_limit - 1]:
             description += format_leaderboard_user(top_user) + "\n"
 
         # Add separator if necessary
@@ -113,6 +147,8 @@ class Leaderboard(Cog):
 
         await msg.edit(
             content=i18n["leaderboard"]["embed_message"].format(
+                user=username,
+                time_str=time_str,
                 duration=get_duration_str(start)
             ),
             embed=Embed(
