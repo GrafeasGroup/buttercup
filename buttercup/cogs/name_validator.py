@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from discord import TextChannel
+from discord import Forbidden, TextChannel
 from discord.ext.commands import Cog
 from discord.member import Member
 
@@ -55,10 +55,18 @@ class NameValidator(Cog):
 
         if leading_slash is None:
             # The user forgot the forward slash, fix it for them
-            await after.edit(
-                reason="Add leading slash to server nickname",
-                nick=f"/u/{username}{rest}".strip(),
-            )
+            try:
+                await after.edit(
+                    reason="Add leading slash to server nickname",
+                    nick=f"/u/{username}{rest}".strip(),
+                )
+            except Forbidden:
+                # The user is a mod, can't fix the nickname
+                await welcome_channel.send(
+                    content=i18n["name_validator"][
+                        "missing_slash_missing_permissions"
+                    ].format(user_id=after.id, username=username)
+                )
             # The edit will trigger another event.
             # To avoid duplicate messages we don't do anything here
             return

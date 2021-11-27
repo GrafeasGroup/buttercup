@@ -13,11 +13,13 @@ handlers:
     [{tracker_id}] Something went wrong, please contact a moderator with the provided ID.
 name_validator:
   valid_name: |
-    Hey <@{user_id}>, you are now successfully registered as **u/{username}**. Thank you!
+    Hey <@{user_id}>, you are now successfully registered as **/u/{username}**. Thank you!
   invalid_name: |
     Hey <@{user_id}>, it appears that your new server nickname is **not compliant** with our guidelines.
 
     It has to have the format `/u/<reddit_username>`, where you replace `<reddit_username>` with your actual username.
+  missing_slash_missing_permissions: |
+    Hey <@{user_id}>, you seem to be missing the leading slash in your server nickname, but I don't have sufficient permissions to fix it for you!
 find:
   please_check_url: |
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
