@@ -17,7 +17,7 @@ name_validator:
   invalid_name: |
     Hey <@{user_id}>, it appears that your new server nickname is **not compliant** with our guidelines.
 
-    It has to have the format `/u/<reddit_username>`, where you replace `<reddit_username>` with your actual username.
+    It must have the format `/u/<reddit_username>`, where you replace `<reddit_username>` with your actual username.
   missing_slash_missing_permissions: |
     Hey <@{user_id}>, you seem to be missing the leading slash in your server nickname, but I don't have sufficient permissions to fix it for you!
 find:
