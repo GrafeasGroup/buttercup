@@ -12,26 +12,12 @@ handlers:
   unknown_error: |
     [{tracker_id}] Something went wrong, please contact a moderator with the provided ID.
 name_validator:
-  new_member: |
-    Hello, <@{0}>! Welcome to the Transcribers of Reddit chill room! Thanks for helping make somebody's day better!
+  valid_name: |
+    Hey <@{user_id}>, you are now successfully registered as **u/{username}**. Thank you!
+  invalid_name: |
+    Hey <@{user_id}>, it appears that your new server nickname is **not compliant** with our guidelines.
 
-    You might have noticed that you can only view this Text Channel. We use this channel to make sure your username is equal to your Reddit username. If you have completed this task, you are given full access to the Discord.
-
-    To use your Reddit name in Discord you can simply type `/nick /u/REDDIT_USERNAME`, replacing "REDDIT_USERNAME" with your actual Reddit username.
-
-    If you have any questions or remarks, feel free to send a message in this channel and one of our moderators will be with you shortly! Cheers!
-  correct_nick: |
-    Hey <@{0}>, thank you for changing your nickname to the specified format!
-  wrong_nick: |
-    Hey <@{0}>, it appears that you have changed your nickname to something that is not compliant with our guidelines.
-
-    Make sure to use your Reddit name in Discord by typing `/nick /u/REDDIT_USERNAME`, replacing "REDDIT_USERNAME" with your actual Reddit username.
-
-    If you have any questions or remarks, feel free to send a message in this channel and one of our moderators will be with you shortly! Cheers!
-  wrong_prefix: |
-    Hey <@{0}>, it appears that you have attempted to change your nickname, but forgot the initial `/` in your nickname. Make sure that your nickname starts with `/u/` and not `u/`!
-  new_lifted: |
-    Welcome <@{0}> to the Transcribers of Reddit Discord! Since you have changed your nickname to the correct format, you now have unrestricted access to our Discord. Thanks for your time and enjoy your time in here!
+    It has to have the format `/u/<reddit_username>`, where you replace `<reddit_username>` with your actual username.
 find:
   please_check_url: |
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.

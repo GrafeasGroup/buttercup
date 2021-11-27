@@ -34,16 +34,19 @@ class NameValidator(Cog):
         welcome_channel: Optional[TextChannel] = after.guild.system_channel
         verified_role = after.guild.get_role(int(self.valid_role_id))
 
-        if welcome_channel is None or verified_role is None:
-            logger.warning(
-                "No welcome channel set or no verified role defined. Can't validate nicknames!"
-            )
+        if verified_role is None:
+            logger.warning("No verified role defined. Can't validate nicknames!")
             return
+        if welcome_channel is None:
+            logger.warning("No welcome channel defined. Can't validate nicknames!")
 
         after_match = username_regex.search(after_name)
         if after_match is None:
+            # Invalid nickname, remove the verified role
             await after.remove_roles(verified_role, reason="Invalid nickname")
-            await welcome_channel.send(content=f"Invalid server nickname!")
+            await welcome_channel.send(
+                content=i18n["name_validator"]["invalid_name"].format(user_id=after.id)
+            )
             return
 
         leading_slash = after_match.group("leading_slash")
@@ -64,12 +67,18 @@ class NameValidator(Cog):
 
         if before_match and before_match.group("leading_slash"):
             # The username was correct already and is still correct
-            # For example timezone change, we can ignore that
+            # For example timezone change, we don't have to send a message
+            # Still set the role, just to be safe
+            await after.add_roles(verified_role, reason="Correct nickname")
             return
 
         # The username was wrong, but is correct now
         await after.add_roles(verified_role, reason="Correct nickname")
-        await welcome_channel.send(content=f"Correct nickname!")
+        await welcome_channel.send(
+            content=i18n["name_validator"]["valid_name"].format(
+                user_id=after.id, username=username
+            )
+        )
 
 
 def setup(bot: ButtercupBot) -> None:
