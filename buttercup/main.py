@@ -9,6 +9,7 @@ EXTENSIONS = [
     "welcome",
     "name_validator",
     "find",
+    "search",
     "stats",
     "heatmap",
     "history",
