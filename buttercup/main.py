@@ -13,6 +13,7 @@ EXTENSIONS = [
     "history",
     "ping",
     "rules",
+    "leaderboard",
 ]
 
 
