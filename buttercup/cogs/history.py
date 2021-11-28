@@ -1,7 +1,7 @@
 import io
-import time
+import math
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 import matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ from dateutil.tz import tzutc
 from discord import Embed, File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
@@ -24,6 +25,7 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     get_rank,
     get_rgb_from_hex,
+    get_timedelta_str,
     get_usernames_from_user_list,
     join_items_with_and,
     parse_time_constraints,
@@ -563,13 +565,108 @@ class History(Cog):
             file=discord_file,
         )
 
+    async def _get_user_progress(
+        self, user: Dict[str, Any], start: datetime, time_frame: timedelta
+    ) -> int:
+        # We ask for submission completed by the user in the time frame
+        # The response will contain a count, so we just need 1 result
+        progress_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "completed_by": user["id"],
+                "from": (start - time_frame).isoformat(),
+                "page_size": 1,
+            },
+        )
+        if progress_response.status_code != 200:
+            raise RuntimeError("Failed to get progress")
+        return progress_response.json()["count"]
+
+    async def _until_user_catch_up(
+        self,
+        msg: SlashMessage,
+        user: Dict[str, Any],
+        target_username: str,
+        start: datetime,
+    ) -> None:
+        """Determine how long it will take the user to catch up with the target user."""
+        # Try to find the target user
+        target_response = self.blossom_api.get_user(target_username)
+        if target_response.status != BlossomStatus.ok:
+            raise InvalidArgumentException("goal", target_username)
+
+        target = target_response.data
+
+        if user["gamma"] > target["gamma"]:
+            # Swap user and target, the target has to have more gamma
+            # Otherwise the goal would have already been reached
+            user, target = target, user
+
+        time_frame = timedelta(weeks=1)
+
+        try:
+            user_progress = await self._get_user_progress(user, start, time_frame)
+            target_progress = await self._get_user_progress(target, start, time_frame)
+        except RuntimeError:
+            await msg.edit(
+                content=i18n["until"]["failed_getting_prediction"].format(user=user)
+            )
+            return
+
+        if user_progress <= target_progress:
+            description = i18n["until"]["embed_description_user_never"].format(
+                user=user["username"],
+                user_gamma=user["gamma"],
+                user_progress=user_progress,
+                target=target["username"],
+                target_gamma=target["gamma"],
+                target_progress=target_progress,
+                time_frame="week",
+            )
+        else:
+            # Calculate time needed
+            seconds_needed = (target["gamma"] - user["gamma"]) / (
+                (user_progress - target_progress) / time_frame.total_seconds()
+            )
+            time_needed = timedelta(seconds=seconds_needed)
+
+            intersection_gamma = user["gamma"] + math.ceil(
+                (user_progress / time_frame.total_seconds())
+                * time_needed.total_seconds()
+            )
+
+            description = i18n["until"]["embed_description_user_prediction"].format(
+                user=user["username"],
+                user_gamma=user["gamma"],
+                user_progress=user_progress,
+                target=target["username"],
+                target_gamma=target["gamma"],
+                target_progress=target_progress,
+                intersection_gamma=intersection_gamma,
+                time_frame=get_timedelta_str(time_frame),
+                time_needed=get_timedelta_str(time_needed),
+            )
+
+        color = get_rank(target["gamma"])["color"]
+
+        await msg.edit(
+            content=i18n["until"]["embed_message"].format(
+                duration=get_duration_str(start)
+            ),
+            embed=Embed(
+                title=i18n["until"]["embed_title"].format(user=user["username"]),
+                description=description,
+                color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
+            ),
+        )
+
     @cog_ext.cog_slash(
         name="until",
         description="Determines the time required to reach the next milestone.",
         options=[
             create_option(
                 name="goal",
-                description="The gamma or flair rank to reach. "
+                description="The gamma, flair rank or user to reach. "
                 "Defaults to the next rank.",
                 option_type=3,
                 required=False,
@@ -591,24 +688,27 @@ class History(Cog):
     ) -> None:
         """Determine how long it will take the user to reach the given goal."""
         start = datetime.now()
-        user = username or extract_username(ctx.author.display_name)
+        username = username or extract_username(ctx.author.display_name)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["until"]["getting_prediction"].format(user=user))
+        msg = await ctx.send(i18n["until"]["getting_prediction"].format(user=username))
 
-        volunteer_response = self.blossom_api.get_user(user)
-        if volunteer_response.status != BlossomStatus.ok:
-            await msg.edit(content=i18n["until"]["user_not_found"].format(user))
+        user_response = self.blossom_api.get_user(username)
+        if user_response.status != BlossomStatus.ok:
+            await msg.edit(content=i18n["until"]["user_not_found"].format(username))
             return
-        volunteer_id = volunteer_response.data["id"]
-        gamma = volunteer_response.data["gamma"]
+        user = user_response.data
+        username = user["username"]
 
         if goal is not None:
-            goal_gamma, goal_str = parse_goal_str(goal)
+            try:
+                goal_gamma, goal_str = parse_goal_str(goal)
+            except InvalidArgumentException:
+                return await self._until_user_catch_up(msg, user, goal, start)
         else:
             # Take the next rank for the user
-            next_rank = get_next_rank(gamma)
+            next_rank = get_next_rank(user["gamma"])
             goal_gamma, goal_str = (
                 next_rank["threshold"],
                 f"{next_rank['name']} ({next_rank['threshold']})",
@@ -616,20 +716,20 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["getting_prediction_to_goal"].format(
-                user=user, goal_gamma=goal_str
+                user=username, goal_gamma=goal_str
             )
         )
 
-        if gamma == 0:
+        if user["gamma"] == 0:
             # The user has not started transcribing yet
             await msg.edit(
                 content=i18n["until"]["embed_message"].format(
                     duration=get_duration_str(start)
                 ),
                 embed=Embed(
-                    title=i18n["until"]["embed_title"].format(user),
+                    title=i18n["until"]["embed_title"].format(username),
                     description=i18n["until"]["embed_description_new"].format(
-                        user=user
+                        user=username
                     ),
                 ),
             )
@@ -637,42 +737,35 @@ class History(Cog):
 
         time_frame = timedelta(weeks=1)
 
-        # We ask for submission completed by the user in the time frame
-        # The response will contain a count, so we just need 1 result
-        progress_response = self.blossom_api.get(
-            "submission/",
-            params={
-                "completed_by": volunteer_id,
-                "from": (start - time_frame).isoformat(),
-                "page_size": 1,
-            },
-        )
-        if progress_response.status_code != 200:
+        try:
+            user_progress = await self._get_user_progress(user, start, time_frame)
+        except RuntimeError:
             await msg.edit(
-                content=i18n["until"]["failed_getting_prediction"].format(user=user)
+                content=i18n["until"]["failed_getting_prediction"].format(user=username)
             )
             return
-        progress_count = progress_response.json()["count"]
 
-        if progress_count == 0:
+        if user_progress == 0:
             description = i18n["until"]["embed_description_zero"].format(
-                time_frame="week", user=user, cur_gamma=gamma, goal=goal_str
+                time_frame=get_timedelta_str(time_frame),
+                user=username,
+                cur_gamma=user["gamma"],
+                goal=goal_str,
             )
         else:
             # Based on the progress in the timeframe, calculate the time needed
-            gamma_needed = goal_gamma - gamma
+            gamma_needed = goal_gamma - user["gamma"]
             time_needed = timedelta(
-                seconds=gamma_needed * (time_frame.total_seconds() / progress_count)
+                seconds=gamma_needed * (time_frame.total_seconds() / user_progress)
             )
-            target_time = datetime.now() + time_needed
 
             description = i18n["until"]["embed_description_prediction"].format(
                 time_frame="week",
-                user=user,
-                cur_gamma=gamma,
+                user=username,
+                user_gamma=user["gamma"],
                 goal=goal_str,
-                progress=progress_count,
-                time_needed=f"<t:{time.mktime(target_time.timetuple()):0.0f}:R>",
+                user_progress=user_progress,
+                time_needed=get_timedelta_str(time_needed),
             )
 
         # Determine the color of the target rank
@@ -683,7 +776,7 @@ class History(Cog):
                 duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["until"]["embed_title"].format(user=user),
+                title=i18n["until"]["embed_title"].format(user=username),
                 description=description,
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
