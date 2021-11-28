@@ -582,7 +582,7 @@ class History(Cog):
             raise RuntimeError("Failed to get progress")
         return progress_response.json()["count"]
 
-    async def _until_user(
+    async def _until_user_catch_up(
         self,
         msg: SlashMessage,
         user: Dict[str, Any],
@@ -705,7 +705,7 @@ class History(Cog):
             try:
                 goal_gamma, goal_str = parse_goal_str(goal)
             except InvalidArgumentException:
-                return await self._until_user(msg, user, goal, start)
+                return await self._until_user_catch_up(msg, user, goal, start)
         else:
             # Take the next rank for the user
             next_rank = get_next_rank(user["gamma"])
