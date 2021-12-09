@@ -206,8 +206,10 @@ until:
     Prediction for u/{user}
   embed_description_prediction: |
     **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** in {time_needed}!
+  embed_description_reached: |
+    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) has already reached **{goal}**!
   embed_description_zero: |
-    **u/{user}** will never get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
+    **u/{user}** will **never** get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
     Hey u/{user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
