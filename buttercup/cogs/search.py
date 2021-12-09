@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 import pytz
-from blossom_wrapper import BlossomAPI
+from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -14,7 +14,13 @@ from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException, get_duration_str
+from buttercup.cogs.helpers import (
+    BlossomException,
+    get_duration_str,
+    parse_time_constraints,
+    extract_username,
+    InvalidArgumentException,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -125,6 +131,8 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
 class SearchCacheItem(TypedDict):
     # The query that the user searched for
     query: str
+    # The user that the search is restricted to
+    user: Optional[Dict[str, Any]]
     # The current Discord page for the query
     cur_page: int
     # The id of the user who executed the query
@@ -212,6 +220,7 @@ class Search(Cog):
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
+        user_id = cache_item["user"]["id"] if cache_item["user"] else None
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
@@ -222,6 +231,7 @@ class Search(Cog):
             # A new request has to be made
             data = dict(
                 text__icontains=cache_item["query"],
+                author=user_id,
                 url__isnull=False,
                 ordering="-create_time",
                 page_size=self.request_page_size,
@@ -247,6 +257,7 @@ class Search(Cog):
             msg.id,
             {
                 "query": query,
+                "user": cache_item["user"],
                 "cur_page": discord_page,
                 "discord_user_id": cache_item["discord_user_id"],
                 "response_data": response_data,
@@ -307,20 +318,62 @@ class Search(Cog):
                 description="The text to search for (case-insensitive).",
                 option_type=3,
                 required=True,
-            )
+            ),
+            create_option(
+                name="username",
+                description="The user to restrict the search to. "
+                "Defaults to the user executing the command.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="after",
+                description="Only show transcriptions after this date.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="Only show transcriptions before this date.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def search(self, ctx: SlashContext, query: str) -> None:
+    async def search(
+        self,
+        ctx: SlashContext,
+        query: str,
+        username: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Search for transcriptions containing the given text."""
         start = datetime.now()
+        after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["search"]["getting_search"].format(query=query))
+        msg = await ctx.send(
+            i18n["search"]["getting_search"].format(query=query, time_str=time_str)
+        )
+
+        username = username or extract_username(ctx.author.display_name)
+
+        # Get the user that the search is restricted to
+        if username.casefold() != "all":
+            volunteer_response = self.blossom_api.get_user(username)
+            if volunteer_response.status != BlossomStatus.ok:
+                raise InvalidArgumentException("username", username)
+
+            user = volunteer_response.data
+        else:
+            user = None
 
         # Simulate an initial cache item
         cache_item: SearchCacheItem = {
             "query": query,
+            "user": user,
             "cur_page": 0,
             "discord_user_id": ctx.author_id,
             "response_data": None,

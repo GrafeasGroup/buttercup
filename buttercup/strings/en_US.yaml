@@ -277,7 +277,7 @@ leaderboard:
     Leaderboard for u/{user} ({time_frame})
 search:
   getting_search: |-
-    Searching for `{query}`...
+    Searching for `{query}` {time_str}...
   no_results: |-
     No results found for `{query}`. ({duration_str})
   description:
