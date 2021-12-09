@@ -749,7 +749,7 @@ class History(Cog):
             description = i18n["until"]["embed_description_zero"].format(
                 time_frame=get_timedelta_str(time_frame),
                 user=username,
-                cur_gamma=user["gamma"],
+                user_gamma=user["gamma"],
                 goal=goal_str,
             )
         else:
