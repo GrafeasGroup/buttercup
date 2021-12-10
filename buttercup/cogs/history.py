@@ -98,11 +98,15 @@ def add_zero_rates(
     """
     new_index = set()
     delta = get_timedelta_from_time_frame(time_frame)
-    now = datetime.now(tz=tzutc())
+    now = datetime.now(tz=pytz.utc)
 
     if after_time:
         # Add the earliest point according to the timeframe
         first_date = data.index[0]
+        # Make sure everything is localized
+        first_date = first_date.replace(tzinfo=first_date.tzinfo or pytz.utc)
+        after_time = after_time.replace(tzinfo=after_time.tzinfo or pytz.utc)
+
         missing_delta: timedelta = first_date - after_time
         missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
         if missing_time_frames > 0:
@@ -121,7 +125,12 @@ def add_zero_rates(
 
     # Add the latest point according to the timeframe
     last_date = data.index[-1]
-    missing_delta: timedelta = (before_time or now) - last_date
+    # Make sure everything is localized
+    last_date = last_date.replace(tzinfo=last_date.tzinfo or pytz.utc)
+    before_time = before_time or now
+    before_time = before_time.replace(tzinfo=before_time.tzinfo or pytz.utc)
+
+    missing_delta: timedelta = before_time - last_date
     missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
     if missing_time_frames > 0:
         # We need to add a new entry at the end
