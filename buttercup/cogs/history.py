@@ -374,7 +374,8 @@ class History(Cog):
                 )
             )
 
-        user_gammas = []
+        min_gammas = []
+        max_gammas = []
 
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
@@ -406,9 +407,13 @@ class History(Cog):
             user_gamma, history_data = self.get_user_history(
                 user, after_time, before_time
             )
-            user_gammas.append(user_gamma)
+
             color = ranks[index]["color"]
+            first_point = history_data.iloc[0]
             last_point = history_data.iloc[-1]
+
+            min_gammas.append(first_point.at["gamma"])
+            max_gammas.append(last_point.at["gamma"])
 
             # Plot the graph
             ax.plot(
@@ -426,7 +431,7 @@ class History(Cog):
             )
 
         # Show ranks when you are close to them already
-        ax = add_milestone_lines(ax, ranks, max(user_gammas) * 1.4)
+        ax = add_milestone_lines(ax, ranks, max(max_gammas) * 1.4)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
