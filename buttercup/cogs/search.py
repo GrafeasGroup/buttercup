@@ -16,10 +16,11 @@ from discord_slash.utils.manage_commands import create_option
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
-    get_duration_str,
-    parse_time_constraints,
-    extract_username,
     InvalidArgumentException,
+    extract_username,
+    get_duration_str,
+    get_username,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
@@ -224,7 +225,8 @@ class Search(Cog):
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
-        user_id = cache_item["user"]["id"] if cache_item["user"] else None
+        user = cache_item["user"]
+        user_id = user["id"] if user else None
         after_time = cache_item["after_time"]
         before_time = cache_item["before_time"]
         time_str = cache_item["time_str"]
@@ -259,7 +261,10 @@ class Search(Cog):
         if response_data["count"] == 0:
             await msg.edit(
                 content=i18n["search"]["no_results"].format(
-                    query=query, duration_str=get_duration_str(start)
+                    query=query,
+                    user=get_username(user),
+                    time_str=time_str,
+                    duration_str=get_duration_str(start),
                 )
             )
             return
@@ -297,10 +302,15 @@ class Search(Cog):
 
         await msg.edit(
             content=i18n["search"]["embed_message"].format(
-                query=query, duration_str=get_duration_str(start)
+                query=query,
+                user=get_username(user),
+                time_str=time_str,
+                duration_str=get_duration_str(start),
             ),
             embed=Embed(
-                title=i18n["search"]["embed_title"].format(query=query),
+                title=i18n["search"]["embed_title"].format(
+                    query=query, user=get_username(user)
+                ),
                 description=description,
             ).set_footer(
                 text=i18n["search"]["embed_footer"].format(
