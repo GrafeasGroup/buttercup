@@ -727,7 +727,7 @@ class History(Cog):
                     duration=get_duration_str(start)
                 ),
                 embed=Embed(
-                    title=i18n["until"]["embed_title"].format(username),
+                    title=i18n["until"]["embed_title"].format(user=username),
                     description=i18n["until"]["embed_description_new"].format(
                         user=username
                     ),
@@ -745,11 +745,20 @@ class History(Cog):
             )
             return
 
-        if user_progress == 0:
+        if user["gamma"] >= goal_gamma:
+            # The user has already reached the goal
+            description = i18n["until"]["embed_description_reached"].format(
+                time_frame="week",
+                user=username,
+                user_gamma=user["gamma"],
+                goal=goal_str,
+                user_progress=user_progress,
+            )
+        elif user_progress == 0:
             description = i18n["until"]["embed_description_zero"].format(
                 time_frame=get_timedelta_str(time_frame),
                 user=username,
-                cur_gamma=user["gamma"],
+                user_gamma=user["gamma"],
                 goal=goal_str,
             )
         else:
