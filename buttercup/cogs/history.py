@@ -83,7 +83,12 @@ def get_timedelta_from_time_frame(time_frame: Optional[str]) -> timedelta:
     return timedelta(days=1)
 
 
-def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
+def add_zero_rates(
+    data: pd.DataFrame,
+    time_frame: str,
+    after_time: Optional[datetime],
+    before_time: Optional[datetime],
+) -> pd.DataFrame:
     """Add entries for the zero rates to the data frame.
 
     When the rate is zero, it is not returned in the API response.
@@ -95,26 +100,55 @@ def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
     delta = get_timedelta_from_time_frame(time_frame)
     now = datetime.now(tz=tzutc())
 
+    if after_time:
+        # Add the earliest point according to the timeframe
+        first_date = data.index[0]
+        missing_delta: timedelta = first_date - after_time
+        missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
+        if missing_time_frames > 0:
+            # We need to add a new entry at the beginning
+            missing_delta = timedelta(
+                seconds=missing_time_frames * delta.total_seconds()
+            )
+            missing_date = first_date - missing_delta
+            new_index.add(missing_date)
+
     for date in data.index:
         new_index.add(date)
         new_index.add(date - delta)
         if date + delta < now:
             new_index.add(date + delta)
 
+    # Add the latest point according to the timeframe
+    last_date = data.index[-1]
+    missing_delta: timedelta = (before_time or now) - last_date
+    missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
+    if missing_time_frames > 0:
+        # We need to add a new entry at the end
+        missing_delta = timedelta(seconds=missing_time_frames * delta.total_seconds())
+        missing_date = last_date + missing_delta
+        new_index.add(missing_date)
+
     return data.reindex(new_index, fill_value=0).sort_index()
 
 
 def add_milestone_lines(
-    ax: plt.Axes, milestones: List[Dict[str, Union[str, int]]], value: float
+    ax: plt.Axes,
+    milestones: List[Dict[str, Union[str, int]]],
+    min_value: float,
+    max_value: float,
+    delta: float,
 ) -> plt.Axes:
     """Add the lines for the milestones the user reached.
 
     :param ax: The axis to draw the milestones into.
     :param milestones: The milestones to consider. Each must have a threshold and color.
-    :param value: The value to determine if a user reached a given milestone.
+    :param min_value: The minimum value to determine if a milestone should be included.
+    :param max_value: The maximum value to determine if a milestone should be inlcuded.
+    :param delta: Determines how "far away" milestone lines are still included.
     """
     for milestone in milestones:
-        if value >= milestone["threshold"]:
+        if max_value + delta >= milestone["threshold"] >= min_value - delta:
             ax.axhline(y=milestone["threshold"], color=milestone["color"], zorder=-1)
     return ax
 
@@ -219,7 +253,7 @@ class History(Cog):
             page += 1
 
         # Add the missing zero entries
-        rate_data = add_zero_rates(rate_data, time_frame)
+        rate_data = add_zero_rates(rate_data, time_frame, after_time, before_time)
         return rate_data
 
     def calculate_history_offset(
@@ -285,8 +319,6 @@ class History(Cog):
             user_data, rate_data, after_time, before_time
         )
 
-        # Add an up-to-date entry
-        rate_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
         history_data = get_history_data_from_rate_data(rate_data, offset)
 
@@ -346,7 +378,8 @@ class History(Cog):
                 )
             )
 
-        user_gammas = []
+        min_gammas = []
+        max_gammas = []
 
         fig: plt.Figure = plt.figure()
         ax: plt.Axes = fig.gca()
@@ -378,9 +411,13 @@ class History(Cog):
             user_gamma, history_data = self.get_user_history(
                 user, after_time, before_time
             )
-            user_gammas.append(user_gamma)
+
             color = ranks[index]["color"]
+            first_point = history_data.iloc[0]
             last_point = history_data.iloc[-1]
+
+            min_gammas.append(first_point.at["gamma"])
+            max_gammas.append(last_point.at["gamma"])
 
             # Plot the graph
             ax.plot(
@@ -398,7 +435,9 @@ class History(Cog):
             )
 
         # Show ranks when you are close to them already
-        ax = add_milestone_lines(ax, ranks, max(user_gammas) * 1.4)
+        min_value, max_value = min(min_gammas), max(max_gammas)
+        delta = (max_value - min_value) * 0.4
+        ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
@@ -526,7 +565,6 @@ class History(Cog):
             max_rate = user_data["count"].max()
             max_rates.append(max_rate)
             max_rate_point = user_data[user_data["count"] == max_rate].iloc[0]
-            print(max_rate_point)
 
             color = ranks[index]["color"]
 
@@ -549,9 +587,7 @@ class History(Cog):
         milestones = [
             dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)
         ]
-        # Show rate milestones when you are close to them already
-        value = max(max_rates) + 40
-        ax = add_milestone_lines(ax, milestones, value)
+        ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
