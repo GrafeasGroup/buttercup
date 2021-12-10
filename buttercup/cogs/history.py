@@ -107,6 +107,8 @@ def add_zero_rates(
         first_date = first_date.replace(tzinfo=first_date.tzinfo or pytz.utc)
         after_time = after_time.replace(tzinfo=after_time.tzinfo or pytz.utc)
 
+        print(f"first_date: {first_date}, after_time: {after_time}")
+
         missing_delta: timedelta = first_date - after_time
         missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
         if missing_time_frames > 0:
@@ -129,6 +131,8 @@ def add_zero_rates(
     last_date = last_date.replace(tzinfo=last_date.tzinfo or pytz.utc)
     before_time = before_time or now
     before_time = before_time.replace(tzinfo=before_time.tzinfo or pytz.utc)
+
+    print(f"last_date: {last_date}, before_time: {before_time}")
 
     missing_delta: timedelta = before_time - last_date
     missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
