@@ -125,9 +125,7 @@ def add_zero_rates(
     missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
     if missing_time_frames > 0:
         # We need to add a new entry at the end
-        missing_delta = timedelta(
-            seconds=missing_time_frames * delta.total_seconds()
-        )
+        missing_delta = timedelta(seconds=missing_time_frames * delta.total_seconds())
         missing_date = last_date + missing_delta
         new_index.add(missing_date)
 
@@ -135,16 +133,22 @@ def add_zero_rates(
 
 
 def add_milestone_lines(
-    ax: plt.Axes, milestones: List[Dict[str, Union[str, int]]], value: float
+    ax: plt.Axes,
+    milestones: List[Dict[str, Union[str, int]]],
+    min_value: float,
+    max_value: float,
+    delta: float,
 ) -> plt.Axes:
     """Add the lines for the milestones the user reached.
 
     :param ax: The axis to draw the milestones into.
     :param milestones: The milestones to consider. Each must have a threshold and color.
-    :param value: The value to determine if a user reached a given milestone.
+    :param min_value: The minimum value to determine if a milestone should be included.
+    :param max_value: The maximum value to determine if a milestone should be inlcuded.
+    :param delta: Determines how "far away" milestone lines are still included.
     """
     for milestone in milestones:
-        if value >= milestone["threshold"]:
+        if max_value + delta >= milestone["threshold"] >= min_value - delta:
             ax.axhline(y=milestone["threshold"], color=milestone["color"], zorder=-1)
     return ax
 
@@ -431,7 +435,9 @@ class History(Cog):
             )
 
         # Show ranks when you are close to them already
-        ax = add_milestone_lines(ax, ranks, max(max_gammas) * 1.4)
+        min_value, max_value = min(min_gammas), max(max_gammas)
+        delta = (max_value - min_value) * 0.4
+        ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
@@ -581,9 +587,7 @@ class History(Cog):
         milestones = [
             dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)
         ]
-        # Show rate milestones when you are close to them already
-        value = max(max_rates) + 40
-        ax = add_milestone_lines(ax, milestones, value)
+        ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
         if len(users) > 1:
             ax.legend([f"u/{user}" for user in users])
