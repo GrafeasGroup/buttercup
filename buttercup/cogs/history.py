@@ -83,7 +83,12 @@ def get_timedelta_from_time_frame(time_frame: Optional[str]) -> timedelta:
     return timedelta(days=1)
 
 
-def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
+def add_zero_rates(
+    data: pd.DataFrame,
+    time_frame: str,
+    after_time: Optional[datetime],
+    before_time: Optional[datetime],
+) -> pd.DataFrame:
     """Add entries for the zero rates to the data frame.
 
     When the rate is zero, it is not returned in the API response.
@@ -95,11 +100,36 @@ def add_zero_rates(data: pd.DataFrame, time_frame: str) -> pd.DataFrame:
     delta = get_timedelta_from_time_frame(time_frame)
     now = datetime.now(tz=tzutc())
 
+    if after_time:
+        # Add the earliest point according to the timeframe
+        first_date = data.index[0]
+        missing_delta: timedelta = first_date - after_time
+        missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
+        if missing_time_frames > 0:
+            # We need to add a new entry at the beginning
+            missing_delta = timedelta(
+                seconds=missing_time_frames * delta.total_seconds()
+            )
+            missing_date = first_date - missing_delta
+            new_index.add(missing_date)
+
     for date in data.index:
         new_index.add(date)
         new_index.add(date - delta)
         if date + delta < now:
             new_index.add(date + delta)
+
+    # Add the latest point according to the timeframe
+    last_date = data.index[-1]
+    missing_delta: timedelta = (before_time or now) - last_date
+    missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
+    if missing_time_frames > 0:
+        # We need to add a new entry at the end
+        missing_delta = timedelta(
+            seconds=missing_time_frames * delta.total_seconds()
+        )
+        missing_date = last_date + missing_delta
+        new_index.add(missing_date)
 
     return data.reindex(new_index, fill_value=0).sort_index()
 
@@ -219,7 +249,7 @@ class History(Cog):
             page += 1
 
         # Add the missing zero entries
-        rate_data = add_zero_rates(rate_data, time_frame)
+        rate_data = add_zero_rates(rate_data, time_frame, after_time, before_time)
         return rate_data
 
     def calculate_history_offset(
@@ -285,8 +315,6 @@ class History(Cog):
             user_data, rate_data, after_time, before_time
         )
 
-        # Add an up-to-date entry
-        rate_data.loc[datetime.now(tz=tzutc())] = [0]
         # Aggregate the gamma score
         history_data = get_history_data_from_rate_data(rate_data, offset)
 
@@ -526,7 +554,6 @@ class History(Cog):
             max_rate = user_data["count"].max()
             max_rates.append(max_rate)
             max_rate_point = user_data[user_data["count"] == max_rate].iloc[0]
-            print(max_rate_point)
 
             color = ranks[index]["color"]
 
