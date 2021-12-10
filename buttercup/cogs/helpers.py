@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from time import mktime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pytz
 from blossom_wrapper import BlossomResponse
@@ -300,3 +300,14 @@ def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
     # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
     hx = hex_str.lstrip("#")
     return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
+
+
+def get_username(user: Optional[Dict[str, Any]]) -> str:
+    """Get the name of the given user.
+
+    None is interpreted as all users.
+    """
+    if user is None:
+        return "everybody"
+
+    return "u/" + user["username"]

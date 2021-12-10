@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 import pytz
-from blossom_wrapper import BlossomAPI
+from blossom_wrapper import BlossomAPI, BlossomStatus
 from discord import Embed, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -14,7 +14,14 @@ from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import BlossomException, get_duration_str
+from buttercup.cogs.helpers import (
+    BlossomException,
+    InvalidArgumentException,
+    extract_username,
+    get_duration_str,
+    get_username,
+    parse_time_constraints,
+)
 from buttercup.strings import translation
 
 i18n = translation()
@@ -125,6 +132,12 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
 class SearchCacheItem(TypedDict):
     # The query that the user searched for
     query: str
+    # The user that the search is restricted to
+    user: Optional[Dict[str, Any]]
+    # The time restriction for the search
+    after_time: Optional[datetime]
+    before_time: Optional[datetime]
+    time_str: str
     # The current Discord page for the query
     cur_page: int
     # The id of the user who executed the query
@@ -212,6 +225,14 @@ class Search(Cog):
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
+        user = cache_item["user"]
+        user_id = user["id"] if user else None
+        after_time = cache_item["after_time"]
+        before_time = cache_item["before_time"]
+        time_str = cache_item["time_str"]
+
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
@@ -220,13 +241,16 @@ class Search(Cog):
             or request_page != cache_item["request_page"]
         ):
             # A new request has to be made
-            data = dict(
-                text__icontains=cache_item["query"],
-                url__isnull=False,
-                ordering="-create_time",
-                page_size=self.request_page_size,
-                page=request_page + 1,
-            )
+            data = {
+                "text__icontains": cache_item["query"],
+                "author": user_id,
+                "create_time__gte": from_str,
+                "create_time__lte": until_str,
+                "url__isnull": False,
+                "ordering": "-create_time",
+                "page_size": self.request_page_size,
+                "page": request_page + 1,
+            }
             response = self.blossom_api.get(path="transcription", params=data)
             if response.status_code != 200:
                 raise BlossomException(response)
@@ -237,7 +261,10 @@ class Search(Cog):
         if response_data["count"] == 0:
             await msg.edit(
                 content=i18n["search"]["no_results"].format(
-                    query=query, duration_str=get_duration_str(start)
+                    query=query,
+                    user=get_username(user),
+                    time_str=time_str,
+                    duration_str=get_duration_str(start),
                 )
             )
             return
@@ -247,6 +274,10 @@ class Search(Cog):
             msg.id,
             {
                 "query": query,
+                "user": cache_item["user"],
+                "after_time": after_time,
+                "before_time": before_time,
+                "time_str": time_str,
                 "cur_page": discord_page,
                 "discord_user_id": cache_item["discord_user_id"],
                 "response_data": response_data,
@@ -271,10 +302,15 @@ class Search(Cog):
 
         await msg.edit(
             content=i18n["search"]["embed_message"].format(
-                query=query, duration_str=get_duration_str(start)
+                query=query,
+                user=get_username(user),
+                time_str=time_str,
+                duration_str=get_duration_str(start),
             ),
             embed=Embed(
-                title=i18n["search"]["embed_title"].format(query=query),
+                title=i18n["search"]["embed_title"].format(
+                    query=query, user=get_username(user)
+                ),
                 description=description,
             ).set_footer(
                 text=i18n["search"]["embed_footer"].format(
@@ -307,20 +343,65 @@ class Search(Cog):
                 description="The text to search for (case-insensitive).",
                 option_type=3,
                 required=True,
-            )
+            ),
+            create_option(
+                name="username",
+                description="The user to restrict the search to. "
+                "Defaults to the user executing the command.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="after",
+                description="Only show transcriptions after this date.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="Only show transcriptions before this date.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
-    async def search(self, ctx: SlashContext, query: str) -> None:
+    async def search(
+        self,
+        ctx: SlashContext,
+        query: str,
+        username: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ) -> None:
         """Search for transcriptions containing the given text."""
         start = datetime.now()
+        after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["search"]["getting_search"].format(query=query))
+        msg = await ctx.send(
+            i18n["search"]["getting_search"].format(query=query, time_str=time_str)
+        )
+
+        username = username or extract_username(ctx.author.display_name)
+
+        # Get the user that the search is restricted to
+        if username.casefold() != "all":
+            volunteer_response = self.blossom_api.get_user(username)
+            if volunteer_response.status != BlossomStatus.ok:
+                raise InvalidArgumentException("username", username)
+
+            user = volunteer_response.data
+        else:
+            user = None
 
         # Simulate an initial cache item
         cache_item: SearchCacheItem = {
             "query": query,
+            "user": user,
+            "after_time": after_time,
+            "before_time": before_time,
+            "time_str": time_str,
             "cur_page": 0,
             "discord_user_id": ctx.author_id,
             "response_data": None,

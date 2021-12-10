@@ -279,17 +279,17 @@ leaderboard:
     Leaderboard for u/{user} ({time_frame})
 search:
   getting_search: |-
-    Searching for `{query}`...
+    Searching for `{query}` {time_str}...
   no_results: |-
-    No results found for `{query}`. ({duration_str})
+    No results found for `{query}` by {user} {time_str}. ({duration_str})
   description:
     item: |-
       {num}. [{tr_type} on {tr_source}]({url})
     more_occurrences: |-
       ... and {count} more occurrence(s).
   embed_message: |-
-    Here are your results for `{query}`! ({duration_str})
+    Here are your results for `{query}` by {user} {time_str}! ({duration_str})
   embed_title: |-
-    Results for `{query}`
+    Results for `{query}` by {user}
   embed_footer: |-
     Page {cur_page}/{total_pages} ({total_results} result(s))
