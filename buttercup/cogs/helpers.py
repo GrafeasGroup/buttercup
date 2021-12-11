@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from time import mktime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TypedDict
 
 import pytz
 from blossom_wrapper import BlossomResponse
@@ -29,6 +29,13 @@ unit_regexes: Dict[str, re.Pattern] = {
     "months": re.compile(r"^m(?:onths?)?$"),
     "years": re.compile(r"^y(?:ears?)?$"),
 }
+
+
+class BlossomUser(TypedDict):
+    id: int
+    username: str
+    gamma: int
+    date_joined: str
 
 
 class NoUsernameException(DiscordException):
@@ -302,7 +309,7 @@ def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
     return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
 
 
-def get_username(user: Optional[Dict[str, Any]]) -> str:
+def get_username(user: Optional[BlossomUser]) -> str:
     """Get the name of the given user.
 
     None is interpreted as all users.
