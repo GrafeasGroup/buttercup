@@ -118,6 +118,23 @@ def get_usernames_from_user_list(
     return [extract_username(user) for user in raw_names][:limit]
 
 
+def get_initial_username(username: str, ctx: SlashContext) -> str:
+    """Get the initial, unverified username.
+
+    This does not make any API requests yet, so it can be used for the first message.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns "everyone".
+    """
+    if username.casefold() in ["all", "everyone", "everybody"]:
+        # Handle command execution for everyone
+        return "everyone"
+
+    _username = ctx.author.display_name if username.casefold() == "me" else username
+    return "u/" + extract_username(_username)
+
+
 def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optional[BlossomUser]:
     """Get the given user from Blossom.
 
@@ -132,7 +149,8 @@ def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optio
         return None
 
     # Handle command execution for the current user
-    _username = extract_username(ctx.author.display_name) if username.casefold() == "me" else username
+    _username = ctx.author.display_name if username.casefold() == "me" else username
+    _username = extract_username(_username)
 
     user_response = blossom_api.get_user(_username)
 
