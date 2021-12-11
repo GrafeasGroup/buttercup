@@ -270,11 +270,11 @@ rate:
       Here is the transcription rate graph for {usernames} {time_str}! ({duration})
 leaderboard:
   getting_leaderboard: |
-    Getting leaderboard for u/{user} {time_str}...
+    Getting leaderboard for {user} {time_str}...
   embed_message: |
-    Here is the leaderboard for u/{user} {time_str}! ({duration})
+    Here is the leaderboard for {user} {time_str}! ({duration})
   embed_title: |
-    Leaderboard for u/{user} ({time_frame})
+    Leaderboard for {user} ({time_frame})
 search:
   getting_search: |-
     Searching for `{query}` {time_str}...
