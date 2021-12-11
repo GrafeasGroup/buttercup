@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from discord import File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -13,9 +13,14 @@ from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
-    extract_username,
+    BlossomException,
+    BlossomUser,
     extract_utc_offset,
     get_duration_str,
+    get_initial_username,
+    get_user,
+    get_user_id,
+    get_username,
     parse_time_constraints,
 )
 from buttercup.strings import translation
@@ -24,7 +29,7 @@ i18n = translation()
 
 
 def create_file_from_heatmap(
-    heatmap: pd.DataFrame, username: str, utc_offset: int = 0
+    heatmap: pd.DataFrame, user: Optional[BlossomUser], utc_offset: int = 0
 ) -> File:
     """Create a Discord file containing the heatmap table."""
     days = i18n["heatmap"]["days"]
@@ -53,8 +58,8 @@ def create_file_from_heatmap(
 
     timezone = "UTC" if utc_offset == 0 else f"UTC{utc_offset:+d}"
 
-    plt.title(i18n["heatmap"]["plot_title"].format(username))
-    plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone))
+    plt.title(i18n["heatmap"]["plot_title"].format(user=get_username(user)))
+    plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone=timezone))
     plt.ylabel(i18n["heatmap"]["plot_ylabel"])
 
     fig.tight_layout()
@@ -108,38 +113,38 @@ class Heatmap(Cog):
     async def _heatmap(
         self,
         ctx: SlashContext,
-        username: Optional[str] = None,
+        username: Optional[str] = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
         """Generate a heatmap for the given user."""
         start = datetime.now()
-        user = username or extract_username(ctx.author.display_name)
-        utc_offset = extract_utc_offset(ctx.author.display_name)
+
         after_time, before_time, time_str = parse_time_constraints(after, before)
+
         msg = await ctx.send(
-            i18n["heatmap"]["getting_heatmap"].format(user=user, time_str=time_str)
+            i18n["heatmap"]["getting_heatmap"].format(
+                user=get_initial_username(username, ctx), time_str=time_str
+            )
         )
+
+        utc_offset = extract_utc_offset(ctx.author.display_name)
+
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
 
-        volunteer_response = self.blossom_api.get_user(user)
-        if not volunteer_response.status == BlossomStatus.ok:
-            await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
-            return
-        volunteer = volunteer_response.data
+        user = get_user(username, ctx, self.blossom_api)
 
         heatmap_response = self.blossom_api.get(
             "submission/heatmap/",
             params={
-                "completed_by": volunteer["id"],
+                "completed_by": get_user_id(user),
                 "from": from_str,
                 "until": until_str,
             },
         )
         if heatmap_response.status_code != 200:
-            await msg.edit(content=i18n["heatmap"]["user_not_found"].format(user))
-            return
+            raise BlossomException(heatmap_response)
 
         data = heatmap_response.json()
         data = [adjust_with_timezone(hour_data, utc_offset) for hour_data in data]
@@ -160,7 +165,9 @@ class Heatmap(Cog):
 
         await msg.edit(
             content=i18n["heatmap"]["response_message"].format(
-                user=user, time_str=time_str, duration=get_duration_str(start)
+                user=get_username(user),
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             file=heatmap_table,
         )

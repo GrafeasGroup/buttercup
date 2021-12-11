@@ -1,12 +1,13 @@
 import re
 from datetime import datetime, timedelta
 from time import mktime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import pytz
-from blossom_wrapper import BlossomResponse
+from blossom_wrapper import BlossomAPI, BlossomResponse, BlossomStatus
 from dateutil import parser
 from discord import DiscordException, User
+from discord_slash import SlashContext
 from requests import Response
 
 from buttercup.cogs import ranks
@@ -29,6 +30,22 @@ unit_regexes: Dict[str, re.Pattern] = {
     "months": re.compile(r"^m(?:onths?)?$"),
     "years": re.compile(r"^y(?:ears?)?$"),
 }
+
+
+class BlossomUser(TypedDict):
+    id: int  # noqa: VNE003
+    username: str
+    gamma: int
+    date_joined: str
+
+
+class UserNotFoundException(DiscordException):
+    """Exception raised when the given user could not be found."""
+
+    def __init__(self, username: str) -> None:
+        """Create a new user not found exception."""
+        super().__init__()
+        self.username = username
 
 
 class NoUsernameException(DiscordException):
@@ -99,6 +116,124 @@ def get_usernames_from_user_list(
         return [extract_username(author.display_name)]
 
     return [extract_username(user) for user in raw_names][:limit]
+
+
+def get_initial_username(username: str, ctx: SlashContext) -> str:
+    """Get the initial, unverified username.
+
+    This does not make any API requests yet, so it can be used for the first message.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns "everyone".
+    """
+    if username.casefold() in ["all", "everyone", "everybody"]:
+        # Handle command execution for everyone
+        return "everyone"
+
+    _username = ctx.author.display_name if username.casefold() == "me" else username
+    return "u/" + extract_username(_username)
+
+
+def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
+    """Get the initial, unverified string of multiple users.
+
+    The usernames should be separated with a space.
+
+    This does not make any API requests yet, so it can be used for the first message.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns "everyone".
+    """
+    username_input = usernames.split(" ")
+    username_list = [get_initial_username(user, ctx) for user in username_input]
+
+    if "everyone" in username_list:
+        return "everyone"
+
+    # Connect the usernames
+    return join_items_with_and(username_list)
+
+
+def get_user(
+    username: str, ctx: SlashContext, blossom_api: BlossomAPI
+) -> Optional[BlossomUser]:
+    """Get the given user from Blossom.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Stats for all users, returns None.
+
+    If the user could not be found, a UserNotFoundException is thrown.
+    """
+    if username.casefold() in ["all", "everyone", "everybody"]:
+        # Handle command execution for everyone
+        return None
+
+    # Handle command execution for the current user
+    _username = ctx.author.display_name if username.casefold() == "me" else username
+    _username = extract_username(_username)
+
+    user_response = blossom_api.get_user(_username)
+
+    if user_response.status != BlossomStatus.ok:
+        raise UserNotFoundException(_username)
+
+    return user_response.data
+
+
+def get_user_list(
+    usernames: str, ctx: SlashContext, blossom_api: BlossomAPI
+) -> Optional[List[BlossomUser]]:
+    """Get the given users from Blossom.
+
+    The usernames should be separated with a space.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Stats for all users, returns None.
+
+    If the user could not be found, a UserNotFoundException is thrown.
+    """
+    username_input = usernames.split(" ")
+    user_list = [get_user(user, ctx, blossom_api) for user in username_input]
+
+    if None in user_list:
+        return None
+
+    return user_list
+
+
+def get_username(user: Optional[BlossomUser]) -> str:
+    """Get the name of the given user.
+
+    None is interpreted as all users.
+    """
+    return "u/" + user["username"] if user else "everyone"
+
+
+def get_usernames(
+    users: Optional[List[BlossomUser]], limit: Optional[int] = None
+) -> str:
+    """Get the name of the given users.
+
+    None is interpreted as all users.
+    """
+    if users is None:
+        return "everyone"
+    if limit is not None and len(users) > limit:
+        return f"{len(users)} users"
+
+    return join_items_with_and([get_username(user) for user in users])
+
+
+def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:
+    """Get the ID of the given user.
+
+    None is interpreted as all users and will also return None.
+    """
+    return user["id"] if user else None
 
 
 def extract_sub_name(subreddit: str) -> str:
@@ -300,14 +435,3 @@ def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
     # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
     hx = hex_str.lstrip("#")
     return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
-
-
-def get_username(user: Optional[Dict[str, Any]]) -> str:
-    """Get the name of the given user.
-
-    None is interpreted as all users.
-    """
-    if user is None:
-        return "everybody"
-
-    return "u/" + user["username"]

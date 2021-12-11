@@ -16,6 +16,7 @@ from discord_slash.utils.manage_commands import create_option
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
+    BlossomUser,
     InvalidArgumentException,
     extract_username,
     get_duration_str,
@@ -133,7 +134,7 @@ class SearchCacheItem(TypedDict):
     # The query that the user searched for
     query: str
     # The user that the search is restricted to
-    user: Optional[Dict[str, Any]]
+    user: Optional[BlossomUser]
     # The time restriction for the search
     after_time: Optional[datetime]
     before_time: Optional[datetime]

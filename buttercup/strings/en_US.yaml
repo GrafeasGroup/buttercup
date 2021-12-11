@@ -3,6 +3,8 @@ handlers:
     You are not authorized to use this command. This incident will be reported.
   no_username: |
     You did not provide a valid username. Either add it to the command or change your display name to a valid format.
+  user_not_found: |
+    I couldn't find a user with the name u/{user}!
   invalid_time_str: |
     "{time_str}" is an invalid date/time. Try something like "2021-08-04", "10:13" or "3 weeks ago".
   invalid_argument: |
@@ -33,42 +35,29 @@ find:
   discord_username_link: "[{0}](https://reddit.com/u/{0})"
 stats:
   getting_stats: |
-    Getting stats for all users...
-  failed_getting_stats: |
-    Failed to get the stats for all users.
+    Getting stats for {user}...
   embed_message: |
-    Here are the stats!
+    Here are the stats for {user}! ({duration})
   embed_title: |
-    Stats For All Users
-  embed_description: |
-    **Volunteers**: {:,d}
-    **Transcriptions**: {:,d}
-    **Days Since Inception**: {:,d}
-user_stats:
-  getting_stats: |
-    Getting stats for u/{user}...
-  failed_getting_stats: |
-    Failed to get the stats for u/{user}.
-  embed_message: |
-    Here are the stats for u/{user}! ({duration})
-  embed_title: |
-    Stats for u/{user}
-  embed_description: |
+    Stats for {user}
+  embed_description_all: |
+    **Volunteers**: {volunteers:,d}
+    **Transcriptions**: {transcriptions:,d}
+    **Days Since Inception**: {days:,d}
+  embed_description_user: |
     **Transcriptions**: {gamma:,d}
     **Flair Rank**: {flair_rank}
     **Date Joined**: {date_joined} ({joined_ago})
     **Last Active**: {last_active} ({last_ago})
 progress:
   getting_progress: |
-    Getting progress for u/{user} {time_str}...
+    Getting progress of {user} {time_str}...
   user_not_found: |
-    I couldn't find user u/{0}!
-  failed_getting_progress: |
-    I couldn't get the progress of u/{0}!
+    I couldn't find user {user}!
   embed_message: |
-    Here is the progress! ({0})
+    Here is the progress of {user}! ({duration})
   embed_title: |
-    Progress of u/{0}
+    Progress of {user}
   embed_description_24: |
     `{bar}` {count}/{total} transcriptions {time_str}.
 
@@ -142,9 +131,7 @@ progress:
       - Is that a 500/24 or is the progress bar just happy to see me?
 heatmap:
   getting_heatmap: |
-    Generating a heatmap for u/{user} {time_str}...
-  user_not_found: |
-    Sorry, I couldn't find the user u/{0}.
+    Generating a heatmap for {user} {time_str}...
   days:
     - Mon
     - Tue
@@ -153,11 +140,11 @@ heatmap:
     - Fri
     - Sat
     - Sun
-  plot_title: Activity Heatmap for u/{0}
-  plot_xlabel: Time ({0})
+  plot_title: Activity Heatmap for {user}
+  plot_xlabel: Time ({timezone})
   plot_ylabel: Weekday
   response_message: |
-    Here is the heatmap for u/{user} {time_str}! ({duration})
+    Here is the heatmap for {user} {time_str}! ({duration})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...
@@ -249,34 +236,32 @@ partner:
   embed_partner_status_description: |
     {status}
 history:
-    getting_history_single: |
-      Creating the history graph for u/{user} {time_str}...
-    getting_history_multi: |
+    getting_history: |
+      Creating the history graph for {users} {time_str}...
+    getting_history_progress: |
       Creating the history graph for {users} {time_str} ({count}/{total})...
-    plot_title_single: History of u/{user}
-    plot_title_multi: History of Multiple Users
+    plot_title: History of {users}
     plot_xlabel: Time
     plot_ylabel: Gamma
     response_message:
-      Here is the history graph for {usernames} {time_str}! ({duration})
+      Here is the history graph for {users} {time_str}! ({duration})
 rate:
-    getting_rate_single: |
-      Creating the transcription rate graph for u/{user} {time_str}...
-    getting_rate_multi: |
+    getting_rate: |
+      Creating the transcription rate graph for {users} {time_str}...
+    getting_rate_progress: |
       Creating the transcription rate graph for {users} {time_str} ({count}/{total})...
-    plot_title_single: Transcription Rate of u/{user}
-    plot_title_multi: Transcription Rate of Multiple Users
+    plot_title: Transcription Rate of {users}
     plot_xlabel: Time
     plot_ylabel: Transcription Rate
     response_message:
       Here is the transcription rate graph for {usernames} {time_str}! ({duration})
 leaderboard:
   getting_leaderboard: |
-    Getting leaderboard for u/{user} {time_str}...
+    Getting leaderboard for {user} {time_str}...
   embed_message: |
-    Here is the leaderboard for u/{user} {time_str}! ({duration})
+    Here is the leaderboard for {user} {time_str}! ({duration})
   embed_title: |
-    Leaderboard for u/{user} ({time_frame})
+    Leaderboard for {user} ({time_frame})
 search:
   getting_search: |-
     Searching for `{query}` {time_str}...

@@ -4,21 +4,27 @@ from typing import Optional
 
 import discord
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil.parser import parse
 from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
-    extract_username,
+    BlossomException,
+    BlossomUser,
     get_discord_time_str,
     get_duration_str,
+    get_initial_username,
     get_progress_bar,
     get_rank,
     get_rgb_from_hex,
+    get_user,
+    get_user_id,
+    get_username,
     parse_time_constraints,
 )
 from buttercup.strings import translation
@@ -26,7 +32,7 @@ from buttercup.strings import translation
 i18n = translation()
 
 
-def get_motivational_message(user: str, progress_count: int) -> str:
+def get_motivational_message(user: Optional[BlossomUser], progress_count: int) -> str:
     """Determine the motivational message for the current progress."""
     all_messages = i18n["progress"]["motivational_messages"]
     message_set = []
@@ -38,7 +44,7 @@ def get_motivational_message(user: str, progress_count: int) -> str:
             break
 
     # Select a random message
-    return choice(message_set).format(user=user)
+    return choice(message_set).format(user=get_username(user))
 
 
 class Stats(Cog):
@@ -60,62 +66,62 @@ class Stats(Cog):
             )
         ],
     )
-    async def _stats(self, ctx: SlashContext, username: Optional[str] = None) -> None:
+    async def _stats(self, ctx: SlashContext, username: str = "me") -> None:
         """Get the stats about one or all users."""
-        if username is not None and username.strip().casefold() == "all":
-            # If "all" is provided as username, return the global stats
-            await self._all_stats(ctx)
-        else:
-            await self._user_stats(ctx, username)
+        initial_username = get_initial_username(username, ctx)
 
-    async def _all_stats(self, ctx: SlashContext) -> None:
-        """Get stats about all users."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["stats"]["getting_stats"])
+        msg = await ctx.send(
+            i18n["stats"]["getting_stats"].format(user=initial_username)
+        )
+
+        if initial_username == get_username(None):
+            # Global stats
+            await self._all_stats(msg)
+        else:
+            await self._user_stats(ctx, msg, username)
+
+    async def _all_stats(self, msg: SlashMessage) -> None:
+        """Get stats about all users."""
+        start = datetime.now(tz=pytz.utc)
 
         response = self.blossom_api.get("summary/")
 
         if response.status_code != 200:
-            await msg.edit(content=i18n["stats"]["failed_getting_stats"])
-            return
+            raise BlossomException(response)
 
         data = response.json()
 
-        description = i18n["stats"]["embed_description"].format(
-            data["volunteer_count"],
-            data["transcription_count"],
-            data["days_since_inception"],
+        description = i18n["stats"]["embed_description_all"].format(
+            volunteers=data["volunteer_count"],
+            transcriptions=data["transcription_count"],
+            days=data["days_since_inception"],
         )
 
         await msg.edit(
-            content=i18n["stats"]["embed_message"],
-            embed=Embed(title=i18n["stats"]["embed_title"], description=description),
+            content=i18n["stats"]["embed_message"].format(
+                user=get_username(None), duration=get_duration_str(start)
+            ),
+            embed=Embed(
+                title=i18n["stats"]["embed_title"].format(user=get_username(None)),
+                description=description,
+            ),
         )
 
     async def _user_stats(
-        self, ctx: SlashContext, username: Optional[str] = None
+        self, ctx: SlashContext, msg: SlashMessage, username: str
     ) -> None:
         """Get stats about a single user."""
         start = datetime.now(tz=pytz.utc)
-        user = username or extract_username(ctx.author.display_name)
-        # Send a first message to show that the bot is responsive.
-        # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["user_stats"]["getting_stats"].format(user=user))
 
-        volunteer_response = self.blossom_api.get_user(user)
-        if volunteer_response.status != BlossomStatus.ok:
-            await msg.edit(
-                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
-            )
-            return
-        volunteer_data = volunteer_response.data
+        user = get_user(username, ctx, self.blossom_api)
 
         # Get the date of last activity
         submission_response = self.blossom_api.get(
             "submission/",
             params={
-                "completed_by": volunteer_data["id"],
+                "completed_by": get_user_id(user),
                 "ordering": "-complete_time",
                 "complete_time__isnull": False,
                 "page_size": 1,
@@ -123,13 +129,11 @@ class Stats(Cog):
             },
         )
         if submission_response.status_code != 200:
-            await msg.edit(
-                content=i18n["user_stats"]["failed_getting_stats"].format(user=user)
-            )
-            return
+            raise BlossomException(submission_response)
+
         submission_data = submission_response.json()["results"][0]
 
-        date_joined = parse(volunteer_data["date_joined"])
+        date_joined = parse(user["date_joined"])
         # For some reason, the complete_time is sometimes None, so we have to fall back
         last_active = parse(
             submission_data["complete_time"]
@@ -137,10 +141,10 @@ class Stats(Cog):
             or submission_data["create_time"]
         )
 
-        rank = get_rank(volunteer_data["gamma"])
+        rank = get_rank(user["gamma"])
 
-        description = i18n["user_stats"]["embed_description"].format(
-            gamma=volunteer_data["gamma"],
+        description = i18n["stats"]["embed_description_user"].format(
+            gamma=user["gamma"],
             flair_rank=rank["name"],
             date_joined=get_discord_time_str(date_joined),
             joined_ago=get_discord_time_str(date_joined, "R"),
@@ -149,11 +153,11 @@ class Stats(Cog):
         )
 
         await msg.edit(
-            content=i18n["user_stats"]["embed_message"].format(
-                user=user, duration=get_duration_str(start)
+            content=i18n["stats"]["embed_message"].format(
+                user=get_username(user), duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["user_stats"]["embed_title"].format(user=user),
+                title=i18n["stats"]["embed_title"].format(user=get_username(user)),
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(rank["color"])),
                 description=description,
             ),
@@ -189,13 +193,13 @@ class Stats(Cog):
     async def _progress(
         self,
         ctx: SlashContext,
-        username: Optional[str] = None,
+        username: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
         """Get the transcribing progress of a user in the given time frame."""
         start = datetime.now()
-        user = username or extract_username(ctx.author.display_name)
+
         # Parse time frame. Defaults to 24 hours ago
         after_time, before_time, time_str = parse_time_constraints(
             after or "24", before
@@ -204,25 +208,25 @@ class Stats(Cog):
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
-            i18n["progress"]["getting_progress"].format(user=user, time_str=time_str)
+            i18n["progress"]["getting_progress"].format(
+                user=get_initial_username(username, ctx), time_str=time_str
+            )
         )
 
-        volunteer_response = self.blossom_api.get_user(user)
-        if volunteer_response.status != BlossomStatus.ok:
-            await msg.edit(content=i18n["progress"]["user_not_found"].format(user))
-            return
-        volunteer_id = volunteer_response.data["id"]
+        user = get_user(username, ctx, self.blossom_api)
 
-        if volunteer_response.data["gamma"] == 0:
+        if user and user["gamma"] == 0:
             # The user has not started transcribing yet
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
-                    get_duration_str(start)
+                    user=get_username(user), duration=get_duration_str(start)
                 ),
                 embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(user),
+                    title=i18n["progress"]["embed_title"].format(
+                        user=get_username(user)
+                    ),
                     description=i18n["progress"]["embed_description_new"].format(
-                        user=user
+                        user=get_username(user)
                     ),
                 ),
             )
@@ -236,7 +240,7 @@ class Stats(Cog):
         progress_response = self.blossom_api.get(
             "submission/",
             params={
-                "completed_by": volunteer_id,
+                "completed_by": get_user_id(user),
                 "from": from_str,
                 "until": until_str,
                 "page_size": 1,
@@ -244,7 +248,9 @@ class Stats(Cog):
         )
         if progress_response.status_code != 200:
             await msg.edit(
-                content=i18n["progress"]["failed_getting_progress"].format(user)
+                content=i18n["progress"]["failed_getting_progress"].format(
+                    user=get_username(user)
+                )
             )
             return
         progress_count = progress_response.json()["count"]
@@ -259,14 +265,17 @@ class Stats(Cog):
             <= 60 * 60 * 24 + 2
         )
 
-        if not is_24_hours:
-            # If it isn't 24, we can't really display a progress bar
+        if not is_24_hours or not user:
+            # If it isn't 24 hours or if it's the global stats
+            # a progress bar doesn't make sense
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
-                    get_duration_str(start)
+                    user=get_username(user), duration=get_duration_str(start),
                 ),
                 embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(user),
+                    title=i18n["progress"]["embed_title"].format(
+                        user=get_username(user)
+                    ),
                     description=i18n["progress"]["embed_description_other"].format(
                         count=progress_count, time_str=time_str,
                     ),
@@ -277,9 +286,11 @@ class Stats(Cog):
         motivational_message = get_motivational_message(user, progress_count)
 
         await msg.edit(
-            content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
+            content=i18n["progress"]["embed_message"].format(
+                user=get_username(user), duration=get_duration_str(start),
+            ),
             embed=Embed(
-                title=i18n["progress"]["embed_title"].format(user),
+                title=i18n["progress"]["embed_title"].format(user=get_username(user)),
                 description=i18n["progress"]["embed_description_24"].format(
                     bar=get_progress_bar(progress_count, 100),
                     count=progress_count,
