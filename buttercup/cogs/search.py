@@ -16,11 +16,12 @@ from discord_slash.utils.manage_commands import create_option
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
+    BlossomUser,
     InvalidArgumentException,
     extract_username,
     get_duration_str,
     get_username,
-    parse_time_constraints, BlossomUser,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 

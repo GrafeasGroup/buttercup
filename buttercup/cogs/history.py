@@ -32,8 +32,6 @@ from buttercup.cogs.helpers import (
     get_user_list,
     get_username,
     get_usernames,
-    get_usernames_from_user_list,
-    join_items_with_and,
     parse_time_constraints,
 )
 from buttercup.strings import translation

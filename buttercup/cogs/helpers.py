@@ -1,10 +1,10 @@
 import re
 from datetime import datetime, timedelta
 from time import mktime
-from typing import Any, Dict, List, Optional, Tuple, Union, TypedDict
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import pytz
-from blossom_wrapper import BlossomResponse, BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI, BlossomResponse, BlossomStatus
 from dateutil import parser
 from discord import DiscordException, User
 from discord_slash import SlashContext
@@ -33,7 +33,7 @@ unit_regexes: Dict[str, re.Pattern] = {
 
 
 class BlossomUser(TypedDict):
-    id: int
+    id: int  # noqa: VNE003
     username: str
     gamma: int
     date_joined: str
@@ -163,9 +163,9 @@ def get_user(
 
     Special keywords:
     - "me": Returns the user executing the command (from the SlashContext).
-    - "all"/"everyone"/"everybody": Returns None, should return stats for all users if possible.
+    - "all"/"everyone"/"everybody": Stats for all users, returns None.
 
-    If the user could not be found, a UserNotFoundException is thrown and handled automatically.
+    If the user could not be found, a UserNotFoundException is thrown.
     """
     if username.casefold() in ["all", "everyone", "everybody"]:
         # Handle command execution for everyone
@@ -192,9 +192,9 @@ def get_user_list(
 
     Special keywords:
     - "me": Returns the user executing the command (from the SlashContext).
-    - "all"/"everyone"/"everybody": Returns None, should return stats for all users if possible.
+    - "all"/"everyone"/"everybody": Stats for all users, returns None.
 
-    If the user could not be found, a UserNotFoundException is thrown and handled automatically.
+    If the user could not be found, a UserNotFoundException is thrown.
     """
     username_input = usernames.split(" ")
     user_list = [get_user(user, ctx, blossom_api) for user in username_input]

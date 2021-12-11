@@ -4,7 +4,7 @@ from typing import Optional
 
 import discord
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil.parser import parse
 from discord import Embed
 from discord.ext.commands import Cog
@@ -16,7 +16,6 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
-    extract_username,
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
@@ -267,7 +266,8 @@ class Stats(Cog):
         )
 
         if not is_24_hours or not user:
-            # If it isn't 24 or if it's the global stats we can't really display a progress bar
+            # If it isn't 24 hours or if it's the global stats
+            # a progress bar doesn't make sense
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
                     user=get_username(user), duration=get_duration_str(start),
