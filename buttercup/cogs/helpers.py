@@ -135,6 +135,27 @@ def get_initial_username(username: str, ctx: SlashContext) -> str:
     return "u/" + extract_username(_username)
 
 
+def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
+    """Get the initial, unverified string of multiple users.
+
+    The usernames should be separated with a space.
+
+    This does not make any API requests yet, so it can be used for the first message.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns "everyone".
+    """
+    username_input = usernames.split(" ")
+    username_list = [get_initial_username(user, ctx) for user in username_input]
+
+    if "everyone" in username_list:
+        return "everyone"
+
+    # Connect the usernames
+    return join_items_with_and(username_list)
+
+
 def get_user(
     username: str, ctx: SlashContext, blossom_api: BlossomAPI
 ) -> Optional[BlossomUser]:
@@ -162,27 +183,6 @@ def get_user(
     return user_response.data
 
 
-def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
-    """Get the initial, unverified string of multiple users.
-
-    The usernames should be separated with a space.
-
-    This does not make any API requests yet, so it can be used for the first message.
-
-    Special keywords:
-    - "me": Returns the user executing the command (from the SlashContext).
-    - "all"/"everyone"/"everybody": Returns "everyone".
-    """
-    username_input = usernames.split(" ")
-    username_set = set([get_initial_username(user, ctx) for user in username_input])
-
-    if "everyone" in username_set:
-        return "everyone"
-
-    # Connect the usernames
-    return join_items_with_and(list(username_set))
-
-
 def get_user_list(
     usernames: str, ctx: SlashContext, blossom_api: BlossomAPI
 ) -> Optional[List[BlossomUser]]:
@@ -197,12 +197,12 @@ def get_user_list(
     If the user could not be found, a UserNotFoundException is thrown and handled automatically.
     """
     username_input = usernames.split(" ")
-    user_set = set([get_user(user, ctx, blossom_api) for user in username_input])
+    user_list = [get_user(user, ctx, blossom_api) for user in username_input]
 
-    if None in user_set:
+    if None in user_list:
         return None
 
-    return list(user_set)
+    return user_list
 
 
 def get_username(user: Optional[BlossomUser]) -> str:
@@ -211,6 +211,21 @@ def get_username(user: Optional[BlossomUser]) -> str:
     None is interpreted as all users.
     """
     return "u/" + user["username"] if user else "everyone"
+
+
+def get_usernames(
+    users: Optional[List[BlossomUser]], limit: Optional[int] = None
+) -> str:
+    """Get the name of the given users.
+
+    None is interpreted as all users.
+    """
+    if users is None:
+        return "everyone"
+    if limit is not None and len(users) > limit:
+        return f"{len(users)} users"
+
+    return join_items_with_and([get_username(user) for user in users])
 
 
 def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:

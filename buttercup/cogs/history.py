@@ -20,12 +20,18 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs import ranks
 from buttercup.cogs.helpers import (
     BlossomException,
+    BlossomUser,
     InvalidArgumentException,
     extract_username,
     get_duration_str,
+    get_initial_username_list,
     get_rank,
     get_rgb_from_hex,
     get_timedelta_str,
+    get_user_id,
+    get_user_list,
+    get_username,
+    get_usernames,
     get_usernames_from_user_list,
     join_items_with_and,
     parse_time_constraints,
@@ -215,7 +221,7 @@ class History(Cog):
 
     def get_all_rate_data(
         self,
-        user_id: int,
+        user: Optional[BlossomUser],
         time_frame: str,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
@@ -235,7 +241,7 @@ class History(Cog):
             response = self.blossom_api.get(
                 "submission/rate",
                 params={
-                    "completed_by": user_id,
+                    "completed_by": get_user_id(user),
                     "page": page,
                     "page_size": page_size,
                     "time_frame": time_frame,
@@ -264,7 +270,7 @@ class History(Cog):
 
     def calculate_history_offset(
         self,
-        user_data: Dict,
+        user: BlossomUser,
         rate_data: pd.DataFrame,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
@@ -279,7 +285,7 @@ class History(Cog):
             offset_response = self.blossom_api.get(
                 "submission/",
                 params={
-                    "completed_by": user_data["id"],
+                    "completed_by": get_user_id(user),
                     "from": before_time.isoformat(),
                     "page_size": 1,
                 },
@@ -288,18 +294,14 @@ class History(Cog):
                 # We still need to calculate based on the total gamma
                 # It may be the case that not all transcriptions have a date set
                 # Then they are not included in the data nor in the API response
-                return (
-                    user_data["gamma"]
-                    - rate_data.sum()
-                    - offset_response.json()["count"]
-                )
+                return user["gamma"] - rate_data.sum() - offset_response.json()["count"]
         else:
             # We can calculate the offset from the given data
-            return user_data["gamma"] - rate_data.sum()
+            return user["gamma"] - rate_data.sum()
 
     def get_user_history(
         self,
-        username: str,
+        user: BlossomUser,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
     ) -> Tuple[int, pd.DataFrame]:
@@ -307,28 +309,17 @@ class History(Cog):
 
         :returns: The gamma of the user and their history data.
         """
-        # First, get the total gamma for the user
-        user_response = self.blossom_api.get_user(username)
-        if user_response.status != BlossomStatus.ok:
-            raise BlossomException(user_response)
-
-        user_data = user_response.data
-
         # Get all rate data
-        time_frame = get_data_granularity(user_data, after_time, before_time)
-        rate_data = self.get_all_rate_data(
-            user_data["id"], time_frame, after_time, before_time
-        )
+        time_frame = get_data_granularity(user, after_time, before_time)
+        rate_data = self.get_all_rate_data(user, time_frame, after_time, before_time)
 
         # Calculate the offset for all data points
-        offset = self.calculate_history_offset(
-            user_data, rate_data, after_time, before_time
-        )
+        offset = self.calculate_history_offset(user, rate_data, after_time, before_time)
 
         # Aggregate the gamma score
         history_data = get_history_data_from_rate_data(rate_data, offset)
 
-        return user_data["gamma"], history_data
+        return user["gamma"], history_data
 
     @cog_ext.cog_slash(
         name="history",
@@ -358,31 +349,24 @@ class History(Cog):
     async def _history(
         self,
         ctx: SlashContext,
-        users: Optional[str] = None,
+        usernames: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
         """Get the transcription history of the user."""
         start = datetime.now()
 
-        users = get_usernames_from_user_list(users, ctx.author)
-        usernames = join_items_with_and([f"u/{user}" for user in users])
         after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
-        if len(users) == 1:
-            msg = await ctx.send(
-                i18n["history"]["getting_history_single"].format(
-                    user=users[0], time_str=time_str
-                )
+        msg = await ctx.send(
+            i18n["history"]["getting_history"].format(
+                users=get_initial_username_list(usernames, ctx), time_str=time_str,
             )
-        else:
-            msg = await ctx.send(
-                i18n["history"]["getting_history_multi"].format(
-                    users=usernames, time_str=time_str, count=0, total=len(users)
-                )
-            )
+        )
+
+        users = get_user_list(usernames, ctx, self.blossom_api)
 
         min_gammas = []
         max_gammas = []
@@ -398,19 +382,16 @@ class History(Cog):
             label.set_rotation(32)
             label.set_ha("right")
 
-        if len(users) == 1:
-            ax.set_title(i18n["history"]["plot_title_single"].format(user=users[0]))
-        else:
-            ax.set_title(i18n["history"]["plot_title_multi"])
+        ax.set_title(i18n["history"]["plot_title"].format(users=get_usernames(users, 2)))
 
         for index, user in enumerate(users):
             if len(users) > 1:
                 await msg.edit(
-                    content=i18n["history"]["getting_history_multi"].format(
-                        users=usernames,
+                    content=i18n["history"]["getting_history_progress"].format(
+                        users=get_usernames(users),
+                        time_str=time_str,
                         count=index + 1,
                         total=len(users),
-                        time_str=time_str,
                     )
                 )
 
@@ -446,13 +427,15 @@ class History(Cog):
         ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
 
         if len(users) > 1:
-            ax.legend([f"u/{user}" for user in users])
+            ax.legend([get_username(user) for user in users])
 
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
         await msg.edit(
             content=i18n["history"]["response_message"].format(
-                usernames=usernames, time_str=time_str, duration=get_duration_str(start)
+                users=get_usernames(users),
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             file=discord_file,
         )
