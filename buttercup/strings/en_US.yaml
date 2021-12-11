@@ -144,9 +144,7 @@ progress:
       - Is that a 500/24 or is the progress bar just happy to see me?
 heatmap:
   getting_heatmap: |
-    Generating a heatmap for u/{user} {time_str}...
-  user_not_found: |
-    Sorry, I couldn't find the user u/{0}.
+    Generating a heatmap for {user} {time_str}...
   days:
     - Mon
     - Tue
@@ -155,11 +153,11 @@ heatmap:
     - Fri
     - Sat
     - Sun
-  plot_title: Activity Heatmap for u/{0}
-  plot_xlabel: Time ({0})
+  plot_title: Activity Heatmap for {user}
+  plot_xlabel: Time ({timezone})
   plot_ylabel: Weekday
   response_message: |
-    Here is the heatmap for u/{user} {time_str}! ({duration})
+    Here is the heatmap for {user} {time_str}! ({duration})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...

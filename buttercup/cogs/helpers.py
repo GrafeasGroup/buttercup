@@ -160,6 +160,22 @@ def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optio
     return user_response.data
 
 
+def get_username(user: Optional[BlossomUser]) -> str:
+    """Get the name of the given user.
+
+    None is interpreted as all users.
+    """
+    return "u/" + user["username"] if user else "everyone"
+
+
+def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:
+    """Get the ID of the given user.
+
+    None is interpreted as all users and will also return None.
+    """
+    return user["id"] if user else None
+
+
 def extract_sub_name(subreddit: str) -> str:
     """Extract the name of the sub without prefix."""
     if subreddit.startswith("/r/"):
@@ -359,14 +375,3 @@ def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
     # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
     hx = hex_str.lstrip("#")
     return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
-
-
-def get_username(user: Optional[BlossomUser]) -> str:
-    """Get the name of the given user.
-
-    None is interpreted as all users.
-    """
-    if user is None:
-        return "everybody"
-
-    return "u/" + user["username"]
