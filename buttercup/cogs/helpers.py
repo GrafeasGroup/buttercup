@@ -135,7 +135,9 @@ def get_initial_username(username: str, ctx: SlashContext) -> str:
     return "u/" + extract_username(_username)
 
 
-def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optional[BlossomUser]:
+def get_user(
+    username: str, ctx: SlashContext, blossom_api: BlossomAPI
+) -> Optional[BlossomUser]:
     """Get the given user from Blossom.
 
     Special keywords:
@@ -158,6 +160,49 @@ def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optio
         raise UserNotFoundException(_username)
 
     return user_response.data
+
+
+def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
+    """Get the initial, unverified string of multiple users.
+
+    The usernames should be separated with a space.
+
+    This does not make any API requests yet, so it can be used for the first message.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns "everyone".
+    """
+    username_input = usernames.split(" ")
+    username_set = set([get_initial_username(user, ctx) for user in username_input])
+
+    if "everyone" in username_set:
+        return "everyone"
+
+    # Connect the usernames
+    return join_items_with_and(list(username_set))
+
+
+def get_user_list(
+    usernames: str, ctx: SlashContext, blossom_api: BlossomAPI
+) -> Optional[List[BlossomUser]]:
+    """Get the given users from Blossom.
+
+    The usernames should be separated with a space.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns None, should return stats for all users if possible.
+
+    If the user could not be found, a UserNotFoundException is thrown and handled automatically.
+    """
+    username_input = usernames.split(" ")
+    user_set = set([get_user(user, ctx, blossom_api) for user in username_input])
+
+    if None in user_set:
+        return None
+
+    return list(user_set)
 
 
 def get_username(user: Optional[BlossomUser]) -> str:
