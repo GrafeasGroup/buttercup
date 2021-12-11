@@ -11,6 +11,7 @@ from buttercup.cogs.helpers import (
     InvalidArgumentException,
     NoUsernameException,
     TimeParseError,
+    UserNotFoundException,
 )
 from buttercup.strings import translation
 
@@ -43,6 +44,11 @@ class Handlers(commands.Cog):
         elif isinstance(error, NoUsernameException):
             logger.warning("Command executed without providing a username.", ctx)
             await ctx.send(i18n["handlers"]["no_username"])
+        elif isinstance(error, UserNotFoundException):
+            logger.warning(f"User '{error.username}' not found.", ctx)
+            await ctx.send(
+                i18n["handlers"]["user_not_found"].format(user=error.username)
+            )
         elif isinstance(error, TimeParseError):
             logger.warning(
                 f"Command executed with an invalid time string '{error.time_str}'.", ctx
