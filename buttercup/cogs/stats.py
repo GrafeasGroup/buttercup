@@ -194,13 +194,13 @@ class Stats(Cog):
     async def _progress(
         self,
         ctx: SlashContext,
-        username: Optional[str] = None,
+        username: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
         """Get the transcribing progress of a user in the given time frame."""
         start = datetime.now()
-        user = username or extract_username(ctx.author.display_name)
+
         # Parse time frame. Defaults to 24 hours ago
         after_time, before_time, time_str = parse_time_constraints(
             after or "24", before
@@ -209,25 +209,25 @@ class Stats(Cog):
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
-            i18n["progress"]["getting_progress"].format(user=user, time_str=time_str)
+            i18n["progress"]["getting_progress"].format(
+                user=get_initial_username(username, ctx), time_str=time_str
+            )
         )
 
-        volunteer_response = self.blossom_api.get_user(user)
-        if volunteer_response.status != BlossomStatus.ok:
-            await msg.edit(content=i18n["progress"]["user_not_found"].format(user))
-            return
-        volunteer_id = volunteer_response.data["id"]
+        user = get_user(username, ctx, self.blossom_api)
 
-        if volunteer_response.data["gamma"] == 0:
+        if user and user["gamma"] == 0:
             # The user has not started transcribing yet
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
-                    get_duration_str(start)
+                    user=get_username(user), duration=get_duration_str(start)
                 ),
                 embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(user),
+                    title=i18n["progress"]["embed_title"].format(
+                        user=get_username(user)
+                    ),
                     description=i18n["progress"]["embed_description_new"].format(
-                        user=user
+                        user=get_username(user)
                     ),
                 ),
             )
@@ -241,7 +241,7 @@ class Stats(Cog):
         progress_response = self.blossom_api.get(
             "submission/",
             params={
-                "completed_by": volunteer_id,
+                "completed_by": get_user_id(user),
                 "from": from_str,
                 "until": until_str,
                 "page_size": 1,
@@ -249,7 +249,9 @@ class Stats(Cog):
         )
         if progress_response.status_code != 200:
             await msg.edit(
-                content=i18n["progress"]["failed_getting_progress"].format(user)
+                content=i18n["progress"]["failed_getting_progress"].format(
+                    user=get_username(user)
+                )
             )
             return
         progress_count = progress_response.json()["count"]
@@ -264,14 +266,16 @@ class Stats(Cog):
             <= 60 * 60 * 24 + 2
         )
 
-        if not is_24_hours:
-            # If it isn't 24, we can't really display a progress bar
+        if not is_24_hours or not user:
+            # If it isn't 24 or if it's the global stats we can't really display a progress bar
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
-                    get_duration_str(start)
+                    user=get_username(user), duration=get_duration_str(start),
                 ),
                 embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(user),
+                    title=i18n["progress"]["embed_title"].format(
+                        user=get_username(user)
+                    ),
                     description=i18n["progress"]["embed_description_other"].format(
                         count=progress_count, time_str=time_str,
                     ),
@@ -282,9 +286,11 @@ class Stats(Cog):
         motivational_message = get_motivational_message(user, progress_count)
 
         await msg.edit(
-            content=i18n["progress"]["embed_message"].format(get_duration_str(start)),
+            content=i18n["progress"]["embed_message"].format(
+                user=get_username(user), duration=get_duration_str(start),
+            ),
             embed=Embed(
-                title=i18n["progress"]["embed_title"].format(user),
+                title=i18n["progress"]["embed_title"].format(user=get_username(user)),
                 description=i18n["progress"]["embed_description_24"].format(
                     bar=get_progress_bar(progress_count, 100),
                     count=progress_count,
