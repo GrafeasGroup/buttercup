@@ -20,7 +20,7 @@ from buttercup.cogs.helpers import (
     extract_username,
     get_duration_str,
     get_username,
-    parse_time_constraints,
+    parse_time_constraints, BlossomUser,
 )
 from buttercup.strings import translation
 
@@ -133,7 +133,7 @@ class SearchCacheItem(TypedDict):
     # The query that the user searched for
     query: str
     # The user that the search is restricted to
-    user: Optional[Dict[str, Any]]
+    user: Optional[BlossomUser]
     # The time restriction for the search
     after_time: Optional[datetime]
     before_time: Optional[datetime]

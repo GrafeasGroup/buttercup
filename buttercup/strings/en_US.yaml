@@ -35,27 +35,16 @@ find:
   discord_username_link: "[{0}](https://reddit.com/u/{0})"
 stats:
   getting_stats: |
-    Getting stats for all users...
-  failed_getting_stats: |
-    Failed to get the stats for all users.
+    Getting stats for {user}...
   embed_message: |
-    Here are the stats!
+    Here are the stats for {user}! ({duration})
   embed_title: |
-    Stats For All Users
-  embed_description: |
-    **Volunteers**: {:,d}
-    **Transcriptions**: {:,d}
-    **Days Since Inception**: {:,d}
-user_stats:
-  getting_stats: |
-    Getting stats for u/{user}...
-  failed_getting_stats: |
-    Failed to get the stats for u/{user}.
-  embed_message: |
-    Here are the stats for u/{user}! ({duration})
-  embed_title: |
-    Stats for u/{user}
-  embed_description: |
+    Stats for {user}
+  embed_description_all: |
+    **Volunteers**: {volunteers:,d}
+    **Transcriptions**: {transcriptions:,d}
+    **Days Since Inception**: {days:,d}
+  embed_description_user: |
     **Transcriptions**: {gamma:,d}
     **Flair Rank**: {flair_rank}
     **Date Joined**: {date_joined} ({joined_ago})
