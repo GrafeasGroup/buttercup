@@ -4,9 +4,10 @@ from time import mktime
 from typing import Any, Dict, List, Optional, Tuple, Union, TypedDict
 
 import pytz
-from blossom_wrapper import BlossomResponse
+from blossom_wrapper import BlossomResponse, BlossomAPI, BlossomStatus
 from dateutil import parser
 from discord import DiscordException, User
+from discord_slash import SlashContext
 from requests import Response
 
 from buttercup.cogs import ranks
@@ -36,6 +37,15 @@ class BlossomUser(TypedDict):
     username: str
     gamma: int
     date_joined: str
+
+
+class UserNotFoundException(DiscordException):
+    """Exception raised when the given user could not be found."""
+
+    def __init__(self, username: str) -> None:
+        """Create a new user not found exception."""
+        super().__init__()
+        self.username = username
 
 
 class NoUsernameException(DiscordException):
@@ -106,6 +116,30 @@ def get_usernames_from_user_list(
         return [extract_username(author.display_name)]
 
     return [extract_username(user) for user in raw_names][:limit]
+
+
+def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optional[BlossomUser]:
+    """Get the given user from Blossom.
+
+    Special keywords:
+    - "me": Returns the user executing the command (from the SlashContext).
+    - "all"/"everyone"/"everybody": Returns None, should return stats for all users if possible.
+
+    If the user could not be found, a UserNotFoundException is thrown and handled automatically.
+    """
+    if username.casefold() in ["all", "everyone", "everybody"]:
+        # Handle command execution for everyone
+        return None
+
+    # Handle command execution for the current user
+    _username = extract_username(ctx.author.display_name) if username.casefold() == "me" else username
+
+    user_response = blossom_api.get_user(_username)
+
+    if user_response.status != BlossomStatus.ok:
+        raise UserNotFoundException(_username)
+
+    return user_response.data
 
 
 def extract_sub_name(subreddit: str) -> str:
