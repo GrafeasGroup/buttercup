@@ -382,7 +382,9 @@ class History(Cog):
             label.set_rotation(32)
             label.set_ha("right")
 
-        ax.set_title(i18n["history"]["plot_title"].format(users=get_usernames(users, 2)))
+        ax.set_title(
+            i18n["history"]["plot_title"].format(users=get_usernames(users, 2))
+        )
 
         for index, user in enumerate(users):
             if len(users) > 1:
@@ -441,21 +443,17 @@ class History(Cog):
         )
 
     def get_user_rate(
-        self, user: str, after_time: Optional[datetime], before_time: Optional[datetime]
+        self,
+        user: BlossomUser,
+        after_time: Optional[datetime],
+        before_time: Optional[datetime],
     ) -> pd.DataFrame:
         """Get a data frame representing the transcription rate of the user.
 
         :returns: The rate data of the user.
         """
-        # First, get the ID of the user
-        user_response = self.blossom_api.get_user(user)
-        if user_response.status != BlossomStatus.ok:
-            raise BlossomException(user_response)
-
-        user_id = user_response.data["id"]
-
         # Get all rate data
-        rate_data = self.get_all_rate_data(user_id, "day", after_time, before_time)
+        rate_data = self.get_all_rate_data(user, "day", after_time, before_time)
 
         # Add an up-to-date entry
         today = datetime.now(tz=tzutc()).replace(
@@ -494,31 +492,24 @@ class History(Cog):
     async def _rate(
         self,
         ctx: SlashContext,
-        users: Optional[str] = None,
+        usernames: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
         """Get the transcription rate of the user."""
         start = datetime.now()
 
-        users = get_usernames_from_user_list(users, ctx.author)
-        usernames = join_items_with_and([f"u/{user}" for user in users])
         after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
-        if len(users) == 1:
-            msg = await ctx.send(
-                i18n["rate"]["getting_rate_single"].format(
-                    user=users[0], time_str=time_str
-                )
+        msg = await ctx.send(
+            i18n["rate"]["getting_rate"].format(
+                users=get_initial_username_list(usernames, ctx), time_str=time_str,
             )
-        else:
-            msg = await ctx.send(
-                i18n["rate"]["getting_rate_multi"].format(
-                    users=usernames, time_str=time_str, count=0, total=len(users)
-                )
-            )
+        )
+
+        users = get_user_list(usernames, ctx, self.blossom_api)
 
         max_rates = []
 
@@ -533,16 +524,13 @@ class History(Cog):
             label.set_rotation(32)
             label.set_ha("right")
 
-        if len(users) == 1:
-            ax.set_title(i18n["rate"]["plot_title_single"].format(user=users[0]))
-        else:
-            ax.set_title(i18n["rate"]["plot_title_multi"])
+        ax.set_title(i18n["rate"]["plot_title"].format(users=get_usernames(users, 2)))
 
         for index, user in enumerate(users):
             if len(users) > 1:
                 await msg.edit(
-                    content=i18n["rate"]["getting_rate_multi"].format(
-                        users=usernames,
+                    content=i18n["rate"]["getting_rate"].format(
+                        users=get_usernames(users),
                         count=index + 1,
                         total=len(users),
                         time_str=time_str,
@@ -579,13 +567,15 @@ class History(Cog):
         ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
         if len(users) > 1:
-            ax.legend([f"u/{user}" for user in users])
+            ax.legend([get_username(user) for user in users])
 
         discord_file = create_file_from_figure(fig, "rate_plot.png")
 
         await msg.edit(
             content=i18n["rate"]["response_message"].format(
-                usernames=usernames, time_str=time_str, duration=get_duration_str(start)
+                usernames=get_usernames(users),
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             file=discord_file,
         )
