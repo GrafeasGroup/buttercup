@@ -5,15 +5,18 @@ import pytz
 from pytest import mark
 
 from buttercup.cogs.helpers import (
+    BlossomUser,
+    escape_formatting,
     extract_sub_name,
     extract_username,
     extract_utc_offset,
     format_absolute_datetime,
     format_relative_datetime,
     get_progress_bar,
+    get_username,
     join_items_with_and,
     parse_time_constraints,
-    try_parse_time, get_username, BlossomUser,
+    try_parse_time,
 )
 
 
@@ -60,31 +63,26 @@ def test_get_username_object() -> None:
         "id": 1314,
         "username": "abc",
         "gamma": 110,
-        "date_joined": "2021-12-12T16:06Z"
+        "date_joined": "2021-12-12T16:06Z",
     }
     actual = get_username(user)
     assert actual == "u/abc"
 
+
 @mark.parametrize(
     "username,expected",
     [
-        ("user", r"u/user"),
-        ("_Diabetes", r"u/\_Diabetes"),
-        ("test*test*test", r"u/test\*test\*test"),
-        ("**bold**", r"u/\*\*bold\*\*"),
-        ("**bold**", r"u/\*\*bold\*\*"),
-        ("__BlAzEsUpErBlAzE__", r"u/\_\_BlAzEsUpErBlAzE\_\_"),
+        ("user", r"user"),
+        ("_Diabetes", r"\_Diabetes"),
+        ("test*test*test", r"test\*test\*test"),
+        ("**bold**", r"\*\*bold\*\*"),
+        ("**bold**", r"\*\*bold\*\*"),
+        ("__BlAzEsUpErBlAzE__", r"\_\_BlAzEsUpErBlAzE\_\_"),
     ],
 )
-def test_get_username_escaping(username: str, expected: str) -> None:
+def test_escape_formatting(username: str, expected: str) -> None:
     """Test that Discord formatting is escaped properly."""
-    user: BlossomUser = {
-        "id": 1314,
-        "username": username,
-        "gamma": 110,
-        "date_joined": "2021-12-12T16:06Z"
-    }
-    actual = get_username(user)
+    actual = escape_formatting(username)
     assert actual == expected
 
 
