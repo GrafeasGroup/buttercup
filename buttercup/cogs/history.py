@@ -40,12 +40,15 @@ i18n = translation()
 
 
 def get_data_granularity(
-    user: Dict, after: Optional[datetime], before: Optional[datetime]
+    user: Optional[BlossomUser], after: Optional[datetime], before: Optional[datetime]
 ) -> str:
     """Determine granularity of the graph.
 
     It should be as detailed as possible, but only require 1 API call in the best case.
     """
+    if not user:
+        return "week"
+
     # TODO: Adjust this when the Blossom dates have been fixed
     now = datetime.now(tz=pytz.utc)
     date_joined = parser.parse(user["date_joined"])
@@ -268,7 +271,7 @@ class History(Cog):
 
     def calculate_history_offset(
         self,
-        user: BlossomUser,
+        user: Optional[BlossomUser],
         rate_data: pd.DataFrame,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
@@ -278,6 +281,17 @@ class History(Cog):
         Note: We always need to do this, because it might be the case that some
         transcriptions don't have a date set.
         """
+        if user:
+            gamma = user["gamma"]
+        else:
+            # We need to get the total gamma of all users
+            gamma_response = self.blossom_api.get(
+                "submission/", params={"page_size": 1},
+            )
+            if not gamma_response.ok:
+                raise BlossomException(gamma_response)
+            gamma = gamma_response.json()["count"]
+
         if before_time is not None:
             # We need to get the offset from the API
             offset_response = self.blossom_api.get(
@@ -288,24 +302,26 @@ class History(Cog):
                     "page_size": 1,
                 },
             )
-            if offset_response.status_code == 200:
-                # We still need to calculate based on the total gamma
-                # It may be the case that not all transcriptions have a date set
-                # Then they are not included in the data nor in the API response
-                return user["gamma"] - rate_data.sum() - offset_response.json()["count"]
+            if not offset_response.ok:
+                raise BlossomException(offset_response)
+
+            # We still need to calculate based on the total gamma
+            # It may be the case that not all transcriptions have a date set
+            # Then they are not included in the data nor in the API response
+            return gamma - rate_data.sum() - offset_response.json()["count"]
         else:
             # We can calculate the offset from the given data
-            return user["gamma"] - rate_data.sum()
+            return gamma - rate_data.sum()
 
     def get_user_history(
         self,
-        user: BlossomUser,
+        user: Optional[BlossomUser],
         after_time: Optional[datetime],
         before_time: Optional[datetime],
-    ) -> Tuple[int, pd.DataFrame]:
+    ) -> pd.DataFrame:
         """Get a data frame representing the history of the user.
 
-        :returns: The gamma of the user and their history data.
+        :returns: The history data of the user.
         """
         # Get all rate data
         time_frame = get_data_granularity(user, after_time, before_time)
@@ -317,7 +333,7 @@ class History(Cog):
         # Aggregate the gamma score
         history_data = get_history_data_from_rate_data(rate_data, offset)
 
-        return user["gamma"], history_data
+        return history_data
 
     @cog_ext.cog_slash(
         name="history",
@@ -386,8 +402,8 @@ class History(Cog):
             )
         )
 
-        for index, user in enumerate(users):
-            if len(users) > 1:
+        for index, user in enumerate(users or [None]):
+            if users and len(users) > 1:
                 await msg.edit(
                     content=i18n["history"]["getting_history_progress"].format(
                         users=get_usernames(users),
@@ -397,9 +413,7 @@ class History(Cog):
                     )
                 )
 
-            user_gamma, history_data = self.get_user_history(
-                user, after_time, before_time
-            )
+            history_data = self.get_user_history(user, after_time, before_time)
 
             color = ranks[index]["color"]
             first_point = history_data.iloc[0]
@@ -423,12 +437,13 @@ class History(Cog):
                 color=color,
             )
 
-        # Show ranks when you are close to them already
-        min_value, max_value = min(min_gammas), max(max_gammas)
-        delta = (max_value - min_value) * 0.4
-        ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
+        if users:
+            # Show milestone lines
+            min_value, max_value = min(min_gammas), max(max_gammas)
+            delta = (max_value - min_value) * 0.4
+            ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
 
-        if len(users) > 1:
+        if users and len(users) > 1:
             ax.legend([get_username(user, escape=False) for user in users])
 
         discord_file = create_file_from_figure(fig, "history_plot.png")
@@ -444,7 +459,7 @@ class History(Cog):
 
     def get_user_rate(
         self,
-        user: BlossomUser,
+        user: Optional[BlossomUser],
         after_time: Optional[datetime],
         before_time: Optional[datetime],
     ) -> pd.DataFrame:
@@ -530,8 +545,8 @@ class History(Cog):
             )
         )
 
-        for index, user in enumerate(users):
-            if len(users) > 1:
+        for index, user in enumerate(users or [None]):
+            if users and len(users) > 1:
                 await msg.edit(
                     content=i18n["rate"]["getting_rate"].format(
                         users=get_usernames(users),
@@ -564,13 +579,15 @@ class History(Cog):
                 color=color,
             )
 
-        # A milestone at every 100 rate
-        milestones = [
-            dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)
-        ]
-        ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
+        if users:
+            # A milestone at every 100 rate
+            milestones = [
+                dict(threshold=i * 100, color=ranks[i + 2]["color"])
+                for i in range(1, 8)
+            ]
+            ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
-        if len(users) > 1:
+        if users and len(users) > 1:
             ax.legend([get_username(user, escape=False) for user in users])
 
         discord_file = create_file_from_figure(fig, "rate_plot.png")
