@@ -286,7 +286,7 @@ class History(Cog):
         else:
             # We need to get the total gamma of all users
             gamma_response = self.blossom_api.get(
-                "submission/", params={"page_size": 1},
+                "submission/", params={"page_size": 1, "completed_by__isnull": False},
             )
             if not gamma_response.ok:
                 raise BlossomException(gamma_response)
@@ -297,6 +297,7 @@ class History(Cog):
             offset_response = self.blossom_api.get(
                 "submission/",
                 params={
+                    "completed_by__isnull": False,
                     "completed_by": get_user_id(user),
                     "from": before_time.isoformat(),
                     "page_size": 1,
