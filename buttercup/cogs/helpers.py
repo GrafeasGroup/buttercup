@@ -97,7 +97,7 @@ def extract_username(display_name: str) -> str:
 
 
 def get_usernames_from_user_list(
-    user_list: Optional[str], author: Optional[User], limit: int = 5
+    user_list: Optional[str], author: Optional[User], limit: int = 5,
 ) -> List[str]:
     """Get the individual usernames from a list of users.
 
@@ -118,6 +118,11 @@ def get_usernames_from_user_list(
     return [extract_username(user) for user in raw_names][:limit]
 
 
+def escape_formatting(username: str) -> str:
+    """Escapes Discord formatting in the given string."""
+    return username.replace("_", "\\_").replace("*", "\\*")
+
+
 def get_initial_username(username: str, ctx: SlashContext) -> str:
     """Get the initial, unverified username.
 
@@ -132,7 +137,7 @@ def get_initial_username(username: str, ctx: SlashContext) -> str:
         return "everyone"
 
     _username = ctx.author.display_name if username.casefold() == "me" else username
-    return "u/" + extract_username(_username)
+    return "u/" + escape_formatting(extract_username(_username))
 
 
 def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
@@ -205,16 +210,22 @@ def get_user_list(
     return user_list
 
 
-def get_username(user: Optional[BlossomUser]) -> str:
+def get_username(user: Optional[BlossomUser], escape: bool = True) -> str:
     """Get the name of the given user.
 
-    None is interpreted as all users.
+    :param user: The user to get the username of.
+        None is interpreted as all users.
+    :param escape: Whether the Discord formatting should be escaped.
+        Defaults to True.
     """
-    return "u/" + user["username"] if user else "everyone"
+    if not user:
+        return "everyone"
+    username = escape_formatting(user["username"]) if escape else user["username"]
+    return "u/" + username
 
 
 def get_usernames(
-    users: Optional[List[BlossomUser]], limit: Optional[int] = None
+    users: Optional[List[BlossomUser]], limit: Optional[int] = None, escape: bool = True
 ) -> str:
     """Get the name of the given users.
 
@@ -225,7 +236,7 @@ def get_usernames(
     if limit is not None and len(users) > limit:
         return f"{len(users)} users"
 
-    return join_items_with_and([get_username(user) for user in users])
+    return join_items_with_and([get_username(user, escape) for user in users])
 
 
 def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:

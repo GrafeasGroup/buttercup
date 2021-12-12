@@ -381,7 +381,9 @@ class History(Cog):
             label.set_ha("right")
 
         ax.set_title(
-            i18n["history"]["plot_title"].format(users=get_usernames(users, 2))
+            i18n["history"]["plot_title"].format(
+                users=get_usernames(users, 2, escape=False)
+            )
         )
 
         for index, user in enumerate(users):
@@ -427,7 +429,7 @@ class History(Cog):
         ax = add_milestone_lines(ax, ranks, min_value, max_value, delta)
 
         if len(users) > 1:
-            ax.legend([get_username(user) for user in users])
+            ax.legend([get_username(user, escape=False) for user in users])
 
         discord_file = create_file_from_figure(fig, "history_plot.png")
 
@@ -522,7 +524,11 @@ class History(Cog):
             label.set_rotation(32)
             label.set_ha("right")
 
-        ax.set_title(i18n["rate"]["plot_title"].format(users=get_usernames(users, 2)))
+        ax.set_title(
+            i18n["rate"]["plot_title"].format(
+                users=get_usernames(users, 2, escape=False)
+            )
+        )
 
         for index, user in enumerate(users):
             if len(users) > 1:
@@ -565,7 +571,7 @@ class History(Cog):
         ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
         if len(users) > 1:
-            ax.legend([get_username(user) for user in users])
+            ax.legend([get_username(user, escape=False) for user in users])
 
         discord_file = create_file_from_figure(fig, "rate_plot.png")
 
@@ -667,7 +673,7 @@ class History(Cog):
                 duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["until"]["embed_title"].format(user=user["username"]),
+                title=i18n["until"]["embed_title"].format(user=get_username(user)),
                 description=description,
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
