@@ -13,7 +13,7 @@ from buttercup.cogs.helpers import (
     get_progress_bar,
     join_items_with_and,
     parse_time_constraints,
-    try_parse_time,
+    try_parse_time, get_username, BlossomUser,
 )
 
 
@@ -45,6 +45,46 @@ def test_extract_username(user_input: str, expected: str) -> None:
 def test_extract_sub_name(sub_input: str, expected: str) -> None:
     """Test that the sub name is extracted correctly."""
     actual = extract_sub_name(sub_input)
+    assert actual == expected
+
+
+def test_get_username_none() -> None:
+    """Test that the username of a None object is returned correctly."""
+    actual = get_username(None)
+    assert actual == "everyone"
+
+
+def test_get_username_object() -> None:
+    """Test that the username of a None object is returned correctly."""
+    user: BlossomUser = {
+        "id": 1314,
+        "username": "abc",
+        "gamma": 110,
+        "date_joined": "2021-12-12T16:06Z"
+    }
+    actual = get_username(user)
+    assert actual == "u/abc"
+
+@mark.parametrize(
+    "username,expected",
+    [
+        ("user", r"u/user"),
+        ("_Diabetes", r"u/\_Diabetes"),
+        ("test*test*test", r"u/test\*test\*test"),
+        ("**bold**", r"u/\*\*bold\*\*"),
+        ("**bold**", r"u/\*\*bold\*\*"),
+        ("__BlAzEsUpErBlAzE__", r"u/\_\_BlAzEsUpErBlAzE\_\_"),
+    ],
+)
+def test_get_username_escaping(username: str, expected: str) -> None:
+    """Test that Discord formatting is escaped properly."""
+    user: BlossomUser = {
+        "id": 1314,
+        "username": username,
+        "gamma": 110,
+        "date_joined": "2021-12-12T16:06Z"
+    }
+    actual = get_username(user)
     assert actual == expected
 
 

@@ -205,16 +205,26 @@ def get_user_list(
     return user_list
 
 
-def get_username(user: Optional[BlossomUser]) -> str:
+def get_username(user: Optional[BlossomUser], escape: bool = True) -> str:
     """Get the name of the given user.
 
-    None is interpreted as all users.
+    :param user: The user to get the username of.
+        None is interpreted as all users.
+    :param escape: Whether the Discord formatting should be escaped.
+        Defaults to True.
     """
-    return "u/" + user["username"] if user else "everyone"
+    if not user:
+        return "everyone"
+    username = (
+        user["username"].replace("_", "\\_").replace("*", "\\*")
+        if escape
+        else user["username"]
+    )
+    return "u/" + username
 
 
 def get_usernames(
-    users: Optional[List[BlossomUser]], limit: Optional[int] = None
+    users: Optional[List[BlossomUser]], limit: Optional[int] = None, escape: bool = True
 ) -> str:
     """Get the name of the given users.
 
@@ -225,7 +235,7 @@ def get_usernames(
     if limit is not None and len(users) > limit:
         return f"{len(users)} users"
 
-    return join_items_with_and([get_username(user) for user in users])
+    return join_items_with_and([get_username(user, escape) for user in users])
 
 
 def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:
