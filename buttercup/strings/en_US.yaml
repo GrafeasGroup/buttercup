@@ -30,9 +30,15 @@ welcome:
     To do this on PC, **type `/nick /u/<reddit_username>`** in the chat.
     On mobile, tap the **hamburger menu** button on the upper left,  tap the **server name**,  tap "**Edit Server Profile**". Cheers!
 find:
-  please_check_url: |
+  looking_for_posts: |
+    Looking for post <{url}>...
+  not_found: |
+    Sorry, I couldn't find a post with the URL <{url}>.
+
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
   discord_username_link: "[{0}](https://reddit.com/u/{0})"
+  embed_message: |
+    I found the post! ({duration})
 stats:
   getting_stats: |
     Getting stats for {user}...
