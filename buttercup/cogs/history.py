@@ -1,13 +1,13 @@
 import io
 import math
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import discord
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil import parser
 from dateutil.tz import tzutc
 from discord import Embed, File
@@ -22,7 +22,7 @@ from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
     InvalidArgumentException,
-    extract_username,
+    get_discord_time_str,
     get_duration_str,
     get_initial_username,
     get_initial_username_list,
@@ -30,12 +30,12 @@ from buttercup.cogs.helpers import (
     get_rgb_from_hex,
     get_timedelta_str,
     get_user,
+    get_user_gamma,
     get_user_id,
     get_user_list,
     get_username,
     get_usernames,
     parse_time_constraints,
-    get_user_gamma, get_discord_time_str,
 )
 from buttercup.strings import translation
 
@@ -213,7 +213,7 @@ def parse_goal_str(goal_str: str) -> Tuple[int, str]:
 
     for rank in ranks:
         if goal_str.casefold() == rank["name"].casefold():
-            goal_gamma = int(rank['threshold'])
+            goal_gamma = int(rank["threshold"])
             return rank["threshold"], f"{rank['name']} ({goal_gamma:,})"
 
     raise InvalidArgumentException("goal", goal_str)
@@ -487,18 +487,6 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
-            create_option(
-                name="after",
-                description="The start date for the rate data.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="before",
-                description="The end date for the rate data.",
-                option_type=3,
-                required=False,
-            ),
         ],
     )
     async def _rate(
@@ -599,15 +587,22 @@ class History(Cog):
         )
 
     async def _get_user_progress(
-        self, user: Optional[BlossomUser], start: datetime, time_frame: timedelta
+        self,
+        user: Optional[BlossomUser],
+        after_time: Optional[datetime],
+        before_time: Optional[datetime],
     ) -> int:
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
+
         # We ask for submission completed by the user in the time frame
         # The response will contain a count, so we just need 1 result
         progress_response = self.blossom_api.get(
             "submission/",
             params={
                 "completed_by": get_user_id(user),
-                "from": (start - time_frame).isoformat(),
+                "from": from_str,
+                "until": until_str,
                 "page_size": 1,
             },
         )
@@ -623,6 +618,9 @@ class History(Cog):
         user: BlossomUser,
         target_username: str,
         start: datetime,
+        after_time: datetime,
+        before_time: Optional[datetime],
+        time_str: str,
     ) -> None:
         """Determine how long it will take the user to catch up with the target user."""
         # Try to find the target user
@@ -644,10 +642,10 @@ class History(Cog):
             # Otherwise the goal would have already been reached
             user, target = target, user
 
-        time_frame = timedelta(weeks=1)
+        user_progress = await self._get_user_progress(user, after_time, before_time)
+        target_progress = await self._get_user_progress(target, after_time, before_time)
 
-        user_progress = await self._get_user_progress(user, start, time_frame)
-        target_progress = await self._get_user_progress(target, start, time_frame)
+        time_frame = (before_time or start) - after_time
 
         if user_progress <= target_progress:
             description = i18n["until"]["embed_description_user_never"].format(
@@ -657,7 +655,7 @@ class History(Cog):
                 target=get_username(target),
                 target_gamma=target["gamma"],
                 target_progress=target_progress,
-                time_frame="week",
+                time_frame=get_timedelta_str(time_frame),
             )
         else:
             # Calculate time needed
@@ -689,7 +687,10 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
-                duration=get_duration_str(start)
+                user=get_username(user),
+                goal=get_username(target),
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=get_username(user)),
@@ -716,19 +717,42 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="after",
+                description="The start date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
     async def _until(
-        self, ctx: SlashContext, goal: Optional[str] = None, username: str = "me",
+        self,
+        ctx: SlashContext,
+        goal: Optional[str] = None,
+        username: str = "me",
+        after: str = "1 week",
+        before: Optional[str] = None,
     ) -> None:
         """Determine how long it will take the user to reach the given goal."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.utc)
+
+        after_time, before_time, time_str = parse_time_constraints(after, before)
+
+        if not after_time:
+            # We need a starting point for the calculations
+            raise InvalidArgumentException("after", after)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
             i18n["until"]["getting_prediction"].format(
-                user=get_initial_username(username, ctx)
+                user=get_initial_username(username, ctx), time_str=time_str,
             )
         )
 
@@ -745,7 +769,9 @@ class History(Cog):
                     raise InvalidArgumentException("goal", goal)
 
                 # Try to treat the goal as a user
-                return await self._until_user_catch_up(ctx, msg, user, goal, start)
+                return await self._until_user_catch_up(
+                    ctx, msg, user, goal, start, after_time, before_time, time_str,
+                )
         elif user:
             # Take the next rank for the user
             next_rank = get_next_rank(user["gamma"])
@@ -758,7 +784,7 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["getting_prediction_to_goal"].format(
-                user=get_username(user), goal=goal_str
+                user=get_username(user), goal=goal_str, time_str=time_str,
             )
         )
 
@@ -766,7 +792,7 @@ class History(Cog):
             # The user has not started transcribing yet
             await msg.edit(
                 content=i18n["until"]["embed_message"].format(
-                    duration=get_duration_str(start)
+                    duration=get_duration_str(start), goal=goal_str, time_str=time_str,
                 ),
                 embed=Embed(
                     title=i18n["until"]["embed_title"].format(user=get_username(user)),
@@ -777,10 +803,8 @@ class History(Cog):
             )
             return
 
-        time_frame = timedelta(weeks=1)
-
         try:
-            user_progress = await self._get_user_progress(user, start, time_frame)
+            user_progress = await self._get_user_progress(user, after_time, before_time)
         except RuntimeError:
             await msg.edit(
                 content=i18n["until"]["failed_getting_prediction"].format(
@@ -789,10 +813,12 @@ class History(Cog):
             )
             return
 
+        time_frame = (before_time or start) - after_time
+
         if user_gamma >= goal_gamma:
             # The user has already reached the goal
             description = i18n["until"]["embed_description_reached"].format(
-                time_frame="week",
+                time_frame=get_timedelta_str(time_frame),
                 user=get_username(user),
                 user_gamma=user_gamma,
                 goal=goal_str,
@@ -814,7 +840,7 @@ class History(Cog):
             absolute_time = start + relative_time
 
             description = i18n["until"]["embed_description_prediction"].format(
-                time_frame="week",
+                time_frame=get_timedelta_str(time_frame),
                 user=get_username(user),
                 user_gamma=user_gamma,
                 goal=goal_str,
@@ -828,7 +854,10 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
-                duration=get_duration_str(start)
+                user=get_username(user),
+                goal=goal_str,
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=get_username(user)),
