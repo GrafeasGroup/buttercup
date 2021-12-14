@@ -35,7 +35,7 @@ from buttercup.cogs.helpers import (
     get_username,
     get_usernames,
     parse_time_constraints,
-    get_user_gamma,
+    get_user_gamma, get_discord_time_str,
 )
 from buttercup.strings import translation
 
@@ -664,11 +664,12 @@ class History(Cog):
             seconds_needed = (target["gamma"] - user["gamma"]) / (
                 (user_progress - target_progress) / time_frame.total_seconds()
             )
-            time_needed = timedelta(seconds=seconds_needed)
+            relative_time = timedelta(seconds=seconds_needed)
+            absolute_time = start + relative_time
 
             intersection_gamma = user["gamma"] + math.ceil(
                 (user_progress / time_frame.total_seconds())
-                * time_needed.total_seconds()
+                * relative_time.total_seconds()
             )
 
             description = i18n["until"]["embed_description_user_prediction"].format(
@@ -680,7 +681,8 @@ class History(Cog):
                 target_progress=target_progress,
                 intersection_gamma=intersection_gamma,
                 time_frame=get_timedelta_str(time_frame),
-                time_needed=get_timedelta_str(time_needed),
+                relative_time=get_timedelta_str(relative_time),
+                absolute_time=get_discord_time_str(absolute_time),
             )
 
         color = get_rank(target["gamma"])["color"]
@@ -806,9 +808,10 @@ class History(Cog):
         else:
             # Based on the progress in the timeframe, calculate the time needed
             gamma_needed = goal_gamma - user_gamma
-            time_needed = timedelta(
+            relative_time = timedelta(
                 seconds=gamma_needed * (time_frame.total_seconds() / user_progress)
             )
+            absolute_time = start + relative_time
 
             description = i18n["until"]["embed_description_prediction"].format(
                 time_frame="week",
@@ -816,7 +819,8 @@ class History(Cog):
                 user_gamma=user_gamma,
                 goal=goal_str,
                 user_progress=user_progress,
-                time_needed=get_timedelta_str(time_needed),
+                relative_time=get_timedelta_str(relative_time),
+                absolute_time=get_discord_time_str(absolute_time),
             )
 
         # Determine the color of the target rank
