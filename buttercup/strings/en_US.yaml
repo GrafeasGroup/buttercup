@@ -180,33 +180,33 @@ pi_rules:
     PI Rules for r/{0}
 until:
   getting_prediction: |
-    Getting prediction for u/{user}...
+    Getting prediction for {user}...
   getting_prediction_to_goal: |
-    Getting prediction for u/{user} to reach {goal_gamma}...
+    Getting prediction for {user} to reach {goal}...
   user_not_found: |
-    I couldn't find user u/{user}!
+    I couldn't find user {user}!
   failed_getting_prediction: |
-    I couldn't get the prediction of u/{user}!
+    I couldn't get the prediction of {user}!
   embed_message: |
     Here is the prediction! ({duration})
   embed_title: |
-    Prediction for u/{user}
+    Prediction for {user}
   embed_description_prediction: |
-    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** in {time_needed}!
+    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** in {time_needed}!
   embed_description_reached: |
-    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) has already reached **{goal}**!
+    **{user}** ({user_gamma}, {user_progress}/{time_frame}) has already reached **{goal}**!
   embed_description_zero: |
-    **u/{user}** will **never** get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
+    **{user}** will **never** get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
-    Hey u/{user}!
+    Hey {user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
     Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   embed_description_user_prediction: |
-    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will catch up with
-    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) in {time_needed} at {intersection_gamma} gamma!
+    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will catch up with
+    **{target}** ({target_gamma}, {target_progress}/{time_frame}) in {time_needed} at {intersection_gamma} gamma!
   embed_description_user_never: |
-    **u/{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
-    **u/{target}** ({target_gamma}, {target_progress}/{time_frame}) at this pace!
+    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
+    **{target}** ({target_gamma}, {target_progress}/{time_frame}) at this pace!
 partner:
   getting_partner_list: |
     Getting the list of our partners...

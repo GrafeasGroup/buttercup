@@ -24,10 +24,12 @@ from buttercup.cogs.helpers import (
     InvalidArgumentException,
     extract_username,
     get_duration_str,
+    get_initial_username,
     get_initial_username_list,
     get_rank,
     get_rgb_from_hex,
     get_timedelta_str,
+    get_user,
     get_user_id,
     get_user_list,
     get_username,
@@ -718,25 +720,20 @@ class History(Cog):
         ],
     )
     async def _until(
-        self,
-        ctx: SlashContext,
-        goal: Optional[str] = None,
-        username: Optional[str] = None,
+        self, ctx: SlashContext, goal: Optional[str] = None, username: str = "me",
     ) -> None:
         """Determine how long it will take the user to reach the given goal."""
         start = datetime.now()
-        username = username or extract_username(ctx.author.display_name)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["until"]["getting_prediction"].format(user=username))
+        msg = await ctx.send(
+            i18n["until"]["getting_prediction"].format(
+                user=get_initial_username(username, ctx)
+            )
+        )
 
-        user_response = self.blossom_api.get_user(username)
-        if user_response.status != BlossomStatus.ok:
-            await msg.edit(content=i18n["until"]["user_not_found"].format(username))
-            return
-        user = user_response.data
-        username = user["username"]
+        user = get_user(username, ctx, self.blossom_api)
 
         if goal is not None:
             try:
@@ -753,7 +750,7 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["getting_prediction_to_goal"].format(
-                user=username, goal_gamma=goal_str
+                user=get_username(user), goal=goal_str
             )
         )
 
@@ -764,9 +761,9 @@ class History(Cog):
                     duration=get_duration_str(start)
                 ),
                 embed=Embed(
-                    title=i18n["until"]["embed_title"].format(user=username),
+                    title=i18n["until"]["embed_title"].format(user=get_username(user)),
                     description=i18n["until"]["embed_description_new"].format(
-                        user=username
+                        user=get_username(user)
                     ),
                 ),
             )
@@ -778,7 +775,9 @@ class History(Cog):
             user_progress = await self._get_user_progress(user, start, time_frame)
         except RuntimeError:
             await msg.edit(
-                content=i18n["until"]["failed_getting_prediction"].format(user=username)
+                content=i18n["until"]["failed_getting_prediction"].format(
+                    user=get_username(user)
+                )
             )
             return
 
@@ -786,7 +785,7 @@ class History(Cog):
             # The user has already reached the goal
             description = i18n["until"]["embed_description_reached"].format(
                 time_frame="week",
-                user=username,
+                user=get_username(user),
                 user_gamma=user["gamma"],
                 goal=goal_str,
                 user_progress=user_progress,
@@ -794,7 +793,7 @@ class History(Cog):
         elif user_progress == 0:
             description = i18n["until"]["embed_description_zero"].format(
                 time_frame=get_timedelta_str(time_frame),
-                user=username,
+                user=get_username(user),
                 user_gamma=user["gamma"],
                 goal=goal_str,
             )
@@ -807,7 +806,7 @@ class History(Cog):
 
             description = i18n["until"]["embed_description_prediction"].format(
                 time_frame="week",
-                user=username,
+                user=get_username(user),
                 user_gamma=user["gamma"],
                 goal=goal_str,
                 user_progress=user_progress,
@@ -822,7 +821,7 @@ class History(Cog):
                 duration=get_duration_str(start)
             ),
             embed=Embed(
-                title=i18n["until"]["embed_title"].format(user=username),
+                title=i18n["until"]["embed_title"].format(user=get_username(user)),
                 description=description,
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
