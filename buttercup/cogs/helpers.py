@@ -247,6 +247,23 @@ def get_user_id(user: Optional[BlossomUser]) -> Optional[int]:
     return user["id"] if user else None
 
 
+def get_user_gamma(user: Optional[BlossomUser], blossom_api: BlossomAPI) -> int:
+    """Get the gamma of the given user.
+
+    If it is None, it will get the total gamma of everyone.
+    This makes a server request, so the result should be reused.
+    """
+    if user:
+        return user["gamma"]
+
+    gamma_response = blossom_api.get(
+        "submission/", params={"page_size": 1, "completed_by__isnull": False},
+    )
+    if not gamma_response.ok:
+        raise BlossomException(gamma_response)
+    return gamma_response.json()["count"]
+
+
 def extract_sub_name(subreddit: str) -> str:
     """Extract the name of the sub without prefix."""
     if subreddit.startswith("/r/"):
