@@ -182,7 +182,7 @@ until:
   getting_prediction: |
     Getting prediction for {user}...
   getting_prediction_to_goal: |
-    Getting prediction for {user} to reach {goal}...
+    Getting prediction for {user} to reach **{goal}**...
   user_not_found: |
     I couldn't find user {user}!
   embed_message: |
@@ -190,21 +190,21 @@ until:
   embed_title: |
     Prediction for {user}
   embed_description_prediction: |
-    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will reach **{goal}** in {time_needed}!
+    **{user}** ({user_gamma:,} at {user_progress:,}/{time_frame}) will reach **{goal}** in {relative_time} ({absolute_time})!
   embed_description_reached: |
-    **{user}** ({user_gamma}, {user_progress}/{time_frame}) has already reached **{goal}**!
+    **{user}** ({user_gamma:,} at {user_progress:,}/{time_frame}) has already reached **{goal}**!
   embed_description_zero: |
-    **{user}** will **never** get from {user_gamma} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
+    **{user}** will **never** get from {user_gamma:,} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
   embed_description_new: |
     Hey {user}!
     It looks like you haven't started transribing yet. Do you need any help to get started?
     Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   embed_description_user_prediction: |
-    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will catch up with
-    **{target}** ({target_gamma}, {target_progress}/{time_frame}) in {time_needed} at {intersection_gamma} gamma!
+    **{user}** ({user_gamma:,}, {user_progress:,}/{time_frame}) will catch up with
+    **{target}** ({target_gamma:,}, {target_progress:,}/{time_frame}) in {relative_time} ({absolute_time}) at {intersection_gamma:,} gamma!
   embed_description_user_never: |
-    **{user}** ({user_gamma}, {user_progress}/{time_frame}) will never catch up with
-    **{target}** ({target_gamma}, {target_progress}/{time_frame}) at this pace!
+    **{user}** ({user_gamma:,}, {user_progress:,}/{time_frame}) will never catch up with
+    **{target}** ({target_gamma:,} at {target_progress:,}/{time_frame}) at this pace!
 partner:
   getting_partner_list: |
     Getting the list of our partners...

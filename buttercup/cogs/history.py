@@ -208,11 +208,13 @@ def parse_goal_str(goal_str: str) -> Tuple[int, str]:
     goal_str = goal_str.strip()
 
     if goal_str.isnumeric():
-        return int(goal_str, 10), goal_str
+        goal_gamma = int(goal_str, 10)
+        return goal_gamma, f"{goal_gamma:,}"
 
     for rank in ranks:
         if goal_str.casefold() == rank["name"].casefold():
-            return rank["threshold"], f"{rank['name']} ({rank['threshold']})"
+            goal_gamma = int(rank['threshold'])
+            return rank["threshold"], f"{rank['name']} ({goal_gamma:,})"
 
     raise InvalidArgumentException("goal", goal_str)
 
@@ -745,10 +747,7 @@ class History(Cog):
         elif user:
             # Take the next rank for the user
             next_rank = get_next_rank(user["gamma"])
-            goal_gamma, goal_str = (
-                next_rank["threshold"],
-                f"{next_rank['name']} ({next_rank['threshold']})",
-            )
+            goal_gamma, goal_str = parse_goal_str(next_rank["name"])
         else:
             # You can't get the "next rank" of the whole server
             raise InvalidArgumentException("goal", "<empty>")
