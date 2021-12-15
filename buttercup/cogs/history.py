@@ -1,17 +1,17 @@
 import io
 import math
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import discord
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil import parser
 from dateutil.tz import tzutc
 from discord import Embed, File
-from discord.ext.commands import Cog
+from discord.ext.commands import Cog, UserNotFound
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
@@ -22,12 +22,15 @@ from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
     InvalidArgumentException,
-    extract_username,
+    get_discord_time_str,
     get_duration_str,
+    get_initial_username,
     get_initial_username_list,
     get_rank,
     get_rgb_from_hex,
     get_timedelta_str,
+    get_user,
+    get_user_gamma,
     get_user_id,
     get_user_list,
     get_username,
@@ -205,13 +208,91 @@ def parse_goal_str(goal_str: str) -> Tuple[int, str]:
     goal_str = goal_str.strip()
 
     if goal_str.isnumeric():
-        return int(goal_str, 10), goal_str
+        goal_gamma = int(goal_str, 10)
+        return goal_gamma, f"{goal_gamma:,}"
 
     for rank in ranks:
         if goal_str.casefold() == rank["name"].casefold():
-            return rank["threshold"], f"{rank['name']} ({rank['threshold']})"
+            goal_gamma = int(rank["threshold"])
+            return rank["threshold"], f"{rank['name']} ({goal_gamma:,})"
 
     raise InvalidArgumentException("goal", goal_str)
+
+
+async def _get_user_progress(
+    user: Optional[BlossomUser],
+    after_time: Optional[datetime],
+    before_time: Optional[datetime],
+    blossom_api: BlossomAPI,
+) -> int:
+    """Get the number of transcriptions made in the given time frame."""
+    from_str = after_time.isoformat() if after_time else None
+    until_str = before_time.isoformat() if before_time else None
+
+    # We ask for submission completed by the user in the time frame
+    # The response will contain a count, so we just need 1 result
+    progress_response = blossom_api.get(
+        "submission/",
+        params={
+            "completed_by": get_user_id(user),
+            "from": from_str,
+            "until": until_str,
+            "page_size": 1,
+        },
+    )
+    if progress_response.status_code != 200:
+        raise BlossomException(progress_response)
+
+    return progress_response.json()["count"]
+
+
+async def _get_progress_description(
+    user: Optional[BlossomUser],
+    user_gamma: int,
+    goal_gamma: int,
+    goal_str: str,
+    start: datetime,
+    after_time: datetime,
+    before_time: Optional[datetime],
+    blossom_api: BlossomAPI,
+) -> str:
+    """Get the description for the user's prediction to reach the goal."""
+    user_progress = await _get_user_progress(user, after_time, before_time, blossom_api)
+    time_frame = (before_time or start) - after_time
+
+    if user_gamma >= goal_gamma:
+        # The user has already reached the goal
+        return i18n["until"]["embed_description_reached"].format(
+            time_frame=get_timedelta_str(time_frame),
+            user=get_username(user),
+            user_gamma=user_gamma,
+            goal=goal_str,
+            user_progress=user_progress,
+        )
+    elif user_progress == 0:
+        return i18n["until"]["embed_description_zero"].format(
+            time_frame=get_timedelta_str(time_frame),
+            user=get_username(user),
+            user_gamma=user_gamma,
+            goal=goal_str,
+        )
+    else:
+        # Based on the progress in the timeframe, calculate the time needed
+        gamma_needed = goal_gamma - user_gamma
+        relative_time = timedelta(
+            seconds=gamma_needed * (time_frame.total_seconds() / user_progress)
+        )
+        absolute_time = start + relative_time
+
+        return i18n["until"]["embed_description_prediction"].format(
+            time_frame=get_timedelta_str(time_frame),
+            user=get_username(user),
+            user_gamma=user_gamma,
+            goal=goal_str,
+            user_progress=user_progress,
+            relative_time=get_timedelta_str(relative_time),
+            absolute_time=get_discord_time_str(absolute_time),
+        )
 
 
 class History(Cog):
@@ -281,16 +362,7 @@ class History(Cog):
         Note: We always need to do this, because it might be the case that some
         transcriptions don't have a date set.
         """
-        if user:
-            gamma = user["gamma"]
-        else:
-            # We need to get the total gamma of all users
-            gamma_response = self.blossom_api.get(
-                "submission/", params={"page_size": 1, "completed_by__isnull": False},
-            )
-            if not gamma_response.ok:
-                raise BlossomException(gamma_response)
-            gamma = gamma_response.json()["count"]
+        gamma = get_user_gamma(user, self.blossom_api)
 
         if before_time is not None:
             # We need to get the offset from the API
@@ -491,18 +563,6 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
-            create_option(
-                name="after",
-                description="The start date for the rate data.",
-                option_type=3,
-                required=False,
-            ),
-            create_option(
-                name="before",
-                description="The end date for the rate data.",
-                option_type=3,
-                required=False,
-            ),
         ],
     )
     async def _rate(
@@ -602,93 +662,90 @@ class History(Cog):
             file=discord_file,
         )
 
-    async def _get_user_progress(
-        self, user: Dict[str, Any], start: datetime, time_frame: timedelta
-    ) -> int:
-        # We ask for submission completed by the user in the time frame
-        # The response will contain a count, so we just need 1 result
-        progress_response = self.blossom_api.get(
-            "submission/",
-            params={
-                "completed_by": user["id"],
-                "from": (start - time_frame).isoformat(),
-                "page_size": 1,
-            },
-        )
-        if progress_response.status_code != 200:
-            raise RuntimeError("Failed to get progress")
-        return progress_response.json()["count"]
-
     async def _until_user_catch_up(
         self,
+        ctx: SlashContext,
         msg: SlashMessage,
-        user: Dict[str, Any],
+        user: BlossomUser,
         target_username: str,
         start: datetime,
+        after_time: datetime,
+        before_time: Optional[datetime],
+        time_str: str,
     ) -> None:
         """Determine how long it will take the user to catch up with the target user."""
         # Try to find the target user
-        target_response = self.blossom_api.get_user(target_username)
-        if target_response.status != BlossomStatus.ok:
+        try:
+            target = get_user(target_username, ctx, self.blossom_api)
+        except UserNotFound:
+            # This doesn't mean the username is wrong
+            # They could have also mistyped a rank
+            # So we change the error message to something else
             raise InvalidArgumentException("goal", target_username)
 
-        target = target_response.data
+        if not target:
+            # Having the combined server as target doesn't make sense
+            # Because it includes the current user, they could never reach it
+            raise InvalidArgumentException("goal", target_username)
 
         if user["gamma"] > target["gamma"]:
             # Swap user and target, the target has to have more gamma
             # Otherwise the goal would have already been reached
             user, target = target, user
 
-        time_frame = timedelta(weeks=1)
+        user_progress = await _get_user_progress(
+            user, after_time, before_time, blossom_api=self.blossom_api
+        )
+        target_progress = await _get_user_progress(
+            target, after_time, before_time, blossom_api=self.blossom_api
+        )
 
-        try:
-            user_progress = await self._get_user_progress(user, start, time_frame)
-            target_progress = await self._get_user_progress(target, start, time_frame)
-        except RuntimeError:
-            await msg.edit(
-                content=i18n["until"]["failed_getting_prediction"].format(user=user)
-            )
-            return
+        time_frame = (before_time or start) - after_time
 
         if user_progress <= target_progress:
             description = i18n["until"]["embed_description_user_never"].format(
-                user=user["username"],
+                user=get_username(user),
                 user_gamma=user["gamma"],
                 user_progress=user_progress,
-                target=target["username"],
+                target=get_username(target),
                 target_gamma=target["gamma"],
                 target_progress=target_progress,
-                time_frame="week",
+                time_frame=get_timedelta_str(time_frame),
             )
         else:
             # Calculate time needed
             seconds_needed = (target["gamma"] - user["gamma"]) / (
                 (user_progress - target_progress) / time_frame.total_seconds()
             )
-            time_needed = timedelta(seconds=seconds_needed)
+            relative_time = timedelta(seconds=seconds_needed)
+            absolute_time = start + relative_time
 
             intersection_gamma = user["gamma"] + math.ceil(
                 (user_progress / time_frame.total_seconds())
-                * time_needed.total_seconds()
+                * relative_time.total_seconds()
             )
 
             description = i18n["until"]["embed_description_user_prediction"].format(
-                user=user["username"],
+                user=get_username(user),
                 user_gamma=user["gamma"],
                 user_progress=user_progress,
-                target=target["username"],
+                target=get_username(target),
                 target_gamma=target["gamma"],
                 target_progress=target_progress,
                 intersection_gamma=intersection_gamma,
                 time_frame=get_timedelta_str(time_frame),
-                time_needed=get_timedelta_str(time_needed),
+                relative_time=get_timedelta_str(relative_time),
+                absolute_time=get_discord_time_str(absolute_time),
             )
 
         color = get_rank(target["gamma"])["color"]
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
-                duration=get_duration_str(start)
+                user=get_username(user),
+                goal=get_username(target),
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             embed=Embed(
                 title=i18n["until"]["embed_title"].format(user=get_username(user)),
@@ -715,114 +772,115 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="after",
+                description="The start date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
     async def _until(
         self,
         ctx: SlashContext,
         goal: Optional[str] = None,
-        username: Optional[str] = None,
+        username: str = "me",
+        after: str = "1 week",
+        before: Optional[str] = None,
     ) -> None:
         """Determine how long it will take the user to reach the given goal."""
-        start = datetime.now()
-        username = username or extract_username(ctx.author.display_name)
+        start = datetime.now(tz=pytz.utc)
+
+        after_time, before_time, time_str = parse_time_constraints(after, before)
+
+        if not after_time:
+            # We need a starting point for the calculations
+            raise InvalidArgumentException("after", after)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(i18n["until"]["getting_prediction"].format(user=username))
-
-        user_response = self.blossom_api.get_user(username)
-        if user_response.status != BlossomStatus.ok:
-            await msg.edit(content=i18n["until"]["user_not_found"].format(username))
-            return
-        user = user_response.data
-        username = user["username"]
-
-        if goal is not None:
-            try:
-                goal_gamma, goal_str = parse_goal_str(goal)
-            except InvalidArgumentException:
-                return await self._until_user_catch_up(msg, user, goal, start)
-        else:
-            # Take the next rank for the user
-            next_rank = get_next_rank(user["gamma"])
-            goal_gamma, goal_str = (
-                next_rank["threshold"],
-                f"{next_rank['name']} ({next_rank['threshold']})",
-            )
-
-        await msg.edit(
-            content=i18n["until"]["getting_prediction_to_goal"].format(
-                user=username, goal_gamma=goal_str
+        msg = await ctx.send(
+            i18n["until"]["getting_prediction"].format(
+                user=get_initial_username(username, ctx), time_str=time_str,
             )
         )
 
-        if user["gamma"] == 0:
+        user = get_user(username, ctx, self.blossom_api)
+
+        if goal is not None:
+            try:
+                # Check if the goal is a gamma value or rank name
+                goal_gamma, goal_str = parse_goal_str(goal)
+            except InvalidArgumentException:
+                # The goal could be a username
+                if not user:
+                    # If the user is the combined server, a target user doesn't make sense
+                    raise InvalidArgumentException("goal", goal)
+
+                # Try to treat the goal as a user
+                return await self._until_user_catch_up(
+                    ctx, msg, user, goal, start, after_time, before_time, time_str,
+                )
+        elif user:
+            # Take the next rank for the user
+            next_rank = get_next_rank(user["gamma"])
+            goal_gamma, goal_str = parse_goal_str(next_rank["name"])
+        else:
+            # You can't get the "next rank" of the whole server
+            raise InvalidArgumentException("goal", "<empty>")
+
+        user_gamma = get_user_gamma(user, self.blossom_api)
+
+        await msg.edit(
+            content=i18n["until"]["getting_prediction_to_goal"].format(
+                user=get_username(user), goal=goal_str, time_str=time_str,
+            )
+        )
+
+        if user_gamma == 0:
             # The user has not started transcribing yet
             await msg.edit(
                 content=i18n["until"]["embed_message"].format(
-                    duration=get_duration_str(start)
+                    duration=get_duration_str(start), goal=goal_str, time_str=time_str,
                 ),
                 embed=Embed(
-                    title=i18n["until"]["embed_title"].format(user=username),
+                    title=i18n["until"]["embed_title"].format(user=get_username(user)),
                     description=i18n["until"]["embed_description_new"].format(
-                        user=username
+                        user=get_username(user)
                     ),
                 ),
             )
             return
 
-        time_frame = timedelta(weeks=1)
-
-        try:
-            user_progress = await self._get_user_progress(user, start, time_frame)
-        except RuntimeError:
-            await msg.edit(
-                content=i18n["until"]["failed_getting_prediction"].format(user=username)
-            )
-            return
-
-        if user["gamma"] >= goal_gamma:
-            # The user has already reached the goal
-            description = i18n["until"]["embed_description_reached"].format(
-                time_frame="week",
-                user=username,
-                user_gamma=user["gamma"],
-                goal=goal_str,
-                user_progress=user_progress,
-            )
-        elif user_progress == 0:
-            description = i18n["until"]["embed_description_zero"].format(
-                time_frame=get_timedelta_str(time_frame),
-                user=username,
-                user_gamma=user["gamma"],
-                goal=goal_str,
-            )
-        else:
-            # Based on the progress in the timeframe, calculate the time needed
-            gamma_needed = goal_gamma - user["gamma"]
-            time_needed = timedelta(
-                seconds=gamma_needed * (time_frame.total_seconds() / user_progress)
-            )
-
-            description = i18n["until"]["embed_description_prediction"].format(
-                time_frame="week",
-                user=username,
-                user_gamma=user["gamma"],
-                goal=goal_str,
-                user_progress=user_progress,
-                time_needed=get_timedelta_str(time_needed),
-            )
+        description = await _get_progress_description(
+            user,
+            user_gamma,
+            goal_gamma,
+            goal_str,
+            start,
+            after_time,
+            before_time,
+            blossom_api=self.blossom_api,
+        )
 
         # Determine the color of the target rank
         color = get_rank(goal_gamma)["color"]
 
         await msg.edit(
             content=i18n["until"]["embed_message"].format(
-                duration=get_duration_str(start)
+                user=get_username(user),
+                goal=goal_str,
+                time_str=time_str,
+                duration=get_duration_str(start),
             ),
             embed=Embed(
-                title=i18n["until"]["embed_title"].format(user=username),
+                title=i18n["until"]["embed_title"].format(user=get_username(user)),
                 description=description,
                 color=discord.Colour.from_rgb(*get_rgb_from_hex(color)),
             ),
