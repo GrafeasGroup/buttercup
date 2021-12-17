@@ -20,10 +20,10 @@ from buttercup.cogs.helpers import (
     BlossomUser,
     InvalidArgumentException,
     extract_username,
+    get_discord_time_str,
     get_duration_str,
     get_username,
     parse_time_constraints,
-    get_discord_time_str,
 )
 from buttercup.strings import translation
 
@@ -70,19 +70,40 @@ def get_transcription_source(transcription: Dict[str, Any]) -> str:
 
 def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> str:
     """Format a single occurrence of the query."""
-    max_context = 20
+    # The maximum amount of characters that fit in a single line
+    # Within an embedded code block
+    max_characters = 56
     line_num_str = "L" + str(line_num) + ": "
-    before_context = line[:pos]
-    if len(before_context) > max_context:
-        before_context = "..." + before_context[-max_context:]
-    offset = len(line_num_str) + len(before_context)
+
+    # The number of chars that we can use to display context to the result
+    remaining_chars = max_characters - len(query) - len(line_num_str)
+
+    left_context = line[:pos]
+    right_context = line[pos + len(query) :]
+
+    left_chars = math.ceil(remaining_chars / 2)
+    right_chars = math.floor(remaining_chars / 2)
+
+    # Give each side as much context as possible
+    if len(left_context) < left_chars:
+        right_chars += left_chars - len(left_context)
+    elif len(right_context) < right_chars:
+        left_chars += right_chars - len(right_context)
+
+    # Truncate if necessary
+    if len(left_context) > left_chars:
+        left_context = "..." + left_context[-left_chars + 3 :]
+
+    if len(right_context) > right_chars:
+        right_context = right_context[: right_chars - 3] + "..."
+
+    # Calculate the offset of the query occurrence
+    offset = len(line_num_str) + len(left_context)
+    # Extract the actual occurrence (Might have different capitalization)
     occurrence = line[pos : pos + len(query)]
-    after_context = line[pos + len(query) :]
-    if len(after_context) > max_context:
-        after_context = after_context[:max_context] + "..."
 
     # Show the occurrence with context
-    context = f"{line_num_str}{before_context}{occurrence}{after_context}\n"
+    context = f"{line_num_str}{left_context}{occurrence}{right_context}\n"
     # Underline the occurrence
     underline = " " * offset + "-" * len(query) + "\n"
     return context + underline
