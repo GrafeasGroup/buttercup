@@ -267,7 +267,7 @@ search:
     No results found for `{query}` by {user} {time_str}. ({duration_str})
   description:
     item: |-
-      {num}. [{tr_type} on {tr_source}]({url})
+      {num}. [{tr_type} on {tr_source}]({url}) {timestamp}
     more_occurrences: |-
       ... and {count} more occurrence(s).
   embed_message: |-

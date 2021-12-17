@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomStatus
+from dateutil import parser
 from discord import Embed, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -22,6 +23,7 @@ from buttercup.cogs.helpers import (
     get_duration_str,
     get_username,
     parse_time_constraints,
+    get_discord_time_str,
 )
 from buttercup.strings import translation
 
@@ -93,9 +95,14 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     # Determine meta info about the post/transcription
     tr_type = get_transcription_type(result)
     tr_source = get_transcription_source(result)
+    time = parser.parse(result["create_time"])
     description = (
         i18n["search"]["description"]["item"].format(
-            num=num, tr_type=tr_type, tr_source=tr_source, url=result["url"],
+            num=num,
+            tr_type=tr_type,
+            tr_source=tr_source,
+            url=result["url"],
+            timestamp=get_discord_time_str(time, "R"),
         )
         # Start code block for occurrences
         + "\n```\n"
