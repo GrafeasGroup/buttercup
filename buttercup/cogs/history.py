@@ -485,6 +485,7 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
+        colors = get_user_colors(users)
 
         min_gammas = []
         max_gammas = []
@@ -519,7 +520,7 @@ class History(Cog):
 
             history_data = self.get_user_history(user, after_time, before_time)
 
-            color = ranks[index]["color"]
+            color = colors[index]
             first_point = history_data.iloc[0]
             last_point = history_data.iloc[-1]
 
@@ -617,6 +618,7 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
+        colors = get_user_colors(users)
 
         max_rates = []
 
@@ -654,7 +656,7 @@ class History(Cog):
             max_rates.append(max_rate)
             max_rate_point = user_data[user_data["count"] == max_rate].iloc[0]
 
-            color = ranks[index]["color"]
+            color = colors[index]
 
             # Plot the graph
             ax.plot(
