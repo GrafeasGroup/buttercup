@@ -262,7 +262,7 @@ leaderboard:
     Leaderboard for {user} ({time_frame})
 search:
   getting_search: |-
-    Searching for `{query}` {time_str}...
+    Searching for `{query}` in transcriptions by {user} {time_str}...
   no_results: |-
     No results found for `{query}` by {user} {time_str}. ({duration_str})
   description:
@@ -271,7 +271,7 @@ search:
     more_occurrences: |-
       ... and {count} more occurrence(s).
   embed_message: |-
-    Here are your results for `{query}` by {user} {time_str}! ({duration_str})
+    Here are your results for `{query}` in transcriptions by {user} {time_str}! ({duration_str})
   embed_title: |-
     Results for `{query}` by {user}
   embed_footer: |-
