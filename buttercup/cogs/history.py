@@ -235,8 +235,8 @@ async def _get_user_progress(
         "submission/",
         params={
             "completed_by": get_user_id(user),
-            "from": from_str,
-            "until": until_str,
+            "complete_time__gte": from_str,
+            "complete_time__lte": until_str,
             "page_size": 1,
         },
     )
@@ -327,8 +327,8 @@ class History(Cog):
                     "page": page,
                     "page_size": page_size,
                     "time_frame": time_frame,
-                    "from": from_str,
-                    "until": until_str,
+                    "complete_time__gte": from_str,
+                    "complete_time__lte": until_str,
                 },
             )
             if response.status_code != 200:
@@ -371,7 +371,7 @@ class History(Cog):
                 params={
                     "completed_by__isnull": False,
                     "completed_by": get_user_id(user),
-                    "from": before_time.isoformat(),
+                    "complete_time__gte": before_time.isoformat(),
                     "page_size": 1,
                 },
             )

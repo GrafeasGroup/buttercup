@@ -241,8 +241,8 @@ class Stats(Cog):
             "submission/",
             params={
                 "completed_by": get_user_id(user),
-                "from": from_str,
-                "until": until_str,
+                "complete_time__gte": from_str,
+                "complete_time__lte": until_str,
                 "page_size": 1,
             },
         )
