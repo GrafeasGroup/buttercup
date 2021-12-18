@@ -170,7 +170,7 @@ class Find(Cog):
         # We will edit this message later with the actual content.
         msg = await ctx.send(i18n["find"]["looking_for_posts"].format(url=reddit_url))
 
-        find_response = self.blossom_api.get("find", data={"url": reddit_url})
+        find_response = self.blossom_api.get("find", params={"url": reddit_url})
         if not find_response.ok:
             await msg.edit(content=i18n["find"]["not_found"].format(url=reddit_url))
             return
