@@ -563,6 +563,18 @@ class History(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="after",
+                description="The start date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
+                name="before",
+                description="The end date for the rate data.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
     async def _rate(
@@ -774,13 +786,13 @@ class History(Cog):
             ),
             create_option(
                 name="after",
-                description="The start date for the rate data.",
+                description="The start date for the prediction data.",
                 option_type=3,
                 required=False,
             ),
             create_option(
                 name="before",
-                description="The end date for the rate data.",
+                description="The end date for the prediction data.",
                 option_type=3,
                 required=False,
             ),
