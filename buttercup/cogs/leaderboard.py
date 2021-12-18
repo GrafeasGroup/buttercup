@@ -114,8 +114,8 @@ class Leaderboard(Cog):
                 "top_count": top_count,
                 "below_count": context_count,
                 "above_count": context_count,
-                "from": from_str,
-                "until": until_str,
+                "complete_time__gte": from_str,
+                "complete_time__lte": until_str,
             },
         )
         if leaderboard_response.status_code != 200:
