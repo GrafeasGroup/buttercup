@@ -168,7 +168,9 @@ def get_user_colors(users: Optional[List[BlossomUser]]) -> List[str]:
         # Give the user their rank color if possible
         if user_rank in available_ranks:
             color_mapping[user["username"]] = user_rank["color"]
-            available_ranks = [r for r in available_ranks if r["name"] != user_rank["name"]]
+            available_ranks = [
+                r for r in available_ranks if r["name"] != user_rank["name"]
+            ]
         else:
             left_over_users.append(user)
 
