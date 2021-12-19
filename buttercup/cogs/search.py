@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 import pytz
-from blossom_wrapper import BlossomAPI, BlossomStatus
+from blossom_wrapper import BlossomAPI
 from dateutil import parser
 from discord import Embed, Reaction, User
 from discord.ext import commands
@@ -18,10 +18,10 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
-    InvalidArgumentException,
-    extract_username,
     get_discord_time_str,
     get_duration_str,
+    get_initial_username,
+    get_user,
     get_username,
     parse_time_constraints,
 )
@@ -398,7 +398,7 @@ class Search(Cog):
         self,
         ctx: SlashContext,
         query: str,
-        username: Optional[str] = None,
+        username: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
@@ -409,20 +409,12 @@ class Search(Cog):
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
-            i18n["search"]["getting_search"].format(query=query, time_str=time_str)
+            i18n["search"]["getting_search"].format(
+                query=query, user=get_initial_username(username, ctx), time_str=time_str
+            )
         )
 
-        username = username or extract_username(ctx.author.display_name)
-
-        # Get the user that the search is restricted to
-        if username.casefold() != "all":
-            volunteer_response = self.blossom_api.get_user(username)
-            if volunteer_response.status != BlossomStatus.ok:
-                raise InvalidArgumentException("username", username)
-
-            user = volunteer_response.data
-        else:
-            user = None
+        user = get_user(username, ctx, self.blossom_api)
 
         # Simulate an initial cache item
         cache_item: SearchCacheItem = {
