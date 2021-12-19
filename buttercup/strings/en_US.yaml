@@ -46,6 +46,7 @@ stats:
     **Days Since Inception**: {days:,d}
   embed_description_user: |
     **Transcriptions**: {gamma:,d}
+    **Leaderboard Rank**: #{leaderboard_rank}
     **Flair Rank**: {flair_rank}
     **Date Joined**: {date_joined} ({joined_ago})
     **Last Active**: {last_active} ({last_ago})

@@ -141,11 +141,27 @@ class Stats(Cog):
             or submission_data["create_time"]
         )
 
+        # Get the user's leaderboard rank
+        leaderboard_response = self.blossom_api.get(
+            "submission/leaderboard",
+            params={
+                "user_id": get_user_id(user),
+                "top_count": 0,
+                "below_count": 0,
+                "above_count": 0,
+            },
+        )
+        if leaderboard_response.status_code != 200:
+            raise BlossomException(leaderboard_response)
+
+        leaderboard_rank = leaderboard_response.json()["user"]["rank"]
+
         rank = get_rank(user["gamma"])
 
         description = i18n["stats"]["embed_description_user"].format(
             gamma=user["gamma"],
             flair_rank=rank["name"],
+            leaderboard_rank=leaderboard_rank,
             date_joined=get_discord_time_str(date_joined),
             joined_ago=get_discord_time_str(date_joined, "R"),
             last_active=get_discord_time_str(last_active),
