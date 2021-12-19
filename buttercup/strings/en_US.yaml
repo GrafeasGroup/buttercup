@@ -52,8 +52,6 @@ stats:
 progress:
   getting_progress: |
     Getting progress of {user} {time_str}...
-  user_not_found: |
-    I couldn't find user {user}!
   embed_message: |
     Here is the progress of {user}! ({duration})
   embed_title: |

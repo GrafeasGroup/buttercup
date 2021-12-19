@@ -128,7 +128,7 @@ class Stats(Cog):
                 "page": 1,
             },
         )
-        if submission_response.status_code != 200:
+        if not submission_response.ok:
             raise BlossomException(submission_response)
 
         submission_data = submission_response.json()["results"][0]
@@ -246,13 +246,9 @@ class Stats(Cog):
                 "page_size": 1,
             },
         )
-        if progress_response.status_code != 200:
-            await msg.edit(
-                content=i18n["progress"]["failed_getting_progress"].format(
-                    user=get_username(user)
-                )
-            )
-            return
+        if not progress_response.ok:
+            raise BlossomException(progress_response)
+
         progress_count = progress_response.json()["count"]
 
         # The progress bar only makes sense for a 24 hour time frame
