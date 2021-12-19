@@ -148,6 +148,39 @@ def add_zero_rates(
     return data.reindex(new_index, fill_value=0).sort_index()
 
 
+def get_user_colors(users: Optional[List[BlossomUser]]) -> List[str]:
+    """Assign a color to each user.
+
+    This will prefer to assign a user their rank color.
+    A single user will get white for better readability.
+    """
+    if not users or len(users) == 1:
+        # If we don't need to distinguish, take white (best contrast)
+        return ["#eeeeee"]
+
+    color_mapping = {}
+    available_ranks = [r for r in ranks]
+    left_over_users = []
+
+    for user in users:
+        user_rank = get_rank(user["gamma"])
+
+        # Give the user their rank color if possible
+        if user_rank in available_ranks:
+            color_mapping[user["username"]] = user_rank["color"]
+            available_ranks = [
+                r for r in available_ranks if r["name"] != user_rank["name"]
+            ]
+        else:
+            left_over_users.append(user)
+
+    # Give the left over users another rank's color
+    for i, user in enumerate(left_over_users):
+        color_mapping[user["username"]] = available_ranks[i]["color"]
+
+    return [color_mapping[user["username"]] for user in users]
+
+
 def add_milestone_lines(
     ax: plt.Axes,
     milestones: List[Dict[str, Union[str, int]]],
@@ -454,6 +487,8 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
+        users.sort(key=lambda u: u["gamma"], reverse=True)
+        colors = get_user_colors(users)
 
         min_gammas = []
         max_gammas = []
@@ -488,7 +523,7 @@ class History(Cog):
 
             history_data = self.get_user_history(user, after_time, before_time)
 
-            color = ranks[index]["color"]
+            color = colors[index]
             first_point = history_data.iloc[0]
             last_point = history_data.iloc[-1]
 
@@ -598,6 +633,8 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
+        users.sort(key=lambda u: u["gamma"], reverse=True)
+        colors = get_user_colors(users)
 
         max_rates = []
 
@@ -635,7 +672,7 @@ class History(Cog):
             max_rates.append(max_rate)
             max_rate_point = user_data[user_data["count"] == max_rate].iloc[0]
 
-            color = ranks[index]["color"]
+            color = colors[index]
 
             # Plot the graph
             ax.plot(
