@@ -46,14 +46,13 @@ stats:
     **Days Since Inception**: {days:,d}
   embed_description_user: |
     **Transcriptions**: {gamma:,d}
+    **Leaderboard Rank**: #{leaderboard_rank}
     **Flair Rank**: {flair_rank}
     **Date Joined**: {date_joined} ({joined_ago})
     **Last Active**: {last_active} ({last_ago})
 progress:
   getting_progress: |
     Getting progress of {user} {time_str}...
-  user_not_found: |
-    I couldn't find user {user}!
   embed_message: |
     Here is the progress of {user}! ({duration})
   embed_title: |
