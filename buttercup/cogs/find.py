@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from blossom_wrapper import BlossomAPI
 from discord import Color, Embed
@@ -55,47 +55,44 @@ def get_clean_transcription(data: Dict) -> str:
     return "---".join(parts[1:-1]).strip()
 
 
-def to_embed(data: Dict) -> Embed:  # noqa: C901
+def get_color_and_status(data: Dict) -> Tuple[str, str]:
+    """Get the color and status for the embed."""
+    author = data.get("author", None)
+    author_link = (
+        i18n["find"]["discord_username_link"].format(author["username"])
+        if author
+        else None
+    )
+
+    if data["submission"].get("completed_by"):
+        # The post has been completed
+        status = f"Completed by {author_link}" if author_link else "Completed"
+        return COMPLETED_COLOR, status
+    elif data["submission"].get("claimed_by"):
+        # The post is in progress
+        status = f"Claimed by {author_link}" if author_link else "Claimed"
+
+        return IN_PROGRESS_COLOR, status
+    else:
+        # The post is unclaimed
+        return UNCLAIMED_COLOR, "Unclaimed"
+
+
+def to_embed(data: Dict) -> Embed:
     """Convert the submission to a Discord embed."""
-    color = UNCLAIMED_COLOR
-    status: str = "Unclaimed"
+    color, status = get_color_and_status(data)
 
     if "transcription" in data:
         tr_link = f"[Link]({data['transcription']['url']})"
     else:
         tr_link = None
 
-    if data["submission"].get("completed_by"):
-        color = COMPLETED_COLOR
-
-        if "author" in data:
-            status = "Completed by {}".format(
-                i18n["find"]["discord_username_link"].format(
-                    data["author"]["username"]
-                )
-            )
-        else:
-            status = "Completed"
-    elif data["submission"].get("claimed_by"):
-        color = IN_PROGRESS_COLOR
-
-        if "author" in data:
-            status = "Claimed by {}".format(
-                i18n["find"]["discord_username_link"].format(
-                    data["author"]["username"]
-                )
-            )
-        else:
-            status = "Claimed"
-
     embed = (
         Embed(color=color)
         .add_field(name="Status", value=status)
         .add_field(
             name="OCR",
-            value="Yes"
-            if data["submission"].get("has_ocr_transcription")
-            else "No",
+            value="Yes" if data["submission"].get("has_ocr_transcription") else "No",
         )
         .add_field(
             name="Archived",
@@ -118,13 +115,9 @@ def to_embed(data: Dict) -> Embed:  # noqa: C901
     if tr_link:
         embed.add_field(name="Transcription", value=tr_link)
     if subreddit := (
-        data["submission"]["url"].split("/")[4]
-        if "url" in data["submission"]
-        else None
+        data["submission"]["url"].split("/")[4] if "url" in data["submission"] else None
     ):
-        embed.set_author(
-            name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}"
-        )
+        embed.set_author(name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}")
 
     return embed
 
