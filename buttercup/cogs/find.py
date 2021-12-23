@@ -14,6 +14,11 @@ from buttercup.strings import translation
 i18n = translation()
 
 
+UNCLAIMED_COLOR = Color.from_rgb(255, 176, 0)  # Orange
+IN_PROGRESS_COLOR = Color.from_rgb(13, 211, 187)  # Cyan
+COMPLETED_COLOR = Color.from_rgb(148, 224, 68)  # Green
+
+
 def get_id_from_url(grafeas_url: str) -> int:
     """Extract the API from a Grafeas URL."""
     return int(grafeas_url.split("/")[-2])
@@ -50,84 +55,85 @@ def get_clean_transcription(data: Dict) -> str:
     return "---".join(parts[1:-1]).strip()
 
 
+def to_embed(data: Dict) -> Embed:  # noqa: C901
+    """Convert the submission to a Discord embed."""
+    color = UNCLAIMED_COLOR
+    status: str = "Unclaimed"
+
+    if "transcription" in data:
+        tr_link = f"[Link]({data['transcription']['url']})"
+    else:
+        tr_link = None
+
+    if data["submission"].get("completed_by"):
+        color = COMPLETED_COLOR
+
+        if "author" in data:
+            status = "Completed by {}".format(
+                i18n["find"]["discord_username_link"].format(
+                    data["author"]["username"]
+                )
+            )
+        else:
+            status = "Completed"
+    elif data["submission"].get("claimed_by"):
+        color = IN_PROGRESS_COLOR
+
+        if "author" in data:
+            status = "Claimed by {}".format(
+                i18n["find"]["discord_username_link"].format(
+                    data["author"]["username"]
+                )
+            )
+        else:
+            status = "Claimed"
+
+    embed = (
+        Embed(color=color)
+        .add_field(name="Status", value=status)
+        .add_field(
+            name="OCR",
+            value="Yes"
+            if data["submission"].get("has_ocr_transcription")
+            else "No",
+        )
+        .add_field(
+            name="Archived",
+            value="Yes" if data["submission"].get("archived") else "No",
+        )
+    )
+
+    if "transcription" in data or "ocr" in data:
+        embed.description = limit_str(get_clean_transcription(data), 200)
+    if data["submission"].get("content_url"):
+        embed.set_image(url=data["submission"]["content_url"])
+    if data["submission"].get("tor_url"):
+        embed.add_field(
+            name="ToR Post", value=f"[Link]({data['submission']['tor_url']})"
+        )
+    if data["submission"].get("url"):
+        embed.add_field(
+            name="Partner Post", value=f"[Link]({data['submission']['url']})"
+        )
+    if tr_link:
+        embed.add_field(name="Transcription", value=tr_link)
+    if subreddit := (
+        data["submission"]["url"].split("/")[4]
+        if "url" in data["submission"]
+        else None
+    ):
+        embed.set_author(
+            name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}"
+        )
+
+    return embed
+
+
 class Find(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the Find cog."""
         self.bot = bot
         self.blossom_api = blossom_api
-
-    def to_embed(self, data: Dict) -> Embed:  # noqa: C901
-        """Convert the submission to a Discord embed."""
-        color = Color.from_rgb(255, 176, 0)  # Orange
-        status: str = "Unclaimed"
-
-        if "transcription" in data:
-            tr_link = f"[Link]({data['transcription']['url']})"
-        else:
-            tr_link = None
-
-        if data["submission"].get("completed_by"):
-            color = Color.from_rgb(148, 224, 68)  # Green
-
-            if "author" in data:
-                status = "Completed by {}".format(
-                    i18n["find"]["discord_username_link"].format(
-                        data["author"]["username"]
-                    )
-                )
-            else:
-                status = "Completed"
-        elif data["submission"].get("claimed_by"):
-            color = Color.from_rgb(13, 211, 187)  # Cyan
-
-            if "author" in data:
-                status = "Claimed by {}".format(
-                    i18n["find"]["discord_username_link"].format(
-                        data["author"]["username"]
-                    )
-                )
-            else:
-                status = "Claimed"
-
-        embed = (
-            Embed(color=color)
-            .add_field(name="Status", value=status)
-            .add_field(
-                name="OCR",
-                value="Yes"
-                if data["submission"].get("has_ocr_transcription")
-                else "No",
-            )
-            .add_field(
-                name="Archived",
-                value="Yes" if data["submission"].get("archived") else "No",
-            )
-        )
-
-        if "transcription" in data or "ocr" in data:
-            embed.description = limit_str(get_clean_transcription(data), 200)
-        if data["submission"].get("content_url"):
-            embed.set_image(url=data["submission"]["content_url"])
-        if data["submission"].get("tor_url"):
-            embed.add_field(
-                name="ToR Post", value=f"[Link]({data['submission']['tor_url']})"
-            )
-        if data["submission"].get("url"):
-            embed.add_field(
-                name="Partner Post", value=f"[Link]({data['submission']['url']})"
-            )
-        if tr_link:
-            embed.add_field(name="Transcription", value=tr_link)
-        if subreddit := (
-            data["submission"]["url"].split("/")[4]
-            if "url" in data["submission"]
-            else None
-        ):
-            embed.set_author(
-                name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}"
-            )
-
-        return embed
 
     @cog_ext.cog_slash(
         name="find",
@@ -160,7 +166,7 @@ class Find(Cog):
             content=i18n["find"]["embed_message"].format(
                 duration=get_duration_str(start)
             ),
-            embed=self.to_embed(data),
+            embed=to_embed(data),
         )
 
 
