@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Dict, Optional
-from urllib.parse import urlparse
 
 from blossom_wrapper import BlossomAPI
 from discord import Color, Embed
@@ -13,25 +12,6 @@ from buttercup.cogs.helpers import get_duration_str
 from buttercup.strings import translation
 
 i18n = translation()
-
-
-def normalize_url(reddit_url_str: str) -> Optional[str]:
-    """
-    Normalize a Reddit URL to the format that Blossom uses.
-
-    This is necessary because the link could be to Old Reddit, for example.
-    """
-    parse_result = urlparse(reddit_url_str)
-    if "reddit" not in parse_result.netloc:
-        return None
-
-    # On Blossom, all URLs end with a slash
-    path = parse_result.path
-
-    if not path.endswith("/"):
-        path += "/"
-
-    return f"https://reddit.com{path}"
 
 
 def get_id_from_url(grafeas_url: str) -> int:
