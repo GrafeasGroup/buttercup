@@ -250,14 +250,15 @@ class Search(Cog):
     ) -> None:
         """Execute the search with the given cache."""
         # Clear previous control emojis
-        try:
-            await msg.clear_reactions()
-        except Forbidden:
-            # The bot is not allowed to clear reactions
-            # This can happen when the command is executed in a DM
-            # We need to clear the reactions manually
-            for emoji in msg.reactions:
-                await msg.remove_reaction(emoji, msg.author)
+        if len(msg.reactions) > 0:
+            try:
+                await msg.clear_reactions()
+            except Forbidden:
+                # The bot is not allowed to clear reactions
+                # This can happen when the command is executed in a DM
+                # We need to clear the reactions manually
+                for emoji in msg.reactions:
+                    await msg.remove_reaction(emoji, msg.author)
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
