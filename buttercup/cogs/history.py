@@ -487,7 +487,8 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
-        users.sort(key=lambda u: u["gamma"], reverse=True)
+        if users:
+            users.sort(key=lambda u: u["gamma"], reverse=True)
         colors = get_user_colors(users)
 
         min_gammas = []
@@ -633,7 +634,8 @@ class History(Cog):
         )
 
         users = get_user_list(usernames, ctx, self.blossom_api)
-        users.sort(key=lambda u: u["gamma"], reverse=True)
+        if users:
+            users.sort(key=lambda u: u["gamma"], reverse=True)
         colors = get_user_colors(users)
 
         max_rates = []
