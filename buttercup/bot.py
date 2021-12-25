@@ -26,7 +26,6 @@ class ButtercupBot(Bot):
         self.slash = SlashCommand(self, sync_commands=True, sync_on_cog_reload=True)
         self.config_path = kwargs.get("config_path", "../config.toml")
         self.cog_path = kwargs.get("cog_path", "buttercup.cogs.")
-        self.guild_name = self.config["guild"]["name"]
 
         for extension in kwargs.get("extensions", list()):
             logging.info(f"Loading extension {extension}...")
@@ -34,17 +33,12 @@ class ButtercupBot(Bot):
 
     async def on_ready(self) -> None:
         """Log a starting message when the bot is ready."""
-        logging.info(f"Connected as {self.user} to '{self.guild}'")
+        logging.info(f"Connected as {self.user}")
 
     @property
     def config(self) -> Dict[str, Any]:
         """Provide the configuration loaded from the specified file."""
         return defaultdict(dict, toml.load(self.config_path))
-
-    @property
-    def guild(self) -> Guild:
-        """Retrieve the guild corresponding to the set name."""
-        return discord.utils.get(self.guilds, name=self.guild_name)
 
     def load(self, name: str) -> None:
         """Load the extension with the specified name."""

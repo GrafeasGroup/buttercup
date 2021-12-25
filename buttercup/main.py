@@ -4,6 +4,8 @@ from buttercup import logger
 from buttercup.bot import ButtercupBot
 
 EXTENSIONS = [
+    # The config cog has to be first!
+    "config",
     "admin",
     "handlers",
     "welcome",
