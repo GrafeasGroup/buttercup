@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 import pytz
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
-from discord import Embed, Reaction, User
+from discord import Embed, Forbidden, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -158,6 +158,19 @@ def create_result_description(result: Dict[str, Any], num: int, query: str) -> s
     return description
 
 
+async def clear_reactions(msg: SlashMessage) -> None:
+    """Clear previously set control emojis."""
+    if len(msg.reactions) > 0:
+        try:
+            await msg.clear_reactions()
+        except Forbidden:
+            # The bot is not allowed to clear reactions
+            # This can happen when the command is executed in a DM
+            # We need to clear the reactions manually
+            for emoji in msg.reactions:
+                await msg.remove_reaction(emoji, msg.author)
+
+
 class SearchCacheItem(TypedDict):
     # The query that the user searched for
     query: str
@@ -250,7 +263,7 @@ class Search(Cog):
     ) -> None:
         """Execute the search with the given cache."""
         # Clear previous control emojis
-        await msg.clear_reactions()
+        await clear_reactions(msg)
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
