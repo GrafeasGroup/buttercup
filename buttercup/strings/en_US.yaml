@@ -3,6 +3,10 @@ handlers:
     You did not provide a valid username. Either add it to the command or change your display name to a valid format.
   user_not_found: |
     I couldn't find a user with the name u/{user}!
+  new_user: |
+    Hey **u/{user}**!
+    It looks like you **haven't started transribing** yet. Do you need any help to get started?
+    Feel free to ask any questions here or [send us a mod mail](<https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit>).
   invalid_time_str: |
     "{time_str}" is an invalid date/time. Try something like "2021-08-04", "10:13" or "3 weeks ago".
   invalid_argument: |
@@ -71,10 +75,6 @@ progress:
     {message}
   embed_description_other: |
     {count} transcriptions {time_str}.
-  embed_description_new: |
-    Hey u/{user}!
-    It looks like you haven't started transribing yet. Do you need any help to get started?
-    Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   motivational_messages:
     0:
       - Look who's slacking off.
@@ -202,10 +202,6 @@ until:
     **{user}** ({user_gamma:,} at {user_progress:,}/{time_frame}) has already reached **{goal}**!
   embed_description_zero: |
     **{user}** will **never** get from {user_gamma:,} to **{goal}** at this pace, they haven't transcribed anything in the past {time_frame}!
-  embed_description_new: |
-    Hey {user}!
-    It looks like you haven't started transribing yet. Do you need any help to get started?
-    Feel free to ask any questions here or [send us a mod mail](https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit).
   embed_description_user_prediction: |
     **{user}** ({user_gamma:,}, {user_progress:,}/{time_frame}) will catch up with
     **{target}** ({target_gamma:,}, {target_progress:,}/{time_frame}) in {relative_time} ({absolute_time}) at {intersection_gamma:,} gamma!

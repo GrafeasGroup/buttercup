@@ -48,6 +48,15 @@ class UserNotFoundException(DiscordException):
         self.username = username
 
 
+class NewUserException(DiscordException):
+    """Exception raised when a user has not started transcribing yet."""
+
+    def __init__(self, username: str) -> None:
+        """Create a new user exception."""
+        super().__init__()
+        self.username = username
+
+
 class NoUsernameException(DiscordException):
     """Exception raised when the username was not provided."""
 
@@ -185,7 +194,14 @@ def get_user(
     if user_response.status != BlossomStatus.ok:
         raise UserNotFoundException(_username)
 
-    return user_response.data
+    user = user_response.data
+
+    if user["gamma"] == 0:
+        # We don't have stats on new users
+        # They would often create an error so let's just handle them separately
+        raise NewUserException(user["username"])
+
+    return user
 
 
 def get_user_list(

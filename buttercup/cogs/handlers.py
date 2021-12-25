@@ -11,7 +11,7 @@ from buttercup.cogs.helpers import (
     InvalidArgumentException,
     NoUsernameException,
     TimeParseError,
-    UserNotFoundException,
+    UserNotFoundException, NewUserException,
 )
 from buttercup.strings import translation
 
@@ -45,6 +45,11 @@ class Handlers(commands.Cog):
             logger.warning(f"User '{error.username}' not found.", ctx)
             await ctx.send(
                 i18n["handlers"]["user_not_found"].format(user=error.username)
+            )
+        elif isinstance(error, NewUserException):
+            logger.warning(f"User '{error.username}' hasn't transcribed yet.", ctx)
+            await ctx.send(
+                i18n["handlers"]["new_user"].format(user=error.username)
             )
         elif isinstance(error, TimeParseError):
             logger.warning(
