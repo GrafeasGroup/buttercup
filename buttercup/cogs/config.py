@@ -1,9 +1,8 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 from buttercup.bot import ButtercupBot
 
-
-config = Dict[str, Any]
+config: Dict[str, Any] = {}
 
 
 def setup(bot: ButtercupBot) -> None:
@@ -17,4 +16,6 @@ def setup(bot: ButtercupBot) -> None:
 
 
 def teardown(bot: ButtercupBot) -> None:
-    pass
+    """Reset the global config."""
+    global config
+    config = {}

@@ -5,7 +5,6 @@ from typing import Any, Dict
 import discord.utils
 import toml
 from discord.ext.commands import Bot
-from discord.guild import Guild
 from discord_slash import SlashCommand
 
 

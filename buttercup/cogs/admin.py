@@ -1,5 +1,6 @@
-from discord import Member
-from discord.ext.commands import CheckFailure, Cog
+from typing import Dict
+
+from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashCommandPermissionType
 from discord_slash.utils.manage_commands import create_option, create_permission
@@ -8,7 +9,7 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.config import config
 
 
-def generate_admin_permissions():
+def generate_admin_permissions() -> Dict:
     """Generate the admin permissions from the config.
 
     Note that this is a bit hacky and the config cog has to be loaded first.
