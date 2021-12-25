@@ -42,7 +42,10 @@ def format_leaderboard_timeframe(
     if not after and not before:
         return "all time"
 
-    delta = (before or datetime.now(tz=pytz.utc)) - (after or datetime(2017, 4, 1))
+    # 2017-04-01 is the start of the project
+    delta = (before or datetime.now(tz=pytz.utc)) - (
+        after or datetime(2017, 4, 1, tzinfo=pytz.utc)
+    )
 
     return get_timedelta_str(delta)
 
