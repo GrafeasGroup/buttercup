@@ -9,6 +9,7 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     InvalidArgumentException,
+    NewUserException,
     NoUsernameException,
     TimeParseError,
     UserNotFoundException,
@@ -46,6 +47,9 @@ class Handlers(commands.Cog):
             await ctx.send(
                 i18n["handlers"]["user_not_found"].format(user=error.username)
             )
+        elif isinstance(error, NewUserException):
+            logger.warning(f"User '{error.username}' hasn't transcribed yet.", ctx)
+            await ctx.send(i18n["handlers"]["new_user"].format(user=error.username))
         elif isinstance(error, TimeParseError):
             logger.warning(
                 f"Command executed with an invalid time string '{error.time_str}'.", ctx

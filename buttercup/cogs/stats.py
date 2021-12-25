@@ -231,23 +231,6 @@ class Stats(Cog):
 
         user = get_user(username, ctx, self.blossom_api)
 
-        if user and user["gamma"] == 0:
-            # The user has not started transcribing yet
-            await msg.edit(
-                content=i18n["progress"]["embed_message"].format(
-                    user=get_username(user), duration=get_duration_str(start)
-                ),
-                embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(
-                        user=get_username(user)
-                    ),
-                    description=i18n["progress"]["embed_description_new"].format(
-                        user=get_username(user)
-                    ),
-                ),
-            )
-            return
-
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
 

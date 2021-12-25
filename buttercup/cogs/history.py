@@ -894,21 +894,6 @@ class History(Cog):
             )
         )
 
-        if user_gamma == 0:
-            # The user has not started transcribing yet
-            await msg.edit(
-                content=i18n["until"]["embed_message"].format(
-                    duration=get_duration_str(start), goal=goal_str, time_str=time_str,
-                ),
-                embed=Embed(
-                    title=i18n["until"]["embed_title"].format(user=get_username(user)),
-                    description=i18n["until"]["embed_description_new"].format(
-                        user=get_username(user)
-                    ),
-                ),
-            )
-            return
-
         description = await _get_progress_description(
             user,
             user_gamma,
