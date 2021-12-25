@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 import pytz
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
-from discord import Embed, Reaction, User
+from discord import Embed, Forbidden, Reaction, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -250,7 +250,14 @@ class Search(Cog):
     ) -> None:
         """Execute the search with the given cache."""
         # Clear previous control emojis
-        await msg.clear_reactions()
+        try:
+            await msg.clear_reactions()
+        except Forbidden:
+            # The bot is not allowed to clear reactions
+            # This can happen when the command is executed in a DM
+            # We need to clear the reactions manually
+            for emoji in msg.reactions:
+                await msg.remove_reaction(emoji, msg.author)
 
         discord_page = cache_item["cur_page"] + page_mod
         query = cache_item["query"]
