@@ -13,6 +13,11 @@ handlers:
     [{tracker_id}] An error occurred while accessing the Blossom API. Please contact a moderator with the provided ID.
   unknown_error: |
     [{tracker_id}] Something went wrong, please contact a moderator with the provided ID.
+reddit:
+  user_url: "https://reddit.com/u/{0}"
+  user_named_link: "[u/{0}](https://reddit.com/u/{0})"
+  subreddit_url: "https://reddit.com/r/{0}"
+  subreddit_named_link: "[r/{0}](https://reddit.com/r/{0})"
 name_validator:
   valid_name: |
     Hey <@{user_id}>, you are now successfully registered as **/u/{username}**. Thank you!
@@ -36,7 +41,6 @@ find:
     Sorry, I couldn't find a post with the URL <{url}>.
 
     Please check that your link is correct; it should lead to either a post on r/TranscribersOfReddit, a post on a partner sub or to a transcription.
-  discord_username_link: "[{0}](https://reddit.com/u/{0})"
   embed_message: |
     I found the post! ({duration})
 stats:

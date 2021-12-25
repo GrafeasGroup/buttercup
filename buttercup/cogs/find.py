@@ -53,9 +53,7 @@ def get_color_and_status(data: Dict) -> Tuple[str, str]:
     """Get the color and status for the embed."""
     author = data.get("author", None)
     author_link = (
-        i18n["find"]["discord_username_link"].format(author["username"])
-        if author
-        else None
+        i18n["reddit"]["user_named_link"].format(author["username"]) if author else None
     )
 
     if data["submission"].get("completed_by"):
@@ -116,7 +114,9 @@ def to_embed(data: Dict) -> Embed:
     if subreddit := (
         data["submission"]["url"].split("/")[4] if "url" in data["submission"] else None
     ):
-        embed.set_author(name=f"r/{subreddit}", url=f"https://reddit.com/r/{subreddit}")
+        embed.set_author(
+            name=f"r/{subreddit}", url=i18n["reddit"]["subreddit_url"].format(subreddit)
+        )
 
     return embed
 
