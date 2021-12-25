@@ -19,11 +19,6 @@ IN_PROGRESS_COLOR = Color.from_rgb(13, 211, 187)  # Cyan
 COMPLETED_COLOR = Color.from_rgb(148, 224, 68)  # Green
 
 
-def get_id_from_url(grafeas_url: str) -> int:
-    """Extract the API from a Grafeas URL."""
-    return int(grafeas_url.split("/")[-2])
-
-
 def limit_str(text: str, limit: Optional[int] = None) -> str:
     """Limit the string to the given length."""
     if limit is None or len(text) <= limit:
@@ -40,12 +35,11 @@ def get_clean_transcription(data: Dict) -> str:
     try and return the human one but will fall through to the OCR
     one if we can't find any.
     """
-    key = "transcription" if "transcription" in data else "ocr"
-    transcription_text = data[key]["text"]
+    if "transcription" not in data:
+        # Fall back to OCR
+        return data["ocr"]["text"]
 
-    if get_id_from_url(data[key]["author"]) == 3:
-        # The author is transcribot and doesn't use our format
-        return transcription_text
+    transcription_text = data["transcription"]["text"]
 
     parts = transcription_text.split("---")
     if len(parts) < 3:
@@ -82,18 +76,23 @@ def to_embed(data: Dict) -> Embed:
     """Convert the submission to a Discord embed."""
     color, status = get_color_and_status(data)
 
-    if "transcription" in data:
-        tr_link = f"[Link]({data['transcription']['url']})"
-    else:
-        tr_link = None
+    tr_link = (
+        f"[Link]({data['transcription']['url']})" if "transcription" in data else None
+    )
+    ocr_link = (
+        # Get the link to the OCR post if available
+        f"[Link]({data['ocr']['url']})"
+        if "ocr" in data and data["ocr"] and data["ocr"]["url"]
+        # Otherwise check the field on the submission
+        else "Yes"
+        if data["submission"]["has_ocr_transcription"]
+        else "No"
+    )
 
     embed = (
         Embed(color=color)
         .add_field(name="Status", value=status)
-        .add_field(
-            name="OCR",
-            value="Yes" if data["submission"].get("has_ocr_transcription") else "No",
-        )
+        .add_field(name="OCR", value=ocr_link,)
         .add_field(
             name="Archived",
             value="Yes" if data["submission"].get("archived") else "No",
