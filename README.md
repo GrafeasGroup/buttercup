@@ -19,28 +19,23 @@ Apart from this, a `.toml` configuration file is expected. Below is a default `c
 ```
 [Discord]
 token = "<YOUR DISCORD BOT SECRET HERE>"
+# Used for admin command permissions
+guilds = [
+    { id = "<guild_id>", mod_roles = ["<role_id>"] },
+]
 
 [Reddit]
 client_id = "<YOUR REDDIT CLIENT ID HERE>"
 client_secret = "<YOUR REDDIT CLIENT SECRET HERE>"
 user_agent = "grafeas.org.buttercup:v0.1.0 (contact u/<YOUR USERNAME HERE>)"
 
-[guild]
-name = "Test Bubbles"
-
-[Admin]
-role = "ToR Mods"
-
-[NameValidator]
-accepted_role = "Visitor (0)"
-restrict_role = "New User"
-restrict_channel = "new-user"
-welcome_channel = "off-topic"
-
 [Blossom]
 email = ""
 password = ""
 api_key = ""
+
+[NameValidator]
+valid_role_id = "<role_id>"
 ```
 The `secrets` section contains all secrets required to run Buttercup:
 - `discord` is Discord's bot secret

@@ -1,6 +1,4 @@
 handlers:
-  not_authorized: |
-    You are not authorized to use this command. This incident will be reported.
   no_username: |
     You did not provide a valid username. Either add it to the command or change your display name to a valid format.
   user_not_found: |

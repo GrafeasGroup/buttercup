@@ -1,20 +1,35 @@
-from discord import Member
-from discord.ext.commands import CheckFailure, Cog
+from typing import Dict
+
+from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
-from discord_slash.utils.manage_commands import create_option
+from discord_slash.model import SlashCommandPermissionType
+from discord_slash.utils.manage_commands import create_option, create_permission
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.config import config
+
+
+def generate_admin_permissions() -> Dict:
+    """Generate the admin permissions from the config.
+
+    Note that this is a bit hacky and the config cog has to be loaded first.
+    Unfortunately we can't use the bot object in the annotation, so we can't
+    access the config like this directly.
+    """
+    permissions = {}
+    for guild in config["Discord"]["guilds"]:
+        permissions[guild["id"]] = [
+            create_permission(role_id, SlashCommandPermissionType.ROLE, True)
+            for role_id in guild["mod_roles"]
+        ]
+    print(permissions)
+    return permissions
 
 
 class AdminCommands(Cog):
-    def __init__(self, bot: ButtercupBot, role_name: str = "ToR Mods") -> None:
+    def __init__(self, bot: ButtercupBot) -> None:
         """Initialize the Admin Commands cog."""
         self.bot = bot
-        self.role_name = role_name
-
-    def _is_authorized(self, member: Member) -> bool:
-        """Check whether the user invoking the command is the correct role."""
-        return self.role_name in {role.name for role in member.roles}
 
     @cog_ext.cog_slash(
         name="reload",
@@ -27,11 +42,11 @@ class AdminCommands(Cog):
                 required=True,
             )
         ],
+        default_permission=False,
+        permissions=generate_admin_permissions(),
     )
     async def _reload(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be reloaded."""
-        if not self._is_authorized(ctx.author):
-            raise CheckFailure()
         self.bot.reload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully reloaded :+1:')
 
@@ -46,11 +61,11 @@ class AdminCommands(Cog):
                 required=True,
             )
         ],
+        default_permission=False,
+        permissions=generate_admin_permissions(),
     )
     async def _load(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be loaded."""
-        if not self._is_authorized(ctx.author):
-            raise CheckFailure()
         self.bot.load(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully loaded :+1:')
 
@@ -65,19 +80,18 @@ class AdminCommands(Cog):
                 required=True,
             )
         ],
+        default_permission=False,
+        permissions=generate_admin_permissions(),
     )
     async def _unload(self, ctx: SlashContext, cog_name: str) -> None:
         """Allow for the provided cog to be unloaded."""
-        if not self._is_authorized(ctx.author):
-            raise CheckFailure()
         self.bot.unload(cog_name)
         await ctx.send(f'Cog "{cog_name}" has been successfully unloaded :+1:')
 
 
 def setup(bot: ButtercupBot) -> None:
     """Set up the Admin cog."""
-    role_name = bot.config["Admin"]["role"]
-    bot.add_cog(AdminCommands(bot, role_name))
+    bot.add_cog(AdminCommands(bot))
 
 
 def teardown(bot: ButtercupBot) -> None:

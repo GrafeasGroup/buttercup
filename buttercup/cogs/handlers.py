@@ -38,10 +38,7 @@ class Handlers(commands.Cog):
             traceback.format_exception(type(error), error, error.__traceback__)
         )
 
-        if isinstance(error, commands.CheckFailure):
-            logger.warning("An unauthorized Command was performed.", ctx)
-            await ctx.send(i18n["handlers"]["not_authorized"])
-        elif isinstance(error, NoUsernameException):
+        if isinstance(error, NoUsernameException):
             logger.warning("Command executed without providing a username.", ctx)
             await ctx.send(i18n["handlers"]["no_username"])
         elif isinstance(error, UserNotFoundException):
