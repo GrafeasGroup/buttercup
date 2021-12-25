@@ -27,7 +27,7 @@ def limit_str(text: str, limit: Optional[int] = None) -> str:
     return f"{text[:(limit - 3)]}..."
 
 
-def get_clean_transcription(data: Dict) -> str:
+def get_clean_transcription(data: Dict) -> Optional[str]:
     """
     Get the content of the transcription, without header and footer.
 
@@ -35,18 +35,19 @@ def get_clean_transcription(data: Dict) -> str:
     try and return the human one but will fall through to the OCR
     one if we can't find any.
     """
-    if "transcription" not in data:
-        # Fall back to OCR
-        return data["ocr"]["text"]
+    if tr_text := (data.get("transcription") or {}).get("text"):
+        # Take the text of the transcription
+        parts = tr_text.split("---")
+        if len(parts) < 3:
+            return tr_text
 
-    transcription_text = data["transcription"]["text"]
+        # Discard header and footer
+        return "---".join(parts[1:-1]).strip()
+    elif ocr_text := (data.get("ocr") or {}).get("text"):
+        # Take the text of the OCR
+        return ocr_text
 
-    parts = transcription_text.split("---")
-    if len(parts) < 3:
-        return transcription_text
-
-    # Discard header and footer
-    return "---".join(parts[1:-1]).strip()
+    return None
 
 
 def get_color_and_status(data: Dict) -> Tuple[str, str]:
@@ -74,49 +75,51 @@ def to_embed(data: Dict) -> Embed:
     """Convert the submission to a Discord embed."""
     color, status = get_color_and_status(data)
 
-    tr_link = (
-        f"[Link]({data['transcription']['url']})" if "transcription" in data else None
-    )
-    ocr_link = (
-        # Get the link to the OCR post if available
-        f"[Link]({data['ocr']['url']})"
-        if "ocr" in data and data["ocr"] and data["ocr"]["url"]
-        # Otherwise check the field on the submission
-        else "Yes"
-        if data["submission"]["has_ocr_transcription"]
-        else "No"
-    )
-
     embed = (
         Embed(color=color)
         .add_field(name="Status", value=status)
-        .add_field(name="OCR", value=ocr_link,)
         .add_field(
             name="Archived",
-            value="Yes" if data["submission"].get("archived") else "No",
+            value="Yes" if (data.get("submission") or {}).get("archived") else "No",
         )
     )
 
-    if "transcription" in data or "ocr" in data:
-        embed.description = limit_str(get_clean_transcription(data), 200)
-    if data["submission"].get("content_url"):
-        embed.set_image(url=data["submission"]["content_url"])
-    if data["submission"].get("tor_url"):
-        embed.add_field(
-            name="ToR Post", value=f"[Link]({data['submission']['tor_url']})"
-        )
-    if data["submission"].get("url"):
-        embed.add_field(
-            name="Partner Post", value=f"[Link]({data['submission']['url']})"
-        )
-    if tr_link:
-        embed.add_field(name="Transcription", value=tr_link)
-    if subreddit := (
-        data["submission"]["url"].split("/")[4] if "url" in data["submission"] else None
-    ):
+    submission = data.get("submission") or {}
+
+    # Add OCR status
+    if ocr_url := (data.get("ocr") or {}).get("url"):
+        ocr_status = f"[Link]({ocr_url})"
+    elif submission.get("has_ocr_transcription"):
+        ocr_status = "Yes"
+    else:
+        ocr_status = "No"
+
+    embed.add_field(name="OCR", value=ocr_status)
+
+    # Add transcription text
+    if tr_text := get_clean_transcription(data):
+        embed.description = limit_str(tr_text, 200)
+
+    # Add image preview
+    if content_url := submission.get("content_url"):
+        embed.set_image(url=content_url)
+
+    # Add link to ToR post
+    if tor_url := submission.get("tor_url"):
+        embed.add_field(name="ToR Post", value=f"[Link]({tor_url})")
+
+    # Add link to partner post
+    if sub_url := submission.get("url"):
+        subreddit = sub_url.split("/")[4]
+        embed.add_field(name="Partner Post", value=f"[Link]({sub_url})")
         embed.set_author(
             name=f"r/{subreddit}", url=i18n["reddit"]["subreddit_url"].format(subreddit)
         )
+
+    # Add link to transcription
+    if tr_url := (data.get("transcription") or {}).get("url"):
+        tr_link = f"[Link]({tr_url})"
+        embed.add_field(name="Transcription", value=tr_link)
 
     return embed
 
