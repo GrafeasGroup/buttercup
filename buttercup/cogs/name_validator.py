@@ -16,10 +16,10 @@ username_regex = re.compile(r"^(?P<leading_slash>/)?u/(?P<username>\S+)(?P<rest>
 
 
 class NameValidator(Cog):
-    def __init__(self, bot: ButtercupBot, valid_role_id: str,) -> None:
+    def __init__(self, bot: ButtercupBot, verified_role_id: str,) -> None:
         """Initialize the member's records and retrieve the roles and channels."""
         self.bot = bot
-        self.valid_role_id = valid_role_id
+        self.verified_role_id = verified_role_id
 
     @Cog.listener()
     async def on_member_update(self, before: Member, after: Member) -> None:
@@ -32,7 +32,11 @@ class NameValidator(Cog):
             return
 
         welcome_channel: Optional[TextChannel] = after.guild.system_channel
-        verified_role = after.guild.get_role(int(self.valid_role_id))
+        verified_role = (
+            after.guild.get_role(int(self.verified_role_id))
+            if self.verified_role_id
+            else None
+        )
 
         if verified_role is None:
             logger.warning("No verified role defined. Can't validate nicknames!")
@@ -92,8 +96,8 @@ class NameValidator(Cog):
 def setup(bot: ButtercupBot) -> None:
     """Set up the NameValidator cog."""
     cog_config = bot.config["NameValidator"]
-    valid_role_id = cog_config.get("valid_role_id")
-    bot.add_cog(NameValidator(bot, valid_role_id))
+    verified_role_id = cog_config.get("verified_role_id")
+    bot.add_cog(NameValidator(bot, verified_role_id))
 
 
 def teardown(bot: ButtercupBot) -> None:
