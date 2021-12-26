@@ -85,10 +85,18 @@ def to_embed(data: Dict) -> Embed:
     )
 
     submission = data.get("submission") or {}
+    # Determine if the post is safe for work
+    # Otherwise we need to be careful about what content to preview
+    is_sfw = not submission.get("nsfw")
+    link_text = "Link" if is_sfw else "Link (NSFW)"
+
+    # Add title
+    if title := submission.get("title"):
+        embed.title = title if is_sfw else f"||{title}||"
 
     # Add OCR status
     if ocr_url := (data.get("ocr") or {}).get("url"):
-        ocr_status = f"[Link]({ocr_url})"
+        ocr_status = f"[{link_text}]({ocr_url})"
     elif submission.get("has_ocr_transcription"):
         ocr_status = "Yes"
     else:
@@ -96,29 +104,33 @@ def to_embed(data: Dict) -> Embed:
 
     embed.add_field(name="OCR", value=ocr_status)
 
-    # Add transcription text
-    if tr_text := get_clean_transcription(data):
-        embed.description = limit_str(tr_text, 200)
+    # Only preview content if it's safe for work
+    if is_sfw:
+        # Add transcription text
+        if tr_text := get_clean_transcription(data):
+            embed.description = limit_str(tr_text, 200)
 
-    # Add image preview
-    if content_url := submission.get("content_url"):
-        embed.set_image(url=content_url)
+        # Add image preview
+        if content_url := submission.get("content_url"):
+            # There is no way to mark the image as spoiler
+            # Instead we just don't add the image if it's NSFW
+            embed.set_image(url=content_url)
 
     # Add link to ToR post
     if tor_url := submission.get("tor_url"):
-        embed.add_field(name="ToR Post", value=f"[Link]({tor_url})")
+        embed.add_field(name="ToR Post", value=f"[{link_text}]({tor_url})")
 
     # Add link to partner post
     if sub_url := submission.get("url"):
         subreddit = sub_url.split("/")[4]
-        embed.add_field(name="Partner Post", value=f"[Link]({sub_url})")
+        embed.add_field(name="Partner Post", value=f"[{link_text}]({sub_url})")
         embed.set_author(
             name=f"r/{subreddit}", url=i18n["reddit"]["subreddit_url"].format(subreddit)
         )
 
     # Add link to transcription
     if tr_url := (data.get("transcription") or {}).get("url"):
-        tr_link = f"[Link]({tr_url})"
+        tr_link = f"[{link_text}]({tr_url})"
         embed.add_field(name="Transcription", value=tr_link)
 
     return embed
