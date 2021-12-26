@@ -86,6 +86,10 @@ def to_embed(data: Dict) -> Embed:
 
     submission = data.get("submission") or {}
 
+    # Add title
+    if title := submission.get("title"):
+        embed.title = title
+
     # Add OCR status
     if ocr_url := (data.get("ocr") or {}).get("url"):
         ocr_status = f"[Link]({ocr_url})"
