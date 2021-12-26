@@ -92,7 +92,7 @@ def to_embed(data: Dict) -> Embed:
 
     # Add title
     if title := submission.get("title"):
-        embed.title = title
+        embed.title = title if is_sfw else f"||{title}||"
 
     # Add OCR status
     if ocr_url := (data.get("ocr") or {}).get("url"):
