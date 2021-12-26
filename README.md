@@ -35,7 +35,7 @@ password = ""
 api_key = ""
 
 [NameValidator]
-valid_role_id = "<role_id>"
+verified_role_id = "<role_id>"
 ```
 The `secrets` section contains all secrets required to run Buttercup:
 - `discord` is Discord's bot secret
