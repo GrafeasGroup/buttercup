@@ -85,8 +85,10 @@ def to_embed(data: Dict) -> Embed:
     )
 
     submission = data.get("submission") or {}
-    is_nsfw = submission.get("nsfw") is True
-    link_text = "Link (NSFW)" if is_nsfw else "Link"
+    # Determine if the post is safe for work
+    # Otherwise we need to be careful about what content to preview
+    is_sfw = not submission.get("nsfw")
+    link_text = "Link" if is_sfw else "Link (NSFW)"
 
     # Add title
     if title := submission.get("title"):
@@ -102,13 +104,14 @@ def to_embed(data: Dict) -> Embed:
 
     embed.add_field(name="OCR", value=ocr_status)
 
-    # Add transcription text
-    if tr_text := get_clean_transcription(data):
-        embed.description = limit_str(tr_text, 200)
+    # Only preview content if it's safe for work
+    if is_sfw:
+        # Add transcription text
+        if tr_text := get_clean_transcription(data):
+            embed.description = limit_str(tr_text, 200)
 
-    # Add image preview
-    if content_url := submission.get("content_url"):
-        if not is_nsfw:
+        # Add image preview
+        if content_url := submission.get("content_url"):
             # There is no way to mark the image as spoiler
             # Instead we just don't add the image if it's NSFW
             embed.set_image(url=content_url)
