@@ -102,7 +102,10 @@ def to_embed(data: Dict) -> Embed:
 
     # Add image preview
     if content_url := submission.get("content_url"):
-        embed.set_image(url=content_url)
+        if not submission.get("nsfw"):
+            # There is no way to mark the image as spoiler
+            # Instead we just don't add the image if it's NSFW
+            embed.set_image(url=content_url)
 
     # Add link to ToR post
     if tor_url := submission.get("tor_url"):
