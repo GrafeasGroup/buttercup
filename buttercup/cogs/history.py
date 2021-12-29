@@ -9,7 +9,6 @@ import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
-from dateutil.tz import tzutc
 from discord import Embed, File
 from discord.ext.commands import Cog, UserNotFound
 from discord_slash import SlashContext, cog_ext
@@ -566,28 +565,6 @@ class History(Cog):
             file=discord_file,
         )
 
-    def get_user_rate(
-        self,
-        user: Optional[BlossomUser],
-        after_time: Optional[datetime],
-        before_time: Optional[datetime],
-    ) -> pd.DataFrame:
-        """Get a data frame representing the transcription rate of the user.
-
-        :returns: The rate data of the user.
-        """
-        # Get all rate data
-        rate_data = self.get_all_rate_data(user, "day", after_time, before_time)
-
-        # Add an up-to-date entry
-        today = datetime.now(tz=tzutc()).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        if today not in rate_data.index:
-            rate_data.loc[today] = [0]
-
-        return rate_data
-
     @cog_ext.cog_slash(
         name="rate",
         description="Display the rate graph.",
@@ -668,7 +645,7 @@ class History(Cog):
                     )
                 )
 
-            user_data = self.get_user_rate(user, after_time, before_time)
+            user_data = self.get_all_rate_data(user, "day", after_time, before_time)
 
             max_rate = user_data["count"].max()
             max_rates.append(max_rate)
@@ -684,7 +661,7 @@ class History(Cog):
             ax.scatter(
                 max_rate_point.name, max_rate_point.at["count"], color=color, s=4,
             )
-            # Label the last value
+            # Label the max value
             ax.annotate(
                 int(max_rate_point.at["count"]),
                 xy=(max_rate_point.name, max_rate_point.at["count"]),
