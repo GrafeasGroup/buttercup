@@ -66,7 +66,7 @@ def create_file_from_heatmap(
     heatmap_table = io.BytesIO()
     plt.savefig(heatmap_table, format="png")
     heatmap_table.seek(0)
-    plt.clf()
+    plt.close(fig)
 
     return File(heatmap_table, "heatmap_table.png")
 
