@@ -75,7 +75,11 @@ class NameValidator(Cog):
 
         before_match = username_regex.search(before_name)
 
-        if before_match and before_match.group("leading_slash"):
+        if (
+            before_match
+            and before_match.group("prefix")
+            and before_match.group("leading_slash")
+        ):
             # The username was correct already and is still correct
             # For example timezone change, we don't have to send a message
             # Still set the role, just to be safe
