@@ -7,12 +7,10 @@ from discord.member import Member
 
 from buttercup import logger
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import username_regex
 from buttercup.strings import translation
 
 i18n = translation()
-
-
-username_regex = re.compile(r"^(?P<leading_slash>/)?u/(?P<username>\S+)(?P<rest>.+)$")
 
 
 class NameValidator(Cog):
@@ -45,7 +43,7 @@ class NameValidator(Cog):
             logger.warning("No welcome channel defined. Can't validate nicknames!")
 
         after_match = username_regex.search(after_name)
-        if after_match is None:
+        if after_match is None or after_match.group("prefix") is None:
             # Invalid nickname, remove the verified role
             await after.remove_roles(verified_role, reason="Invalid nickname")
             await welcome_channel.send(

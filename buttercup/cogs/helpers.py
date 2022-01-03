@@ -12,7 +12,7 @@ from requests import Response
 
 from buttercup.cogs import ranks
 
-username_regex = re.compile(r"^(?:/?u/)?(?P<username>\S+)")
+username_regex = re.compile(r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.+)?$")
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 # First an amount and then a unit
