@@ -12,7 +12,9 @@ from requests import Response
 
 from buttercup.cogs import ranks
 
-username_regex = re.compile(r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$")
+username_regex = re.compile(
+    r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"
+)
 timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
 
 # First an amount and then a unit
@@ -291,10 +293,19 @@ def extract_sub_name(subreddit: str) -> str:
 
 def extract_utc_offset(display_name: str) -> int:
     """Extract the user's timezone (UTC offset) from the display name."""
-    match = timezone_regex.search(display_name)
-    if match is None or match.group("offset") is None:
+    username_match = username_regex.match(display_name)
+    if username_match is None:
         return 0
-    return int(match.group("offset"))
+
+    if rest := username_match.group("rest"):
+        timezone_match = timezone_regex.search(rest)
+        if timezone_match is None:
+            return 0
+
+        if offset := timezone_match.group("offset"):
+            return int(offset)
+
+    return 0
 
 
 def get_duration_str(start: datetime) -> str:
