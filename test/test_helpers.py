@@ -16,7 +16,8 @@ from buttercup.cogs.helpers import (
     get_username,
     join_items_with_and,
     parse_time_constraints,
-    try_parse_time, username_regex,
+    try_parse_time,
+    username_regex,
 )
 
 
