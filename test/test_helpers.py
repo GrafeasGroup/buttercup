@@ -16,8 +16,31 @@ from buttercup.cogs.helpers import (
     get_username,
     join_items_with_and,
     parse_time_constraints,
-    try_parse_time,
+    try_parse_time, username_regex,
 )
+
+
+@mark.parametrize(
+    "input_str,prefix,leading_slash,username,rest",
+    [
+        ("user", None, False, "user", ""),
+        ("u/user", "u/", False, "user", ""),
+        ("/u/user", "/u/", True, "user", ""),
+        ("/u/user-name_with123stuff", "/u/", True, "user-name_with123stuff", ""),
+        ("/u/user [mod] UTC-3 ~40⭐", "/u/", True, "user", " [mod] UTC-3 ~40⭐"),
+    ],
+)
+def test_username_regex(
+    input_str: str, prefix: str, leading_slash: bool, username: str, rest: str
+) -> None:
+    """Test that the user name is extracted correctly."""
+    match = username_regex.match(input_str)
+    assert match is not None
+
+    assert match.group("prefix") == prefix
+    assert match.group("leading_slash") == ("/" if leading_slash else None)
+    assert match.group("username") == username
+    assert match.group("rest") == rest
 
 
 @mark.parametrize(
