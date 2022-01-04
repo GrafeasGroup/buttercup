@@ -223,13 +223,13 @@ def get_history_data_from_rate_data(
     return rate_data.assign(gamma=rate_data.expanding(1).sum() + offset)
 
 
-def get_next_rank(gamma: int) -> Dict[str, Union[str, int]]:
+def get_next_rank(gamma: int) -> Optional[Dict[str, Union[str, int]]]:
     """Determine the next rank based on the current gamma."""
     for rank in ranks:
         if rank["threshold"] > gamma:
             return rank
 
-    # TODO: How to handle if the user reached the highest rank?
+    return None
 
 
 def parse_goal_str(goal_str: str) -> Tuple[int, str]:
@@ -858,7 +858,12 @@ class History(Cog):
         elif user:
             # Take the next rank for the user
             next_rank = get_next_rank(user["gamma"])
-            goal_gamma, goal_str = parse_goal_str(next_rank["name"])
+            if next_rank:
+                goal_gamma, goal_str = parse_goal_str(next_rank["name"])
+            else:
+                # If the user has reached the maximum rank, take the next 10,000 tier
+                goal_gamma = ((user["gamma"] + 10_000) // 10_000) * 10_000
+                goal_str = f"{goal_gamma:,}"
         else:
             # You can't get the "next rank" of the whole server
             raise InvalidArgumentException("goal", "<empty>")
