@@ -311,21 +311,23 @@ class Search(Cog):
             )
             return
 
-        # Update the cache
-        self.cache.set(
-            msg.id,
-            {
-                "query": query,
-                "user": cache_item["user"],
-                "after_time": after_time,
-                "before_time": before_time,
-                "time_str": time_str,
-                "cur_page": discord_page,
-                "discord_user_id": cache_item["discord_user_id"],
-                "response_data": response_data,
-                "request_page": request_page,
-            },
-        )
+        # Only cache the result if the user can change pages
+        if response_data["count"] <= self.discord_page_size:
+            # Update the cache
+            self.cache.set(
+                msg.id,
+                {
+                    "query": query,
+                    "user": cache_item["user"],
+                    "after_time": after_time,
+                    "before_time": before_time,
+                    "time_str": time_str,
+                    "cur_page": discord_page,
+                    "discord_user_id": cache_item["discord_user_id"],
+                    "response_data": response_data,
+                    "request_page": request_page,
+                },
+            )
 
         # Calculate the offset within the response
         # The requested pages are larger than the pages displayed on Discord
