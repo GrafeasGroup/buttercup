@@ -117,10 +117,10 @@ def test_escape_formatting(username: str, expected: str) -> None:
         ("u/username", 0),
         ("/u/username [mod] ~20⭐", 0),
         ("/u/username UTC", 0),
-        ("/u/username UTC+2", 2),
-        ("/u/username UTC-5", -5),
-        ("/u/username utc+4", 4),
-        ("/u/username [mod] UTC+1 - 14⭐", 1),
+        ("/u/username UTC+2", 7_200),
+        ("/u/username UTC-5", -18_000),
+        ("/u/username utc+4", 14400),
+        ("/u/username [mod] UTC+1 - 14⭐", 3600),
     ],
 )
 def test_extract_utc_offset(name_input: str, expected: int) -> None:

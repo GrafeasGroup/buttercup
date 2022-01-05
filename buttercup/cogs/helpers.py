@@ -292,7 +292,10 @@ def extract_sub_name(subreddit: str) -> str:
 
 
 def extract_utc_offset(display_name: str) -> int:
-    """Extract the user's timezone (UTC offset) from the display name."""
+    """Extract the user's timezone (UTC offset) from the display name.
+
+    :returns: The UTC offset in seconds.
+    """
     username_match = username_regex.match(display_name)
     if username_match is None:
         return 0
@@ -303,7 +306,7 @@ def extract_utc_offset(display_name: str) -> int:
             return 0
 
         if offset := timezone_match.group("offset"):
-            return int(offset)
+            return int(offset) * 60 * 60
 
     return 0
 
