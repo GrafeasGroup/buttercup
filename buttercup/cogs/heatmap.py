@@ -21,7 +21,7 @@ from buttercup.cogs.helpers import (
     get_user,
     get_user_id,
     get_username,
-    parse_time_constraints,
+    parse_time_constraints, utc_offset_to_str,
 )
 from buttercup.strings import translation
 
@@ -56,7 +56,7 @@ def create_file_from_heatmap(
         yticklabels=days,
     )
 
-    timezone = "UTC" if utc_offset == 0 else f"UTC{utc_offset:+d}"
+    timezone = utc_offset_to_str(utc_offset)
 
     plt.title(i18n["heatmap"]["plot_title"].format(user=get_username(user)))
     plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone=timezone))

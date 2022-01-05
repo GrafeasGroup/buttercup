@@ -311,6 +311,17 @@ def extract_utc_offset(display_name: str) -> int:
     return 0
 
 
+def utc_offset_to_str(utc_offset: int) -> str:
+    """Converts a UTC offset to a readable string.
+
+    :param utc_offset: The UTC offset in seconds.
+    """
+    sign = "-" if utc_offset < 0 else "+"
+    hours = abs(utc_offset) // (60 * 60)
+    minutes = abs(utc_offset) % (60 * 60)
+    return f"UTC{sign}{hours:02}:{minutes:02}"
+
+
 def get_duration_str(start: datetime) -> str:
     """Get the processing duration based on the start time."""
     duration = datetime.now(tz=start.tzinfo) - start

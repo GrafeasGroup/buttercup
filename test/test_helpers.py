@@ -17,7 +17,7 @@ from buttercup.cogs.helpers import (
     join_items_with_and,
     parse_time_constraints,
     try_parse_time,
-    username_regex,
+    username_regex, utc_offset_to_str,
 )
 
 
@@ -126,6 +126,22 @@ def test_escape_formatting(username: str, expected: str) -> None:
 def test_extract_utc_offset(name_input: str, expected: int) -> None:
     """Test that the UTC offset is extracted correctly."""
     actual = extract_utc_offset(name_input)
+    assert actual == expected
+
+
+@mark.parametrize(
+    "utc_offset,expected",
+    [
+        (0, "UTC+00:00"),
+        (7_200, "UTC+02:00"),
+        (-18_000, "UTC-05:00"),
+        (14400, "UTC+04:00"),
+        (3600, "UTC+01:00"),
+    ],
+)
+def test_utc_offset_to_str(utc_offset: int, expected: str) -> None:
+    """Test that the UTC offset is extracted correctly."""
+    actual = utc_offset_to_str(utc_offset)
     assert actual == expected
 
 
