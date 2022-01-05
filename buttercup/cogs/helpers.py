@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import datetime, timedelta
 from time import mktime
@@ -15,7 +16,7 @@ from buttercup.cogs import ranks
 username_regex = re.compile(
     r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"
 )
-timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
+timezone_regex = re.compile(r"UTC(?:(?P<hours>[+-]\d+(?:\.\d+)?)(?::(?P<minutes>\d+))?)?", re.RegexFlag.I)
 
 # First an amount and then a unit
 relative_time_regex = re.compile(
@@ -305,9 +306,15 @@ def extract_utc_offset(display_name: str) -> int:
         if timezone_match is None:
             return 0
 
-        if offset := timezone_match.group("offset"):
-            return int(offset) * 60 * 60
+        offset = 0
 
+        if hours := timezone_match.group("hours"):
+            offset += math.floor(float(hours) * 60 * 60)
+
+        if minutes := timezone_match.group("minutes"):
+            offset += int(minutes) * 60
+
+        return offset
     return 0
 
 
@@ -318,7 +325,7 @@ def utc_offset_to_str(utc_offset: int) -> str:
     """
     sign = "-" if utc_offset < 0 else "+"
     hours = abs(utc_offset) // (60 * 60)
-    minutes = abs(utc_offset) % (60 * 60)
+    minutes = (abs(utc_offset) % (60 * 60)) // 60
     return f"UTC{sign}{hours:02}:{minutes:02}"
 
 
