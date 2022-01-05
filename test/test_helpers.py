@@ -17,7 +17,8 @@ from buttercup.cogs.helpers import (
     join_items_with_and,
     parse_time_constraints,
     try_parse_time,
-    username_regex, utc_offset_to_str,
+    username_regex,
+    utc_offset_to_str,
 )
 
 
@@ -141,7 +142,7 @@ def test_extract_utc_offset(name_input: str, expected: int) -> None:
         (-18_000, "UTC-05:00"),
         (14_400, "UTC+04:00"),
         (3_600, "UTC+01:00"),
-        (37_800, "UTC+10:30")
+        (37_800, "UTC+10:30"),
     ],
 )
 def test_utc_offset_to_str(utc_offset: int, expected: str) -> None:

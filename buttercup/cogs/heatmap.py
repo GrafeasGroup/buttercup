@@ -1,6 +1,6 @@
 import io
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,7 +21,8 @@ from buttercup.cogs.helpers import (
     get_user,
     get_user_id,
     get_username,
-    parse_time_constraints, utc_offset_to_str,
+    parse_time_constraints,
+    utc_offset_to_str,
 )
 from buttercup.strings import translation
 

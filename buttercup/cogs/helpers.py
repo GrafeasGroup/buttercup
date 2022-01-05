@@ -16,7 +16,9 @@ from buttercup.cogs import ranks
 username_regex = re.compile(
     r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"
 )
-timezone_regex = re.compile(r"UTC(?:(?P<hours>[+-]\d+(?:\.\d+)?)(?::(?P<minutes>\d+))?)?", re.RegexFlag.I)
+timezone_regex = re.compile(
+    r"UTC(?:(?P<hours>[+-]\d+(?:\.\d+)?)(?::(?P<minutes>\d+))?)?", re.RegexFlag.I
+)
 
 # First an amount and then a unit
 relative_time_regex = re.compile(
@@ -319,7 +321,7 @@ def extract_utc_offset(display_name: str) -> int:
 
 
 def utc_offset_to_str(utc_offset: int) -> str:
-    """Converts a UTC offset to a readable string.
+    """Convert a UTC offset to a readable string.
 
     :param utc_offset: The UTC offset in seconds.
     """
