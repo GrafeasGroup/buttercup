@@ -21,6 +21,7 @@ from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
     InvalidArgumentException,
+    extract_utc_offset,
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
@@ -35,6 +36,7 @@ from buttercup.cogs.helpers import (
     get_username,
     get_usernames,
     parse_time_constraints,
+    utc_offset_to_str,
 )
 from buttercup.strings import translation
 
@@ -339,6 +341,7 @@ class History(Cog):
         time_frame: str,
         after_time: Optional[datetime],
         before_time: Optional[datetime],
+        utc_offset: int,
     ) -> pd.DataFrame:
         """Get all rate data for the given user."""
         page_size = 500
@@ -361,6 +364,7 @@ class History(Cog):
                     "time_frame": time_frame,
                     "complete_time__gte": from_str,
                     "complete_time__lte": until_str,
+                    "utc_offset": utc_offset,
                 },
             )
             if response.status_code != 200:
@@ -423,6 +427,7 @@ class History(Cog):
         user: Optional[BlossomUser],
         after_time: Optional[datetime],
         before_time: Optional[datetime],
+        utc_offset: int,
     ) -> pd.DataFrame:
         """Get a data frame representing the history of the user.
 
@@ -430,7 +435,9 @@ class History(Cog):
         """
         # Get all rate data
         time_frame = get_data_granularity(user, after_time, before_time)
-        rate_data = self.get_all_rate_data(user, time_frame, after_time, before_time)
+        rate_data = self.get_all_rate_data(
+            user, time_frame, after_time, before_time, utc_offset
+        )
 
         # Calculate the offset for all data points
         offset = self.calculate_history_offset(user, rate_data, after_time, before_time)
@@ -465,7 +472,7 @@ class History(Cog):
             ),
         ],
     )
-    async def _history(
+    async def history(
         self,
         ctx: SlashContext,
         usernames: str = "me",
@@ -476,6 +483,8 @@ class History(Cog):
         start = datetime.now()
 
         after_time, before_time, time_str = parse_time_constraints(after, before)
+
+        utc_offset = extract_utc_offset(ctx.author.display_name)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
@@ -497,7 +506,11 @@ class History(Cog):
         ax: plt.Axes = fig.gca()
 
         fig.subplots_adjust(bottom=0.2)
-        ax.set_xlabel(i18n["history"]["plot_xlabel"])
+        ax.set_xlabel(
+            i18n["history"]["plot_xlabel"].format(
+                timezone=utc_offset_to_str(utc_offset)
+            )
+        )
         ax.set_ylabel(i18n["history"]["plot_ylabel"])
 
         for label in ax.get_xticklabels():
@@ -521,7 +534,9 @@ class History(Cog):
                     )
                 )
 
-            history_data = self.get_user_history(user, after_time, before_time)
+            history_data = self.get_user_history(
+                user, after_time, before_time, utc_offset
+            )
 
             color = colors[index]
             first_point = history_data.iloc[0]
@@ -590,7 +605,7 @@ class History(Cog):
             ),
         ],
     )
-    async def _rate(
+    async def rate(
         self,
         ctx: SlashContext,
         usernames: str = "me",
@@ -601,6 +616,8 @@ class History(Cog):
         start = datetime.now()
 
         after_time, before_time, time_str = parse_time_constraints(after, before)
+
+        utc_offset = extract_utc_offset(ctx.author.display_name)
 
         # Give a quick response to let the user know we're working on it
         # We'll later edit this message with the actual content
@@ -621,7 +638,9 @@ class History(Cog):
         ax: plt.Axes = fig.gca()
 
         fig.subplots_adjust(bottom=0.2)
-        ax.set_xlabel(i18n["rate"]["plot_xlabel"])
+        ax.set_xlabel(
+            i18n["rate"]["plot_xlabel"].format(timezone=utc_offset_to_str(utc_offset))
+        )
         ax.set_ylabel(i18n["rate"]["plot_ylabel"])
 
         for label in ax.get_xticklabels():
@@ -645,7 +664,9 @@ class History(Cog):
                     )
                 )
 
-            user_data = self.get_all_rate_data(user, "day", after_time, before_time)
+            user_data = self.get_all_rate_data(
+                user, "day", after_time, before_time, utc_offset
+            )
 
             max_rate = user_data["count"].max()
             max_rates.append(max_rate)

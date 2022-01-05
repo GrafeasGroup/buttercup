@@ -242,7 +242,7 @@ history:
     getting_history_progress: |
       Creating the history graph for {users} {time_str} ({count}/{total})...
     plot_title: History of {users}
-    plot_xlabel: Time
+    plot_xlabel: Time ({timezone})
     plot_ylabel: Gamma
     response_message:
       Here is the history graph for {users} {time_str}! ({duration})
@@ -252,7 +252,7 @@ rate:
     getting_rate_progress: |
       Creating the transcription rate graph for {users} {time_str} ({count}/{total})...
     plot_title: Transcription Rate of {users}
-    plot_xlabel: Time
+    plot_xlabel: Time ({timezone})
     plot_ylabel: Transcription Rate
     response_message:
       Here is the transcription rate graph for {usernames} {time_str}! ({duration})

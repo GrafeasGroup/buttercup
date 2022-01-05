@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import datetime, timedelta
 from time import mktime
@@ -15,7 +16,9 @@ from buttercup.cogs import ranks
 username_regex = re.compile(
     r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"
 )
-timezone_regex = re.compile(r"UTC(?P<offset>[+-]\d+)?", re.RegexFlag.I)
+timezone_regex = re.compile(
+    r"UTC(?:(?P<hours>[+-]\d+(?:\.\d+)?)(?::(?P<minutes>\d+))?)?", re.RegexFlag.I
+)
 
 # First an amount and then a unit
 relative_time_regex = re.compile(
@@ -292,7 +295,10 @@ def extract_sub_name(subreddit: str) -> str:
 
 
 def extract_utc_offset(display_name: str) -> int:
-    """Extract the user's timezone (UTC offset) from the display name."""
+    """Extract the user's timezone (UTC offset) from the display name.
+
+    :returns: The UTC offset in seconds.
+    """
     username_match = username_regex.match(display_name)
     if username_match is None:
         return 0
@@ -302,10 +308,27 @@ def extract_utc_offset(display_name: str) -> int:
         if timezone_match is None:
             return 0
 
-        if offset := timezone_match.group("offset"):
-            return int(offset)
+        offset = 0
 
+        if hours := timezone_match.group("hours"):
+            offset += math.floor(float(hours) * 60 * 60)
+
+        if minutes := timezone_match.group("minutes"):
+            offset += int(minutes) * 60
+
+        return offset
     return 0
+
+
+def utc_offset_to_str(utc_offset: int) -> str:
+    """Convert a UTC offset to a readable string.
+
+    :param utc_offset: The UTC offset in seconds.
+    """
+    sign = "-" if utc_offset < 0 else "+"
+    hours = abs(utc_offset) // (60 * 60)
+    minutes = (abs(utc_offset) % (60 * 60)) // 60
+    return f"UTC{sign}{hours:02}:{minutes:02}"
 
 
 def get_duration_str(start: datetime) -> str:

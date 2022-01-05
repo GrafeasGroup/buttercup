@@ -1,6 +1,6 @@
 import io
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -22,6 +22,7 @@ from buttercup.cogs.helpers import (
     get_user_id,
     get_username,
     parse_time_constraints,
+    utc_offset_to_str,
 )
 from buttercup.strings import translation
 
@@ -56,7 +57,7 @@ def create_file_from_heatmap(
         yticklabels=days,
     )
 
-    timezone = "UTC" if utc_offset == 0 else f"UTC{utc_offset:+d}"
+    timezone = utc_offset_to_str(utc_offset)
 
     plt.title(i18n["heatmap"]["plot_title"].format(user=get_username(user)))
     plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone=timezone))
@@ -69,15 +70,6 @@ def create_file_from_heatmap(
     plt.close(fig)
 
     return File(heatmap_table, "heatmap_table.png")
-
-
-def adjust_with_timezone(hour_data: Dict[str, Any], utc_offset: int) -> Dict[str, Any]:
-    """Adjust the heatmap data according to the UTC offset of the user."""
-    hour_offset = hour_data["hour"] + utc_offset
-    new_hour = hour_offset % 24
-    # The days go from 1 to 7, so we need to adjust this to zero index and back
-    new_day = ((hour_data["day"] + hour_offset // 24) - 1) % 7 + 1
-    return {"day": new_day, "hour": new_hour, "count": hour_data["count"]}
 
 
 class Heatmap(Cog):
@@ -139,6 +131,7 @@ class Heatmap(Cog):
             "submission/heatmap/",
             params={
                 "completed_by": get_user_id(user),
+                "utc_offset": utc_offset,
                 "complete_time__gte": from_str,
                 "complete_time__lte": until_str,
             },
@@ -147,7 +140,6 @@ class Heatmap(Cog):
             raise BlossomException(heatmap_response)
 
         data = heatmap_response.json()
-        data = [adjust_with_timezone(hour_data, utc_offset) for hour_data in data]
 
         day_index = pd.Index(range(1, 8))
         hour_index = pd.Index(range(0, 24))

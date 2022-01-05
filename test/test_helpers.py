@@ -18,6 +18,7 @@ from buttercup.cogs.helpers import (
     parse_time_constraints,
     try_parse_time,
     username_regex,
+    utc_offset_to_str,
 )
 
 
@@ -117,15 +118,36 @@ def test_escape_formatting(username: str, expected: str) -> None:
         ("u/username", 0),
         ("/u/username [mod] ~20⭐", 0),
         ("/u/username UTC", 0),
-        ("/u/username UTC+2", 2),
-        ("/u/username UTC-5", -5),
-        ("/u/username utc+4", 4),
-        ("/u/username [mod] UTC+1 - 14⭐", 1),
+        ("/u/UTC+10", 0),
+        ("/u/username UTC+2", 7_200),
+        ("/u/username UTC-5", -18_000),
+        ("/u/username utc+4", 14400),
+        ("/u/username [mod] UTC+1 - 14⭐", 3600),
+        ("/u/username UTC+02:00", 7_200),
+        ("/u/username UTC+10.5", 37_800),
+        ("/u/username UTC+10:30", 37_800),
     ],
 )
 def test_extract_utc_offset(name_input: str, expected: int) -> None:
     """Test that the UTC offset is extracted correctly."""
     actual = extract_utc_offset(name_input)
+    assert actual == expected
+
+
+@mark.parametrize(
+    "utc_offset,expected",
+    [
+        (0, "UTC+00:00"),
+        (7_200, "UTC+02:00"),
+        (-18_000, "UTC-05:00"),
+        (14_400, "UTC+04:00"),
+        (3_600, "UTC+01:00"),
+        (37_800, "UTC+10:30"),
+    ],
+)
+def test_utc_offset_to_str(utc_offset: int, expected: str) -> None:
+    """Test that the UTC offset is extracted correctly."""
+    actual = utc_offset_to_str(utc_offset)
     assert actual == expected
 
 
