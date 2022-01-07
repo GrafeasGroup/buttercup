@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "buttercup"
-version = "0.16.0"
+version = "0.17.0"
 description = "The Discord Bot!"
 authors = ["Grafeas Group Ltd. <devs@grafeas.org>"]
 exclude = ['test', 'test.*', '*.test.*', '*.test']
