@@ -312,7 +312,7 @@ class Search(Cog):
             return
 
         # Only cache the result if the user can change pages
-        if response_data["count"] <= self.discord_page_size:
+        if response_data["count"] > self.discord_page_size:
             # Update the cache
             self.cache.set(
                 msg.id,
