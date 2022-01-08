@@ -1,30 +1,18 @@
-import asyncio
-import math
-import re
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Dict, Optional
 
 import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
-from dateutil import parser
-from discord import Embed, Forbidden, Reaction, User
-from discord.ext import commands
+from discord import Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
-from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
-    BlossomUser,
-    get_discord_time_str,
     get_duration_str,
-    get_initial_username,
-    get_user,
-    get_username,
-    parse_time_constraints,
     get_submission_source,
 )
 from buttercup.strings import translation
@@ -41,7 +29,10 @@ def fix_submission_source(submission: Dict) -> Dict:
 
 
 def get_source_list(sources: pd.Series) -> str:
-    items = [f"- {count} from **{source}**" for source, count in sources.head(5).iteritems()]
+    """Get a list of the posts grouped by sources."""
+    items = [
+        f"- {count} from **{source}**" for source, count in sources.head(5).iteritems()
+    ]
     result = "\n".join(items)
 
     if len(sources) > 5:

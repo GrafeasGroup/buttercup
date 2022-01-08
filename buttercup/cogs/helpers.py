@@ -2,7 +2,7 @@ import math
 import re
 from datetime import datetime, timedelta
 from time import mktime
-from typing import Dict, List, Optional, Tuple, TypedDict, Union, Any
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomResponse, BlossomStatus

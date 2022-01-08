@@ -21,9 +21,10 @@ from buttercup.cogs.helpers import (
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
+    get_transcription_source,
     get_user,
     get_username,
-    parse_time_constraints, get_transcription_source,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 

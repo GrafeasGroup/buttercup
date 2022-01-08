@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pytz
-from _pytest.mark import MARK_GEN
 from pytest import mark
 
 from buttercup.cogs.helpers import (
@@ -14,12 +13,13 @@ from buttercup.cogs.helpers import (
     format_absolute_datetime,
     format_relative_datetime,
     get_progress_bar,
+    get_transcription_source,
     get_username,
     join_items_with_and,
     parse_time_constraints,
     try_parse_time,
     username_regex,
-    utc_offset_to_str, get_transcription_source,
+    utc_offset_to_str,
 )
 
 
