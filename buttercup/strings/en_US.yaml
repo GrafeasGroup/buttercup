@@ -284,3 +284,7 @@ queue:
     Getting the current status of the queue...
   embed_message: |-
     Here is the current status of the queue! ({duration_str})
+  embed_title: |-
+    Queue Status
+  embed_description: |-
+    The queue currently contains {unclaimed} unclaimed posts!

@@ -1,9 +1,10 @@
 import asyncio
 import math
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, TypedDict
 
+import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
@@ -36,6 +37,40 @@ class Queue(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
+    async def get_unclaimed_queue_submissions(self) -> pd.DataFrame:
+        """Get the submissions that are currently unclaimed in the queue."""
+        # Posts older than 18 hours are archived
+        queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=18)
+        results = []
+        size = 500
+        page = 1
+
+        # Fetch all unclaimed posts from the queue
+        while True:
+            queue_response = self.blossom_api.get(
+                "submission/",
+                params={
+                    "page_size": size,
+                    "page": page,
+                    "completed_by__isnull": True,
+                    "claimed_by__isnull": True,
+                    "archived": False,
+                    "create_time__gte": queue_start.isoformat(),
+                },
+            )
+            if not queue_response.ok:
+                raise BlossomException(queue_response)
+
+            data = queue_response.json()["results"]
+            results += data
+            page += 1
+
+            if len(data) < size:
+                break
+
+        data_frame = pd.DataFrame.from_records(data=results, index="id")
+        return data_frame
+
     @cog_ext.cog_slash(
         name="queue",
         description="Display the current status of the queue.",
@@ -56,10 +91,18 @@ class Queue(Cog):
         # We will edit this message later with the actual content.
         msg = await ctx.send(i18n["queue"]["getting_queue"])
 
+        unclaimed = await self.get_unclaimed_queue_submissions()
+
         await msg.edit(
             content=i18n["queue"]["embed_message"].format(
-                duration_str=get_duration_str(start)
-            )
+                duration_str=get_duration_str(start),
+            ),
+            embed=Embed(
+                title=i18n["queue"]["embed_title"],
+                description=i18n["queue"]["embed_description"].format(
+                    unclaimed=len(unclaimed.index),
+                ),
+            ),
         )
 
 
