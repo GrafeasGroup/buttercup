@@ -18,6 +18,7 @@ EXTENSIONS = [
     "ping",
     "rules",
     "leaderboard",
+    "queue",
 ]
 
 

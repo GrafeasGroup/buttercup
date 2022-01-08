@@ -279,3 +279,8 @@ search:
     Results for `{query}` by {user}
   embed_footer: |-
     Page {cur_page}/{total_pages} ({total_results} result(s))
+queue:
+  getting_queue: |-
+    Getting the current status of the queue...
+  embed_message: |-
+    Here is the current status of the queue! ({duration_str})
