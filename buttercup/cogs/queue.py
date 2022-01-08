@@ -25,10 +25,32 @@ from buttercup.cogs.helpers import (
     get_user,
     get_username,
     parse_time_constraints,
+    get_submission_source,
 )
 from buttercup.strings import translation
 
 i18n = translation()
+
+
+def fix_submission_source(submission: Dict) -> Dict:
+    """Fix the source of the submission to be the subreddit."""
+    return {
+        **submission,
+        "source": get_submission_source(submission),
+    }
+
+
+def get_source_list(sources: pd.Series) -> str:
+    items = [f"- {count} from **{source}**" for source, count in sources.head(5).iteritems()]
+    result = "\n".join(items)
+
+    if len(sources) > 5:
+        rest = sources[5:]
+        source_count = len(rest)
+        post_count = rest.sum()
+        result += f"\n...and {post_count} from {source_count} other source(s)."
+
+    return result
 
 
 class Queue(Cog):
@@ -62,6 +84,7 @@ class Queue(Cog):
                 raise BlossomException(queue_response)
 
             data = queue_response.json()["results"]
+            data = [fix_submission_source(entry) for entry in data]
             results += data
             page += 1
 
@@ -92,6 +115,15 @@ class Queue(Cog):
         msg = await ctx.send(i18n["queue"]["getting_queue"])
 
         unclaimed = await self.get_unclaimed_queue_submissions()
+        unclaimed_count = len(unclaimed.index)
+
+        sources = (
+            unclaimed.reset_index()
+            .groupby(["source"])["id"]
+            .count()
+            .sort_values(ascending=False)
+        )
+        source_list = get_source_list(sources)
 
         await msg.edit(
             content=i18n["queue"]["embed_message"].format(
@@ -100,7 +132,7 @@ class Queue(Cog):
             embed=Embed(
                 title=i18n["queue"]["embed_title"],
                 description=i18n["queue"]["embed_description"].format(
-                    unclaimed=len(unclaimed.index),
+                    unclaimed_count=unclaimed_count, source_list=source_list,
                 ),
             ),
         )

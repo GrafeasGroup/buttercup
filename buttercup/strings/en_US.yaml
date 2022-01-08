@@ -287,4 +287,5 @@ queue:
   embed_title: |-
     Queue Status
   embed_description: |-
-    The queue currently contains {unclaimed} unclaimed posts!
+    **Unclaimed**: {unclaimed_count}
+    {source_list}

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pytz
+from _pytest.mark import MARK_GEN
 from pytest import mark
 
 from buttercup.cogs.helpers import (
@@ -18,7 +19,7 @@ from buttercup.cogs.helpers import (
     parse_time_constraints,
     try_parse_time,
     username_regex,
-    utc_offset_to_str,
+    utc_offset_to_str, get_transcription_source,
 )
 
 
@@ -381,3 +382,23 @@ def test_parse_relative_time_constraints(
         assert actual_before is None
 
     assert actual_str == expected_str
+
+
+@mark.parametrize(
+    "url,expected",
+    [
+        (
+            "https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/",  # noqa: E501
+            "r/thatHappened",
+        ),
+        (
+            # noqa: E501
+            "https://reddit.com/r/CasualUK/comments/qzhsco/found_this_bag_of_mints_on_the_floor_which_is/hlmjpoa/",  # noqa: E501
+            "r/CasualUK",
+        ),
+    ],
+)
+def test_get_transcription_source(url: str, expected: str) -> None:
+    """Verify that the transcription source is determined correctly."""
+    tr_type = get_transcription_source({"url": url})
+    assert tr_type == expected
