@@ -31,7 +31,8 @@ def fix_submission_source(submission: Dict) -> Dict:
 def get_source_list(sources: pd.Series) -> str:
     """Get a list of the posts grouped by sources."""
     items = [
-        f"- {count} from **{source}**" for source, count in sources.head(5).iteritems()
+        i18n["queue"]["source_list_entry"].format(count=count, source=source)
+        for source, count in sources.head(5).iteritems()
     ]
     result = "\n".join(items)
 
@@ -39,7 +40,9 @@ def get_source_list(sources: pd.Series) -> str:
         rest = sources[5:]
         source_count = len(rest)
         post_count = rest.sum()
-        result += f"\n...and {post_count} from {source_count} other source(s)."
+        result += "\n" + i18n["queue"]["source_list_others"].format(
+            post_count=post_count, source_count=source_count
+        )
 
     return result
 
@@ -116,6 +119,14 @@ class Queue(Cog):
         )
         source_list = get_source_list(sources)
 
+        unclaimed_message = (
+            i18n["queue"]["unclaimed_message_cleared"]
+            if unclaimed_count == 0
+            else i18n["queue"]["unclaimed_message"].format(
+                unclaimed_count=unclaimed_count, source_list=source_list,
+            )
+        )
+
         await msg.edit(
             content=i18n["queue"]["embed_message"].format(
                 duration_str=get_duration_str(start),
@@ -123,7 +134,7 @@ class Queue(Cog):
             embed=Embed(
                 title=i18n["queue"]["embed_title"],
                 description=i18n["queue"]["embed_description"].format(
-                    unclaimed_count=unclaimed_count, source_list=source_list,
+                    unclaimed_message=unclaimed_message
                 ),
             ),
         )

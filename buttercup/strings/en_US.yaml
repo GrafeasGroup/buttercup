@@ -287,5 +287,13 @@ queue:
   embed_title: |-
     Queue Status
   embed_description: |-
+    {unclaimed_message}
+  unclaimed_message: |-
     **Unclaimed**: {unclaimed_count}
     {source_list}
+  unclaimed_message_cleared: |-
+    :tada: **The queue has been cleared!** :tada:
+  source_list_entry: |-
+    - {count} from **{source}**
+  source_list_others: |-
+    ...and {post_count} from {source_count} other source(s).
