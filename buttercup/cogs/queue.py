@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
+import dateutil.parser
 import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
@@ -13,7 +14,6 @@ from discord_slash.model import SlashMessage
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
-    get_duration_str,
     get_submission_source,
     get_discord_time_str,
 )
@@ -30,10 +30,10 @@ def fix_submission_source(submission: Dict) -> Dict:
     }
 
 
-def get_source_list(sources: pd.Series) -> str:
+def get_unclaimed_list(sources: pd.Series) -> str:
     """Get a list of the posts grouped by sources."""
     items = [
-        i18n["queue"]["source_list_entry"].format(count=count, source=source)
+        i18n["queue"]["unclaimed_list_entry"].format(count=count, source=source)
         for source, count in sources.head(5).iteritems()
     ]
     result = "\n".join(items)
@@ -42,8 +42,38 @@ def get_source_list(sources: pd.Series) -> str:
         rest = sources[5:]
         source_count = len(rest)
         post_count = rest.sum()
-        result += "\n" + i18n["queue"]["source_list_others"].format(
+        result += "\n" + i18n["queue"]["unclaimed_list_others"].format(
             post_count=post_count, source_count=source_count
+        )
+
+    return result
+
+
+def get_claimed_item(submission: pd.Series) -> str:
+    """Get the formatted submission item."""
+    source = submission["source"]
+    time_str = submission["claim_time"]
+    author_url = submission["claimed_by"]
+
+    time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
+    author_id = author_url.split("/")[-2]
+
+    return i18n["queue"]["claimed_list_entry"].format(
+        source=source, time=time, author=author_id,
+    )
+
+
+def get_claimed_list(claimed: pd.DataFrame) -> str:
+    """Get a list of claimed submissions."""
+    items = [
+        get_claimed_item(submission) for idx, submission in claimed.head(5).iterrows()
+    ]
+    result = "\n".join(items)
+
+    if len(claimed) > 5:
+        rest = claimed[5:]
+        result += "\n" + i18n["queue"]["claimed_list_others"].format(
+            other_count=len(rest)
         )
 
     return result
@@ -135,6 +165,7 @@ class Queue(Cog):
                     "claimed_by__isnull": False,
                     "archived": False,
                     "create_time__gte": queue_start.isoformat(),
+                    "ordering": "-claim_time",
                 },
             )
             if not queue_response.ok:
@@ -158,7 +189,7 @@ class Queue(Cog):
         be kept updated, to improve performance.
         """
         limit = 5
-        self.messages = self.messages[-(limit - 1):] + [msg]
+        self.messages = self.messages[-(limit - 1) :] + [msg]
 
     @cog_ext.cog_slash(
         name="queue", description="Display the current status of the queue.",
@@ -187,29 +218,30 @@ class Queue(Cog):
             .count()
             .sort_values(ascending=False)
         )
-        source_list = get_source_list(sources)
+        unclaimed_list = get_unclaimed_list(sources)
 
         unclaimed_message = (
             i18n["queue"]["unclaimed_message_cleared"]
             if unclaimed_count == 0
             else i18n["queue"]["unclaimed_message"].format(
-                unclaimed_count=unclaimed_count, source_list=source_list,
+                unclaimed_count=unclaimed_count, unclaimed_list=unclaimed_list,
             )
         )
+
+        claimed_list = get_claimed_list(self.claimed)
 
         claimed_message = (
             i18n["queue"]["claimed_message_cleared"]
             if claimed_count == 0
             else i18n["queue"]["claimed_message"].format(
-                claimed_count=claimed_count,
+                claimed_count=claimed_count, claimed_list=claimed_list
             )
         )
 
         embed = Embed(
             title=i18n["queue"]["embed_title"],
             description=i18n["queue"]["embed_description"].format(
-                unclaimed_message=unclaimed_message,
-                claimed_message=claimed_message,
+                unclaimed_message=unclaimed_message, claimed_message=claimed_message,
             ),
         )
 

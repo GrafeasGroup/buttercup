@@ -292,14 +292,19 @@ queue:
     {claimed_message}
   unclaimed_message: |-
     **Unclaimed**: {unclaimed_count}
-    {source_list}
+    {unclaimed_list}
   unclaimed_message_cleared: |-
     :tada: **The queue has been cleared!** :tada:
-  source_list_entry: |-
+  unclaimed_list_entry: |-
     - {count} from **{source}**
-  source_list_others: |-
+  unclaimed_list_others: |-
     ...and {post_count} from {source_count} other source(s).
   claimed_message: |-
     **In Progress**: {claimed_count}
+    {claimed_list}
   claimed_message_cleared: |-
     There are no transcriptions in progress right now.
+  claimed_list_entry: |-
+    - **{author}** on {source} {time}
+  claimed_list_others: |-
+    ...and {other_count} other(s).
