@@ -124,16 +124,8 @@ class Queue(Cog):
     @cog_ext.cog_slash(
         name="queue",
         description="Display the current status of the queue.",
-        options=[
-            create_option(
-                name="source",
-                description="The source (subreddit) to filter the queue by.",
-                option_type=3,
-                required=False,
-            ),
-        ],
     )
-    async def queue(self, ctx: SlashContext, source: Optional[str] = None,) -> None:
+    async def queue(self, ctx: SlashContext) -> None:
         """Display the current status of the queue."""
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
