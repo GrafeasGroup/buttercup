@@ -16,8 +16,8 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.find import COMPLETED_COLOR, IN_PROGRESS_COLOR, UNCLAIMED_COLOR
 from buttercup.cogs.helpers import (
     BlossomException,
-    get_submission_source,
     get_discord_time_str,
+    get_submission_source,
 )
 from buttercup.strings import translation
 
@@ -27,6 +27,7 @@ i18n = translation()
 
 
 def extract_user_id(user_url: str) -> str:
+    """Extract the ID from a Blossom user URL."""
     return user_url.split("/")[-2]
 
 
@@ -106,12 +107,12 @@ class Queue(Cog):
         self.update_cycle.start()
 
     @tasks.loop(minutes=1)
-    async def update_cycle(self):
+    async def update_cycle(self) -> None:
         """Keep everything up-to-date."""
         await self.update_queue()
         await self.update_messages()
 
-    async def update_queue(self):
+    async def update_queue(self) -> None:
         """Update the cached queue items."""
         self.unclaimed = await self.get_unclaimed_submissions()
         self.claimed = await self.get_claimed_submissions()
@@ -119,7 +120,7 @@ class Queue(Cog):
 
         self.last_update = datetime.now()
 
-    async def update_messages(self):
+    async def update_messages(self) -> None:
         """Update all messages with the latest queue stats."""
         for msg in self.messages:
             await self.update_message(msg)
@@ -195,7 +196,7 @@ class Queue(Cog):
         data_frame = pd.DataFrame.from_records(data=results, index="id")
         return data_frame
 
-    def update_user_cache(self):
+    def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
         user_cache = {}
 
@@ -214,7 +215,7 @@ class Queue(Cog):
 
         self.user_cache = user_cache
 
-    def add_message(self, msg: SlashMessage):
+    def add_message(self, msg: SlashMessage) -> None:
         """Add a new message to update with the current queue stats.
 
         This enforces a maximum amount of messages that should
@@ -236,7 +237,7 @@ class Queue(Cog):
         # Keep the message updated in the future
         self.add_message(msg)
 
-    async def update_message(self, msg: SlashMessage):
+    async def update_message(self, msg: SlashMessage) -> None:
         """Update the given message with the latest queue stats."""
         unclaimed = self.unclaimed
         unclaimed_count = len(unclaimed.index)

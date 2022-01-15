@@ -1,7 +1,6 @@
 import math
 import re
 from datetime import datetime, timedelta
-from time import mktime
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 import pytz
