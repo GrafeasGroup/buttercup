@@ -283,7 +283,7 @@ queue:
   getting_queue: |-
     Getting the current status of the queue...
   embed_message: |-
-    Here is the current status of the queue! ({duration_str})
+    Here is the current status of the queue! (Last updated {last_updated})
   embed_title: |-
     Queue Status
   embed_description: |-

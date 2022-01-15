@@ -9,13 +9,13 @@ from discord.ext import tasks
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
-from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     get_duration_str,
     get_submission_source,
+    get_discord_time_str,
 )
 from buttercup.strings import translation
 
@@ -55,6 +55,7 @@ class Queue(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
+        self.last_update = datetime.now()
         self.unclaimed = None
         self.messages = []
 
@@ -70,6 +71,7 @@ class Queue(Cog):
     async def update_queue(self):
         """Update the cached queue items."""
         self.unclaimed = await self.get_unclaimed_queue_submissions()
+        self.last_update = datetime.now()
 
     async def update_messages(self):
         """Update all messages with the latest queue stats."""
@@ -118,12 +120,10 @@ class Queue(Cog):
         be kept updated, to improve performance.
         """
         limit = 5
-        self.messages = self.messages[:-limit] + [msg]
-        print(f"Messages: {len(self.messages)}")
+        self.messages = self.messages[-(limit - 1):] + [msg]
 
     @cog_ext.cog_slash(
-        name="queue",
-        description="Display the current status of the queue.",
+        name="queue", description="Display the current status of the queue.",
     )
     async def queue(self, ctx: SlashContext) -> None:
         """Display the current status of the queue."""
@@ -158,16 +158,18 @@ class Queue(Cog):
             )
         )
 
+        embed = Embed(
+            title=i18n["queue"]["embed_title"],
+            description=i18n["queue"]["embed_description"].format(
+                unclaimed_message=unclaimed_message
+            ),
+        )
+
         await msg.edit(
             content=i18n["queue"]["embed_message"].format(
-                duration_str=get_duration_str(start),
+                last_updated=get_discord_time_str(date_time=self.last_update, style="R")
             ),
-            embed=Embed(
-                title=i18n["queue"]["embed_title"],
-                description=i18n["queue"]["embed_description"].format(
-                    unclaimed_message=unclaimed_message
-                ),
-            ),
+            embed=embed,
         )
 
 
