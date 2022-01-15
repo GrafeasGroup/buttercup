@@ -143,6 +143,7 @@ class Queue(Cog):
                     "completed_by__isnull": True,
                     "claimed_by__isnull": True,
                     "archived": False,
+                    "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                 },
             )
@@ -178,6 +179,7 @@ class Queue(Cog):
                     "completed_by__isnull": True,
                     "claimed_by__isnull": False,
                     "archived": False,
+                    "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                     "ordering": "-claim_time",
                 },
