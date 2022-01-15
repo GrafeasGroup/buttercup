@@ -57,6 +57,7 @@ class Queue(Cog):
 
         self.last_update = datetime.now()
         self.unclaimed = None
+        self.claimed = None
         self.messages = []
 
         self.update_cycle.start()
@@ -70,7 +71,9 @@ class Queue(Cog):
 
     async def update_queue(self):
         """Update the cached queue items."""
-        self.unclaimed = await self.get_unclaimed_queue_submissions()
+        self.unclaimed = await self.get_unclaimed_submissions()
+        self.claimed = await self.get_claimed_submissions()
+
         self.last_update = datetime.now()
 
     async def update_messages(self):
@@ -78,7 +81,7 @@ class Queue(Cog):
         for msg in self.messages:
             await self.update_message(msg)
 
-    async def get_unclaimed_queue_submissions(self) -> pd.DataFrame:
+    async def get_unclaimed_submissions(self) -> pd.DataFrame:
         """Get the submissions that are currently unclaimed in the queue."""
         # Posts older than 18 hours are archived
         queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=18)
@@ -95,6 +98,41 @@ class Queue(Cog):
                     "page": page,
                     "completed_by__isnull": True,
                     "claimed_by__isnull": True,
+                    "archived": False,
+                    "create_time__gte": queue_start.isoformat(),
+                },
+            )
+            if not queue_response.ok:
+                raise BlossomException(queue_response)
+
+            data = queue_response.json()["results"]
+            data = [fix_submission_source(entry) for entry in data]
+            results += data
+            page += 1
+
+            if len(data) < size:
+                break
+
+        data_frame = pd.DataFrame.from_records(data=results, index="id")
+        return data_frame
+
+    async def get_claimed_submissions(self) -> pd.DataFrame:
+        """Get the submissions that are currently in progress."""
+        # Only consider recent posts that may still be worked on
+        queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=48)
+        results = []
+        size = 500
+        page = 1
+
+        # Fetch all claimed posts from the queue
+        while True:
+            queue_response = self.blossom_api.get(
+                "submission/",
+                params={
+                    "page_size": size,
+                    "page": page,
+                    "completed_by__isnull": True,
+                    "claimed_by__isnull": False,
                     "archived": False,
                     "create_time__gte": queue_start.isoformat(),
                 },
@@ -137,10 +175,11 @@ class Queue(Cog):
 
     async def update_message(self, msg: SlashMessage):
         """Update the given message with the latest queue stats."""
-        start = datetime.now()
-
         unclaimed = self.unclaimed
         unclaimed_count = len(unclaimed.index)
+
+        claimed = self.claimed
+        claimed_count = len(claimed.index)
 
         sources = (
             unclaimed.reset_index()
@@ -158,10 +197,19 @@ class Queue(Cog):
             )
         )
 
+        claimed_message = (
+            i18n["queue"]["claimed_message_cleared"]
+            if claimed_count == 0
+            else i18n["queue"]["claimed_message"].format(
+                claimed_count=claimed_count,
+            )
+        )
+
         embed = Embed(
             title=i18n["queue"]["embed_title"],
             description=i18n["queue"]["embed_description"].format(
-                unclaimed_message=unclaimed_message
+                unclaimed_message=unclaimed_message,
+                claimed_message=claimed_message,
             ),
         )
 
