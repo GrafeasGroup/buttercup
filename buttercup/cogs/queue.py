@@ -106,7 +106,7 @@ class Queue(Cog):
         logger.info("Starting queue update cycle...")
         self.update_cycle.start()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=2)
     async def update_cycle(self) -> None:
         """Keep everything up-to-date."""
         await self.update_queue()
