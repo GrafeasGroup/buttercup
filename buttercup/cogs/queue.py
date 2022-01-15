@@ -60,6 +60,7 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     """Get the formatted submission item."""
     source = submission["source"]
     time_str = submission["claim_time"]
+    url = submission["tor_url"]
     author_url = submission["claimed_by"]
 
     time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
@@ -67,7 +68,7 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     author = user_cache.get(author_id, {"username": author_id})
 
     return i18n["queue"]["claimed_list_entry"].format(
-        source=source, time=time, author="u/" + author["username"],
+        author="u/" + author["username"], source=source, url=url, time=time,
     )
 
 

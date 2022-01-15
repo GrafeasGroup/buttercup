@@ -305,6 +305,6 @@ queue:
   claimed_message_cleared: |-
     There are no transcriptions in progress right now.
   claimed_list_entry: |-
-    - **{author}** on {source} {time}
+    - **{author}** on [{source}]({url}) {time}
   claimed_list_others: |-
     ...and {other_count} other(s).
