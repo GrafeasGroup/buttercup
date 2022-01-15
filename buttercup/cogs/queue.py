@@ -1,5 +1,6 @@
+import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple
+from typing import Dict
 
 import dateutil.parser
 import pandas as pd
@@ -19,7 +20,13 @@ from buttercup.cogs.helpers import (
 )
 from buttercup.strings import translation
 
+logger = logging.Logger("queue")
+
 i18n = translation()
+
+
+def extract_user_id(user_url: str) -> str:
+    return user_url.split("/")[-2]
 
 
 def fix_submission_source(submission: Dict) -> Dict:
@@ -49,24 +56,26 @@ def get_unclaimed_list(sources: pd.Series) -> str:
     return result
 
 
-def get_claimed_item(submission: pd.Series) -> str:
+def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     """Get the formatted submission item."""
     source = submission["source"]
     time_str = submission["claim_time"]
     author_url = submission["claimed_by"]
 
     time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
-    author_id = author_url.split("/")[-2]
+    author_id = extract_user_id(author_url)
+    author = user_cache.get(author_id, {"username": author_id})
 
     return i18n["queue"]["claimed_list_entry"].format(
-        source=source, time=time, author=author_id,
+        source=source, time=time, author="u/" + author["username"],
     )
 
 
-def get_claimed_list(claimed: pd.DataFrame) -> str:
+def get_claimed_list(claimed: pd.DataFrame, user_cache: Dict) -> str:
     """Get a list of claimed submissions."""
     items = [
-        get_claimed_item(submission) for idx, submission in claimed.head(5).iterrows()
+        get_claimed_item(submission, user_cache)
+        for idx, submission in claimed.head(5).iterrows()
     ]
     result = "\n".join(items)
 
@@ -88,14 +97,15 @@ class Queue(Cog):
         self.last_update = datetime.now()
         self.unclaimed = None
         self.claimed = None
+        self.user_cache = {}
         self.messages = []
 
+        logger.info("Starting queue update cycle...")
         self.update_cycle.start()
 
     @tasks.loop(minutes=1)
     async def update_cycle(self):
         """Keep everything up-to-date."""
-        print("Updating the queue!")
         await self.update_queue()
         await self.update_messages()
 
@@ -103,6 +113,7 @@ class Queue(Cog):
         """Update the cached queue items."""
         self.unclaimed = await self.get_unclaimed_submissions()
         self.claimed = await self.get_claimed_submissions()
+        self.update_user_cache()
 
         self.last_update = datetime.now()
 
@@ -182,6 +193,25 @@ class Queue(Cog):
         data_frame = pd.DataFrame.from_records(data=results, index="id")
         return data_frame
 
+    def update_user_cache(self):
+        """Fetch the users from their IDs."""
+        user_cache = {}
+
+        for idx, submission in self.claimed.head(5).iterrows():
+            user_id = extract_user_id(submission["claimed_by"])
+
+            if user := self.user_cache.get(user_id):
+                # Take the user from the old cache, if available
+                user_cache[user_id] = user
+
+            user_response = self.blossom_api.get("volunteer", params={"id": user_id})
+            if not user_response.ok:
+                raise BlossomException(user_response)
+            user = user_response.json()["results"][0]
+            user_cache[user_id] = user
+
+        self.user_cache = user_cache
+
     def add_message(self, msg: SlashMessage):
         """Add a new message to update with the current queue stats.
 
@@ -228,7 +258,7 @@ class Queue(Cog):
             )
         )
 
-        claimed_list = get_claimed_list(self.claimed)
+        claimed_list = get_claimed_list(self.claimed, self.user_cache)
 
         claimed_message = (
             i18n["queue"]["claimed_message_cleared"]
