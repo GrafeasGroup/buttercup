@@ -1,8 +1,7 @@
 import math
 import re
 from datetime import datetime, timedelta
-from time import mktime
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 import pytz
 from blossom_wrapper import BlossomAPI, BlossomResponse, BlossomStatus
@@ -398,7 +397,7 @@ def get_discord_time_str(date_time: datetime, style: str = "f") -> str:
     Style should be one of the timestamp styles defined here:
     https://discord.com/developers/docs/reference#message-formatting-timestamp-styles
     """
-    timestamp = mktime(date_time.timetuple())
+    timestamp = date_time.timestamp()
     # https://discord.com/developers/docs/reference#message-formatting-formats
     return f"<t:{timestamp:0.0f}:{style}>"
 
@@ -513,3 +512,19 @@ def get_rgb_from_hex(hex_str: str) -> Tuple[int, int, int]:
     # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
     hx = hex_str.lstrip("#")
     return int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
+
+
+def extract_sub_from_url(url: str) -> str:
+    """Extract the subreddit from a Reddit URL."""
+    # https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/
+    return "r/" + url.split("/")[4]
+
+
+def get_transcription_source(transcription: Dict[str, Any]) -> str:
+    """Try to determine the source (subreddit) of the transcription."""
+    return extract_sub_from_url(transcription["url"])
+
+
+def get_submission_source(submission: Dict[str, Any]) -> str:
+    """Try to determine the source (subreddit) of the submission."""
+    return extract_sub_from_url(submission["url"])

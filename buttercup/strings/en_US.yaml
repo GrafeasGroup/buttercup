@@ -279,3 +279,32 @@ search:
     Results for `{query}` by {user}
   embed_footer: |-
     Page {cur_page}/{total_pages} ({total_results} result(s))
+queue:
+  getting_queue: |-
+    Getting the current status of the queue...
+  embed_message: |-
+    Here is the current status of the queue! (Last updated {last_updated})
+  embed_title: |-
+    Queue Status
+  embed_description: |-
+    {unclaimed_message}
+
+    {claimed_message}
+  unclaimed_message: |-
+    **Unclaimed**: {unclaimed_count}
+    {unclaimed_list}
+  unclaimed_message_cleared: |-
+    :tada: **The queue has been cleared!** :tada:
+  unclaimed_list_entry: |-
+    - {count} from **{source}**
+  unclaimed_list_others: |-
+    ...and {post_count} from {source_count} other source(s).
+  claimed_message: |-
+    **In Progress**: {claimed_count}
+    {claimed_list}
+  claimed_message_cleared: |-
+    There are no transcriptions in progress right now.
+  claimed_list_entry: |-
+    - **{author}** on [{source}]({url}) {time}
+  claimed_list_others: |-
+    ...and {other_count} other(s).

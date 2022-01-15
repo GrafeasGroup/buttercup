@@ -21,6 +21,7 @@ from buttercup.cogs.helpers import (
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
+    get_transcription_source,
     get_user,
     get_username,
     parse_time_constraints,
@@ -59,13 +60,6 @@ def get_transcription_type(transcription: Dict[str, Any]) -> str:
         tr_type = tr_type.strip()
 
     return tr_type or tr_format
-
-
-def get_transcription_source(transcription: Dict[str, Any]) -> str:
-    """Try to determine the source (subreddit) of the transcription."""
-    # https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/
-    url: str = transcription["url"]
-    return "r/" + url.split("/")[4]
 
 
 def format_query_occurrence(line: str, line_num: int, pos: int, query: str) -> str:

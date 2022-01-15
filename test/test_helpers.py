@@ -13,6 +13,7 @@ from buttercup.cogs.helpers import (
     format_absolute_datetime,
     format_relative_datetime,
     get_progress_bar,
+    get_transcription_source,
     get_username,
     join_items_with_and,
     parse_time_constraints,
@@ -381,3 +382,23 @@ def test_parse_relative_time_constraints(
         assert actual_before is None
 
     assert actual_str == expected_str
+
+
+@mark.parametrize(
+    "url,expected",
+    [
+        (
+            "https://reddit.com/r/thatHappened/comments/qzhtyb/the_more_you_read_the_less_believable_it_gets/hlmkuau/",  # noqa: E501
+            "r/thatHappened",
+        ),
+        (
+            # noqa: E501
+            "https://reddit.com/r/CasualUK/comments/qzhsco/found_this_bag_of_mints_on_the_floor_which_is/hlmjpoa/",  # noqa: E501
+            "r/CasualUK",
+        ),
+    ],
+)
+def test_get_transcription_source(url: str, expected: str) -> None:
+    """Verify that the transcription source is determined correctly."""
+    tr_type = get_transcription_source({"url": url})
+    assert tr_type == expected
