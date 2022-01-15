@@ -13,6 +13,7 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 
 from buttercup.bot import ButtercupBot
+from buttercup.cogs.find import COMPLETED_COLOR, IN_PROGRESS_COLOR, UNCLAIMED_COLOR
 from buttercup.cogs.helpers import (
     BlossomException,
     get_submission_source,
@@ -269,11 +270,20 @@ class Queue(Cog):
             )
         )
 
+        color = (
+            COMPLETED_COLOR
+            if unclaimed_count == 0
+            else IN_PROGRESS_COLOR
+            if claimed_count > 0
+            else UNCLAIMED_COLOR
+        )
+
         embed = Embed(
             title=i18n["queue"]["embed_title"],
             description=i18n["queue"]["embed_description"].format(
                 unclaimed_message=unclaimed_message, claimed_message=claimed_message,
             ),
+            color=color,
         )
 
         await msg.edit(
