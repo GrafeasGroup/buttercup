@@ -5,8 +5,10 @@ import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
 from discord import Embed
+from discord.ext import tasks
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
+from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
 from buttercup.bot import ButtercupBot
@@ -53,6 +55,27 @@ class Queue(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
+        self.unclaimed = None
+        self.messages = []
+
+        self.update_cycle.start()
+
+    @tasks.loop(minutes=1)
+    async def update_cycle(self):
+        """Keep everything up-to-date."""
+        print("Updating the queue!")
+        await self.update_queue()
+        await self.update_messages()
+
+    async def update_queue(self):
+        """Update the cached queue items."""
+        self.unclaimed = await self.get_unclaimed_queue_submissions()
+
+    async def update_messages(self):
+        """Update all messages with the latest queue stats."""
+        for msg in self.messages:
+            await self.update_message(msg)
+
     async def get_unclaimed_queue_submissions(self) -> pd.DataFrame:
         """Get the submissions that are currently unclaimed in the queue."""
         # Posts older than 18 hours are archived
@@ -88,6 +111,16 @@ class Queue(Cog):
         data_frame = pd.DataFrame.from_records(data=results, index="id")
         return data_frame
 
+    def add_message(self, msg: SlashMessage):
+        """Add a new message to update with the current queue stats.
+
+        This enforces a maximum amount of messages that should
+        be kept updated, to improve performance.
+        """
+        limit = 5
+        self.messages = self.messages[:-limit] + [msg]
+        print(f"Messages: {len(self.messages)}")
+
     @cog_ext.cog_slash(
         name="queue",
         description="Display the current status of the queue.",
@@ -102,13 +135,19 @@ class Queue(Cog):
     )
     async def queue(self, ctx: SlashContext, source: Optional[str] = None,) -> None:
         """Display the current status of the queue."""
-        start = datetime.now()
-
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(i18n["queue"]["getting_queue"])
+        # Update the message with the last known stats
+        await self.update_message(msg)
+        # Keep the message updated in the future
+        self.add_message(msg)
 
-        unclaimed = await self.get_unclaimed_queue_submissions()
+    async def update_message(self, msg: SlashMessage):
+        """Update the given message with the latest queue stats."""
+        start = datetime.now()
+
+        unclaimed = self.unclaimed
         unclaimed_count = len(unclaimed.index)
 
         sources = (
