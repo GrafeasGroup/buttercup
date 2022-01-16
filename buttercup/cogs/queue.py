@@ -6,7 +6,7 @@ import dateutil.parser
 import pandas as pd
 import pytz
 from blossom_wrapper import BlossomAPI
-from discord import Embed
+from discord import DiscordException, Embed
 from discord.ext import tasks
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -109,8 +109,17 @@ class Queue(Cog):
     @tasks.loop(minutes=2)
     async def update_cycle(self) -> None:
         """Keep everything up-to-date."""
-        await self.update_queue()
-        await self.update_messages()
+        try:
+            await self.update_queue()
+        except BlossomException as e:
+            # If Blossom fails, just ignore and don't update the message
+            logger.warning(f"Failed to update queue ({e.status})\n{e.data}")
+            return
+        try:
+            await self.update_messages()
+        except DiscordException as e:
+            # If Discord fails, just ignore
+            logger.warning(f"Failed to update queue messages: {e}")
 
     async def update_queue(self) -> None:
         """Update the cached queue items."""
