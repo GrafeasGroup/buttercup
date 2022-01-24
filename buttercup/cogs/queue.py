@@ -164,7 +164,7 @@ class Queue(Cog):
         await asyncio.gather(
             self.update_unclaimed_submissions(),
             self.update_claimed_submissions(),
-            self.update_completed_submissions()
+            self.update_completed_submissions(),
         )
         # The other steps have to be completed before the user cache can be updated
         self.update_user_cache()
@@ -191,9 +191,7 @@ class Queue(Cog):
                 params={
                     "page_size": size,
                     "page": page,
-                    "completed_by__isnull": True,
                     "claimed_by__isnull": True,
-                    "archived": False,
                     "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                 },
@@ -206,7 +204,7 @@ class Queue(Cog):
             results += data
             page += 1
 
-            if len(data) < size:
+            if len(data) < size or queue_response.json()["next"] is None:
                 break
 
         self.unclaimed = pd.DataFrame.from_records(data=results, index="id")
@@ -228,7 +226,7 @@ class Queue(Cog):
                     "page": page,
                     "completed_by__isnull": True,
                     "claimed_by__isnull": False,
-                    "archived": False,
+                    "claim_time__isnull": False,
                     "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                     "ordering": "-claim_time",
@@ -242,7 +240,7 @@ class Queue(Cog):
             results += data
             page += 1
 
-            if len(data) < size:
+            if len(data) < size or queue_response.json()["next"] is None:
                 break
 
         self.claimed = pd.DataFrame.from_records(data=results, index="id")
@@ -256,7 +254,6 @@ class Queue(Cog):
                 "page": 1,
                 "completed_by__isnull": False,
                 "complete_time__isnull": False,
-                "claimed_by__isnull": False,
                 "removed_from_queue": False,
                 "ordering": "-complete_time",
             },
@@ -278,7 +275,7 @@ class Queue(Cog):
             for tr_url in submission["transcription_set"]:
                 tr_id = extract_blossom_id(tr_url)
                 tr_response = self.blossom_api.get(
-                    "transcription/", params={"page_size": 1, "page": 1, "id": tr_id,},
+                    "transcription/", params={"page_size": 1, "page": 1, "id": tr_id},
                 )
                 if not tr_response.ok:
                     raise BlossomException(tr_response)
