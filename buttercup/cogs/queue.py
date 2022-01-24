@@ -357,6 +357,11 @@ class Queue(Cog):
 
     async def update_message(self, msg: SlashMessage) -> None:
         """Update the given message with the latest queue stats."""
+        if self.unclaimed is None or self.claimed is None or self.completed is None:
+            # No data available yet
+            await msg.edit(content=i18n["queue"]["embed_message_loading_queue"])
+            return
+
         unclaimed = self.unclaimed
         unclaimed_count = len(unclaimed.index)
 

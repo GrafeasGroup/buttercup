@@ -286,6 +286,9 @@ queue:
     Here is the current status of the queue! (Last updated {last_updated})
   embed_title: |-
     Queue Status
+  embed_description_loading_queue: |-
+    I'm currently loading the status of the queue.
+    If this message doesn't go away in a couple of minutes, please contact a moderator.
   embed_description: |-
     {unclaimed_message}
 
