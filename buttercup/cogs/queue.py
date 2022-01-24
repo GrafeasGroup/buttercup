@@ -26,9 +26,9 @@ logger = logging.Logger("queue")
 i18n = translation()
 
 
-def extract_user_id(user_url: str) -> str:
-    """Extract the ID from a Blossom user URL."""
-    return user_url.split("/")[-2]
+def extract_blossom_id(blossom_url: str) -> str:
+    """Extract the ID from a Blossom URL."""
+    return blossom_url.split("/")[-2]
 
 
 def fix_submission_source(submission: Dict) -> Dict:
@@ -66,7 +66,7 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     author_url = submission["claimed_by"]
 
     time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
-    author_id = extract_user_id(author_url)
+    author_id = extract_blossom_id(author_url)
     author = user_cache.get(author_id, {"username": author_id})
 
     return i18n["queue"]["claimed_list_entry"].format(
@@ -217,6 +217,7 @@ class Queue(Cog):
                 "page_size": 5,
                 "page": 1,
                 "completed_by__isnull": False,
+                "complete_time__isnull": False,
                 "claimed_by__isnull": False,
                 "removed_from_queue": False,
                 "ordering": "-complete_time",
@@ -227,14 +228,48 @@ class Queue(Cog):
 
         data = queue_response.json()["results"]
         data = [fix_submission_source(entry) for entry in data]
-        return pd.DataFrame.from_records(data=data, index="id")
+        results = []
+
+        # Get the corresponding transcription of each completed submission
+        for submission in data:
+            completed_by_id = extract_blossom_id(submission["completed_by"])
+            transcription = None
+
+            # There might be multiple transcriptions, e.g. the OCR
+            # Usually, the user transcription is the first one though
+            for tr_url in submission["transcription_set"]:
+                tr_id = extract_blossom_id(tr_url)
+                tr_response = self.blossom_api.get(
+                    "transcription/",
+                    params={
+                        "page_size": 1,
+                        "page": 1,
+                        "id": tr_id,
+                    },
+                )
+                if not tr_response.ok:
+                    raise BlossomException(tr_response)
+                tr_data = tr_response.json()["results"]
+
+                # Only take transcriptions by the user, not OCR
+                if extract_blossom_id(tr_data["author"]) == completed_by_id:
+                    transcription = tr_data[0]
+                    break
+
+            if transcription:
+                # Add the transcription data to the submission
+                submission["tr_url"] = transcription["url"]
+                submission["tr_text"] = transcription["text"]
+                results.append(submission)
+
+        return pd.DataFrame.from_records(data=results, index="id")
 
     def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
         user_cache = {}
 
         for idx, submission in self.claimed.head(5).iterrows():
-            user_id = extract_user_id(submission["claimed_by"])
+            user_id = extract_blossom_id(submission["claimed_by"])
 
             if user_cache.get(user_id):
                 continue
@@ -250,7 +285,7 @@ class Queue(Cog):
             user_cache[user_id] = user
 
         for idx, submission in self.completed.iterrows():
-            user_id = extract_user_id(submission["completed_by"])
+            user_id = extract_blossom_id(submission["completed_by"])
 
             if user_cache.get(user_id):
                 continue
