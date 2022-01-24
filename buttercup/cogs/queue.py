@@ -19,6 +19,7 @@ from buttercup.cogs.helpers import (
     get_discord_time_str,
     get_submission_source,
 )
+from buttercup.cogs.search import get_transcription_type
 from buttercup.strings import translation
 
 logger = logging.Logger("queue")
@@ -87,6 +88,41 @@ def get_claimed_list(claimed: pd.DataFrame, user_cache: Dict) -> str:
         result += "\n" + i18n["queue"]["claimed_list_others"].format(
             other_count=len(rest)
         )
+
+    return result
+
+
+def get_completed_item(submission: pd.Series, user_cache: Dict) -> str:
+    """Get the formatted completed item."""
+    source = submission["source"]
+    time_str = submission["complete_time"]
+    url = submission["tor_url"]
+    tr_url = submission["tr_url"]
+    author_url = submission["completed_by"]
+    text = submission["tr_text"]
+
+    tr_type = get_transcription_type({"text": text})
+    time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
+    author_id = extract_blossom_id(author_url)
+    author = user_cache.get(author_id, {"username": author_id})
+
+    return i18n["queue"]["completed_list_entry"].format(
+        type=tr_type,
+        author="u/" + author["username"],
+        source=source,
+        tr_url=tr_url,
+        url=url,
+        time=time,
+    )
+
+
+def get_completed_list(completed: pd.DataFrame, user_cache: Dict) -> str:
+    """Get a list of completed submissions."""
+    items = [
+        get_completed_item(submission, user_cache)
+        for idx, submission in completed.iterrows()
+    ]
+    result = "\n".join(items)
 
     return result
 
@@ -209,7 +245,7 @@ class Queue(Cog):
         data_frame = pd.DataFrame.from_records(data=results, index="id")
         return data_frame
 
-    def get_completed_submissions(self) -> pd.DataFrame:
+    async def get_completed_submissions(self) -> pd.DataFrame:
         """Get the most recent completed submissions from the queue."""
         queue_response = self.blossom_api.get(
             "submission/",
@@ -240,20 +276,15 @@ class Queue(Cog):
             for tr_url in submission["transcription_set"]:
                 tr_id = extract_blossom_id(tr_url)
                 tr_response = self.blossom_api.get(
-                    "transcription/",
-                    params={
-                        "page_size": 1,
-                        "page": 1,
-                        "id": tr_id,
-                    },
+                    "transcription/", params={"page_size": 1, "page": 1, "id": tr_id,},
                 )
                 if not tr_response.ok:
                     raise BlossomException(tr_response)
-                tr_data = tr_response.json()["results"]
+                tr_data = tr_response.json()["results"][0]
 
                 # Only take transcriptions by the user, not OCR
                 if extract_blossom_id(tr_data["author"]) == completed_by_id:
-                    transcription = tr_data[0]
+                    transcription = tr_data
                     break
 
             if transcription:
@@ -358,6 +389,16 @@ class Queue(Cog):
             )
         )
 
+        completed_list = get_completed_list(self.completed, self.user_cache)
+
+        completed_message = (
+            i18n["queue"]["completed_message_cleared"]
+            if len(self.completed) == 0
+            else i18n["queue"]["completed_message"].format(
+                completed_list=completed_list
+            )
+        )
+
         color = (
             COMPLETED_COLOR
             if unclaimed_count == 0
@@ -369,7 +410,9 @@ class Queue(Cog):
         embed = Embed(
             title=i18n["queue"]["embed_title"],
             description=i18n["queue"]["embed_description"].format(
-                unclaimed_message=unclaimed_message, claimed_message=claimed_message,
+                unclaimed_message=unclaimed_message,
+                claimed_message=claimed_message,
+                completed_message=completed_message,
             ),
             color=color,
         )
