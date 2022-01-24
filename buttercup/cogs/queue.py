@@ -100,6 +100,7 @@ class Queue(Cog):
         self.last_update = datetime.now()
         self.unclaimed = None
         self.claimed = None
+        self.completed = None
         self.user_cache = {}
         self.messages = []
 
@@ -125,6 +126,7 @@ class Queue(Cog):
         """Update the cached queue items."""
         self.unclaimed = await self.get_unclaimed_submissions()
         self.claimed = await self.get_claimed_submissions()
+        self.completed = await self.get_completed_submissions()
         self.update_user_cache()
 
         self.last_update = datetime.now()
@@ -207,12 +209,51 @@ class Queue(Cog):
         data_frame = pd.DataFrame.from_records(data=results, index="id")
         return data_frame
 
+    def get_completed_submissions(self) -> pd.DataFrame:
+        """Get the most recent completed submissions from the queue."""
+        queue_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "page_size": 5,
+                "page": 1,
+                "completed_by__isnull": False,
+                "claimed_by__isnull": False,
+                "removed_from_queue": False,
+                "ordering": "-complete_time",
+            },
+        )
+        if not queue_response.ok:
+            raise BlossomException(queue_response)
+
+        data = queue_response.json()["results"]
+        data = [fix_submission_source(entry) for entry in data]
+        return pd.DataFrame.from_records(data=data, index="id")
+
     def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
         user_cache = {}
 
         for idx, submission in self.claimed.head(5).iterrows():
             user_id = extract_user_id(submission["claimed_by"])
+
+            if user_cache.get(user_id):
+                continue
+
+            if user := self.user_cache.get(user_id):
+                # Take the user from the old cache, if available
+                user_cache[user_id] = user
+
+            user_response = self.blossom_api.get("volunteer", params={"id": user_id})
+            if not user_response.ok:
+                raise BlossomException(user_response)
+            user = user_response.json()["results"][0]
+            user_cache[user_id] = user
+
+        for idx, submission in self.completed.iterrows():
+            user_id = extract_user_id(submission["completed_by"])
+
+            if user_cache.get(user_id):
+                continue
 
             if user := self.user_cache.get(user_id):
                 # Take the user from the old cache, if available
