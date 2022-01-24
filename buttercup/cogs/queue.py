@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Dict
@@ -160,9 +161,12 @@ class Queue(Cog):
 
     async def update_queue(self) -> None:
         """Update the cached queue items."""
-        self.unclaimed = await self.get_unclaimed_submissions()
-        self.claimed = await self.get_claimed_submissions()
-        self.completed = await self.get_completed_submissions()
+        await asyncio.gather(
+            self.update_unclaimed_submissions(),
+            self.update_claimed_submissions(),
+            self.update_completed_submissions()
+        )
+        # The other steps have to be completed before the user cache can be updated
         self.update_user_cache()
 
         self.last_update = datetime.now()
@@ -172,8 +176,8 @@ class Queue(Cog):
         for msg in self.messages:
             await self.update_message(msg)
 
-    async def get_unclaimed_submissions(self) -> pd.DataFrame:
-        """Get the submissions that are currently unclaimed in the queue."""
+    async def update_unclaimed_submissions(self) -> None:
+        """Update the submissions that are currently unclaimed in the queue."""
         # Posts older than 18 hours are archived
         queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=18)
         results = []
@@ -205,11 +209,10 @@ class Queue(Cog):
             if len(data) < size:
                 break
 
-        data_frame = pd.DataFrame.from_records(data=results, index="id")
-        return data_frame
+        self.unclaimed = pd.DataFrame.from_records(data=results, index="id")
 
-    async def get_claimed_submissions(self) -> pd.DataFrame:
-        """Get the submissions that are currently in progress."""
+    async def update_claimed_submissions(self) -> None:
+        """Update the submissions that are currently in progress."""
         # Only consider recent posts that may still be worked on
         queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=48)
         results = []
@@ -242,11 +245,10 @@ class Queue(Cog):
             if len(data) < size:
                 break
 
-        data_frame = pd.DataFrame.from_records(data=results, index="id")
-        return data_frame
+        self.claimed = pd.DataFrame.from_records(data=results, index="id")
 
-    async def get_completed_submissions(self) -> pd.DataFrame:
-        """Get the most recent completed submissions from the queue."""
+    async def update_completed_submissions(self) -> None:
+        """Update the most recent completed submissions from the queue."""
         queue_response = self.blossom_api.get(
             "submission/",
             params={
@@ -293,7 +295,7 @@ class Queue(Cog):
                 submission["tr_text"] = transcription["text"]
                 results.append(submission)
 
-        return pd.DataFrame.from_records(data=results, index="id")
+        self.completed = pd.DataFrame.from_records(data=results, index="id")
 
     def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
