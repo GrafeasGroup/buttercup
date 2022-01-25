@@ -286,10 +286,15 @@ queue:
     Here is the current status of the queue! (Last updated {last_updated})
   embed_title: |-
     Queue Status
+  embed_description_loading_queue: |-
+    I'm currently loading the status of the queue.
+    If this message doesn't go away in a couple of minutes, please contact a moderator.
   embed_description: |-
     {unclaimed_message}
 
     {claimed_message}
+
+    {completed_message}
   unclaimed_message: |-
     **Unclaimed**: {unclaimed_count}
     {unclaimed_list}
@@ -308,3 +313,10 @@ queue:
     - **{author}** on [{source}]({url}) {time}
   claimed_list_others: |-
     ...and {other_count} other(s).
+  completed_message: |-
+    **Recently Completed**:
+    {completed_list}
+  completed_message_cleared: |-
+    There are no transcriptions in completed right now.
+  completed_list_entry: |-
+    - [{type}]({tr_url}) on [{source}]({url}) by **{author}** {time}

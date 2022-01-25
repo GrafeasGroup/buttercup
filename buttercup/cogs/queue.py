@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Dict
@@ -19,6 +20,7 @@ from buttercup.cogs.helpers import (
     get_discord_time_str,
     get_submission_source,
 )
+from buttercup.cogs.search import get_transcription_type
 from buttercup.strings import translation
 
 logger = logging.Logger("queue")
@@ -26,9 +28,9 @@ logger = logging.Logger("queue")
 i18n = translation()
 
 
-def extract_user_id(user_url: str) -> str:
-    """Extract the ID from a Blossom user URL."""
-    return user_url.split("/")[-2]
+def extract_blossom_id(blossom_url: str) -> str:
+    """Extract the ID from a Blossom URL."""
+    return blossom_url.split("/")[-2]
 
 
 def fix_submission_source(submission: Dict) -> Dict:
@@ -66,7 +68,7 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     author_url = submission["claimed_by"]
 
     time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
-    author_id = extract_user_id(author_url)
+    author_id = extract_blossom_id(author_url)
     author = user_cache.get(author_id, {"username": author_id})
 
     return i18n["queue"]["claimed_list_entry"].format(
@@ -91,6 +93,41 @@ def get_claimed_list(claimed: pd.DataFrame, user_cache: Dict) -> str:
     return result
 
 
+def get_completed_item(submission: pd.Series, user_cache: Dict) -> str:
+    """Get the formatted completed item."""
+    source = submission["source"]
+    time_str = submission["complete_time"]
+    url = submission["tor_url"]
+    tr_url = submission["tr_url"]
+    author_url = submission["completed_by"]
+    text = submission["tr_text"]
+
+    tr_type = get_transcription_type({"text": text})
+    time = get_discord_time_str(dateutil.parser.parse(time_str), style="R")
+    author_id = extract_blossom_id(author_url)
+    author = user_cache.get(author_id, {"username": author_id})
+
+    return i18n["queue"]["completed_list_entry"].format(
+        type=tr_type,
+        author="u/" + author["username"],
+        source=source,
+        tr_url=tr_url,
+        url=url,
+        time=time,
+    )
+
+
+def get_completed_list(completed: pd.DataFrame, user_cache: Dict) -> str:
+    """Get a list of completed submissions."""
+    items = [
+        get_completed_item(submission, user_cache)
+        for idx, submission in completed.iterrows()
+    ]
+    result = "\n".join(items)
+
+    return result
+
+
 class Queue(Cog):
     def __init__(self, bot: ButtercupBot, blossom_api: BlossomAPI) -> None:
         """Initialize the Queue cog."""
@@ -100,6 +137,7 @@ class Queue(Cog):
         self.last_update = datetime.now()
         self.unclaimed = None
         self.claimed = None
+        self.completed = None
         self.user_cache = {}
         self.messages = []
 
@@ -123,8 +161,12 @@ class Queue(Cog):
 
     async def update_queue(self) -> None:
         """Update the cached queue items."""
-        self.unclaimed = await self.get_unclaimed_submissions()
-        self.claimed = await self.get_claimed_submissions()
+        await asyncio.gather(
+            self.update_unclaimed_submissions(),
+            self.update_claimed_submissions(),
+            self.update_completed_submissions(),
+        )
+        # The other steps have to be completed before the user cache can be updated
         self.update_user_cache()
 
         self.last_update = datetime.now()
@@ -134,8 +176,8 @@ class Queue(Cog):
         for msg in self.messages:
             await self.update_message(msg)
 
-    async def get_unclaimed_submissions(self) -> pd.DataFrame:
-        """Get the submissions that are currently unclaimed in the queue."""
+    async def update_unclaimed_submissions(self) -> None:
+        """Update the submissions that are currently unclaimed in the queue."""
         # Posts older than 18 hours are archived
         queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=18)
         results = []
@@ -149,9 +191,7 @@ class Queue(Cog):
                 params={
                     "page_size": size,
                     "page": page,
-                    "completed_by__isnull": True,
                     "claimed_by__isnull": True,
-                    "archived": False,
                     "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                 },
@@ -164,14 +204,13 @@ class Queue(Cog):
             results += data
             page += 1
 
-            if len(data) < size:
+            if len(data) < size or queue_response.json()["next"] is None:
                 break
 
-        data_frame = pd.DataFrame.from_records(data=results, index="id")
-        return data_frame
+        self.unclaimed = pd.DataFrame.from_records(data=results, index="id")
 
-    async def get_claimed_submissions(self) -> pd.DataFrame:
-        """Get the submissions that are currently in progress."""
+    async def update_claimed_submissions(self) -> None:
+        """Update the submissions that are currently in progress."""
         # Only consider recent posts that may still be worked on
         queue_start = datetime.now(tz=pytz.utc) - timedelta(hours=48)
         results = []
@@ -187,7 +226,7 @@ class Queue(Cog):
                     "page": page,
                     "completed_by__isnull": True,
                     "claimed_by__isnull": False,
-                    "archived": False,
+                    "claim_time__isnull": False,
                     "removed_from_queue": False,
                     "create_time__gte": queue_start.isoformat(),
                     "ordering": "-claim_time",
@@ -201,18 +240,85 @@ class Queue(Cog):
             results += data
             page += 1
 
-            if len(data) < size:
+            if len(data) < size or queue_response.json()["next"] is None:
                 break
 
-        data_frame = pd.DataFrame.from_records(data=results, index="id")
-        return data_frame
+        self.claimed = pd.DataFrame.from_records(data=results, index="id")
+
+    async def update_completed_submissions(self) -> None:
+        """Update the most recent completed submissions from the queue."""
+        queue_response = self.blossom_api.get(
+            "submission/",
+            params={
+                "page_size": 5,
+                "page": 1,
+                "completed_by__isnull": False,
+                "complete_time__isnull": False,
+                "removed_from_queue": False,
+                "ordering": "-complete_time",
+            },
+        )
+        if not queue_response.ok:
+            raise BlossomException(queue_response)
+
+        data = queue_response.json()["results"]
+        data = [fix_submission_source(entry) for entry in data]
+        results = []
+
+        # Get the corresponding transcription of each completed submission
+        for submission in data:
+            completed_by_id = extract_blossom_id(submission["completed_by"])
+            transcription = None
+
+            # There might be multiple transcriptions, e.g. the OCR
+            # Usually, the user transcription is the first one though
+            for tr_url in submission["transcription_set"]:
+                tr_id = extract_blossom_id(tr_url)
+                tr_response = self.blossom_api.get(
+                    "transcription/", params={"page_size": 1, "page": 1, "id": tr_id},
+                )
+                if not tr_response.ok:
+                    raise BlossomException(tr_response)
+                tr_data = tr_response.json()["results"][0]
+
+                # Only take transcriptions by the user, not OCR
+                if extract_blossom_id(tr_data["author"]) == completed_by_id:
+                    transcription = tr_data
+                    break
+
+            if transcription:
+                # Add the transcription data to the submission
+                submission["tr_url"] = transcription["url"]
+                submission["tr_text"] = transcription["text"]
+                results.append(submission)
+
+        self.completed = pd.DataFrame.from_records(data=results, index="id")
 
     def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
         user_cache = {}
 
         for idx, submission in self.claimed.head(5).iterrows():
-            user_id = extract_user_id(submission["claimed_by"])
+            user_id = extract_blossom_id(submission["claimed_by"])
+
+            if user_cache.get(user_id):
+                continue
+
+            if user := self.user_cache.get(user_id):
+                # Take the user from the old cache, if available
+                user_cache[user_id] = user
+
+            user_response = self.blossom_api.get("volunteer", params={"id": user_id})
+            if not user_response.ok:
+                raise BlossomException(user_response)
+            user = user_response.json()["results"][0]
+            user_cache[user_id] = user
+
+        for idx, submission in self.completed.iterrows():
+            user_id = extract_blossom_id(submission["completed_by"])
+
+            if user_cache.get(user_id):
+                continue
 
             if user := self.user_cache.get(user_id):
                 # Take the user from the old cache, if available
@@ -250,6 +356,11 @@ class Queue(Cog):
 
     async def update_message(self, msg: SlashMessage) -> None:
         """Update the given message with the latest queue stats."""
+        if self.unclaimed is None or self.claimed is None or self.completed is None:
+            # No data available yet
+            await msg.edit(content=i18n["queue"]["embed_message_loading_queue"])
+            return
+
         unclaimed = self.unclaimed
         unclaimed_count = len(unclaimed.index)
 
@@ -282,6 +393,16 @@ class Queue(Cog):
             )
         )
 
+        completed_list = get_completed_list(self.completed, self.user_cache)
+
+        completed_message = (
+            i18n["queue"]["completed_message_cleared"]
+            if len(self.completed) == 0
+            else i18n["queue"]["completed_message"].format(
+                completed_list=completed_list
+            )
+        )
+
         color = (
             COMPLETED_COLOR
             if unclaimed_count == 0
@@ -293,7 +414,9 @@ class Queue(Cog):
         embed = Embed(
             title=i18n["queue"]["embed_title"],
             description=i18n["queue"]["embed_description"].format(
-                unclaimed_message=unclaimed_message, claimed_message=claimed_message,
+                unclaimed_message=unclaimed_message,
+                claimed_message=claimed_message,
+                completed_message=completed_message,
             ),
             color=color,
         )
