@@ -27,6 +27,25 @@ logger = logging.Logger("queue")
 
 i18n = translation()
 
+# The default columns for the records
+# We need to set these in case that we don't have any records available
+submission_columns = [
+    "id",
+    "source",
+    "url",
+    "tor_url",
+    "create_time",
+    "claimed_by",
+    "claim_time",
+    "completed_by",
+    "complete_time",
+]
+
+submission_with_transcription_columns = submission_columns + [
+    "tr_url",
+    "tr_text",
+]
+
 
 def extract_blossom_id(blossom_url: str) -> str:
     """Extract the ID from a Blossom URL."""
@@ -207,7 +226,9 @@ class Queue(Cog):
             if len(data) < size or queue_response.json()["next"] is None:
                 break
 
-        self.unclaimed = pd.DataFrame.from_records(data=results, index="id")
+        self.unclaimed = pd.DataFrame.from_records(
+            data=results, index="id", columns=submission_columns,
+        )
 
     async def update_claimed_submissions(self) -> None:
         """Update the submissions that are currently in progress."""
@@ -243,7 +264,9 @@ class Queue(Cog):
             if len(data) < size or queue_response.json()["next"] is None:
                 break
 
-        self.claimed = pd.DataFrame.from_records(data=results, index="id")
+        self.claimed = pd.DataFrame.from_records(
+            data=results, index="id", columns=submission_columns,
+        )
 
     async def update_completed_submissions(self) -> None:
         """Update the most recent completed submissions from the queue."""
@@ -292,7 +315,9 @@ class Queue(Cog):
                 submission["tr_text"] = transcription["text"]
                 results.append(submission)
 
-        self.completed = pd.DataFrame.from_records(data=results, index="id")
+        self.completed = pd.DataFrame.from_records(
+            data=results, index="id", columns=submission_with_transcription_columns,
+        )
 
     def update_user_cache(self) -> None:
         """Fetch the users from their IDs."""
