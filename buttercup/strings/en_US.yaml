@@ -5,7 +5,7 @@ handlers:
     I couldn't find a user with the name u/{user}!
   new_user: |
     Hey **u/{user}**!
-    It looks like you **haven't started transribing** yet. Do you need any help to get started?
+    It looks like you **haven't started transcribing** yet. Do you need any help to get started?
     Feel free to ask any questions here or [send us a mod mail](<https://www.reddit.com/message/compose?to=/r/TranscribersOfReddit>).
   invalid_time_str: |
     "{time_str}" is an invalid date/time. Try something like "2021-08-04", "10:13" or "3 weeks ago".
