@@ -212,7 +212,9 @@ class Heatmap(Cog):
         ],
     )
     async def activity_map(
-        self, ctx: SlashContext, username: Optional[str] = "me",
+        self,
+        ctx: SlashContext,
+        username: Optional[str] = "me",
     ) -> None:
         """Generate a yearly activity heatmap for the given user."""
         start = datetime.now()
@@ -271,7 +273,8 @@ class Heatmap(Cog):
 
         await msg.edit(
             content=i18n["activity"]["response_message"].format(
-                user=get_username(user), duration=get_duration_str(start),
+                user=get_username(user),
+                duration=get_duration_str(start),
             ),
             file=activity_map,
         )
