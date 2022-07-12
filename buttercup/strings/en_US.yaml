@@ -152,6 +152,22 @@ heatmap:
   plot_ylabel: Weekday
   response_message: |
     Here is the heatmap for {user} {time_str}! ({duration})
+activity:
+  getting_activity: |
+    Generating the yearly activity map for {user}...
+  days:
+    - Mon
+    - Tue
+    - Wed
+    - Thu
+    - Fri
+    - Sat
+    - Sun
+  plot_title: Yearly activity map for {user}
+  plot_xlabel: Time ({timezone})
+  plot_ylabel: Weekday
+  response_message: |
+    Here is the yearly activity map for {user}! ({duration})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...

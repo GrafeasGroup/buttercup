@@ -1,11 +1,13 @@
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import pytz
 import seaborn as sns
 from blossom_wrapper import BlossomAPI
+from dateutil import parser
 from discord import File
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
@@ -70,6 +72,39 @@ def create_file_from_heatmap(
     plt.close(fig)
 
     return File(heatmap_table, "heatmap_table.png")
+
+
+def _create_file_from_activity_map(
+    activity_df: pd.DataFrame, user: Optional[BlossomUser]
+) -> File:
+    """Create a Discord file containing the activity map."""
+    days = i18n["heatmap"]["days"]
+
+    # Don't annotate the data
+    annotations = activity_df.apply(lambda series: series.apply(lambda value: ""))
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(9, 3.44)
+
+    sns.heatmap(
+        activity_df,
+        ax=ax,
+        annot=annotations,
+        fmt="s",
+        cbar=False,
+        square=True,
+        yticklabels=days,
+    )
+
+    plt.title(i18n["activity"]["plot_title"].format(user=get_username(user)))
+
+    fig.tight_layout()
+    activity_map = io.BytesIO()
+    plt.savefig(activity_map, format="png")
+    activity_map.seek(0)
+    plt.close(fig)
+
+    return File(activity_map, "activity_map.png")
 
 
 class Heatmap(Cog):
@@ -162,6 +197,83 @@ class Heatmap(Cog):
                 duration=get_duration_str(start),
             ),
             file=heatmap_table,
+        )
+
+    @cog_ext.cog_slash(
+        name="activity",
+        description="Display the yearly activity map for the given user.",
+        options=[
+            create_option(
+                name="username",
+                description="The user to get the activity map for.",
+                option_type=3,
+                required=False,
+            ),
+        ],
+    )
+    async def activity_map(
+        self, ctx: SlashContext, username: Optional[str] = "me",
+    ) -> None:
+        """Generate a yearly activity heatmap for the given user."""
+        start = datetime.now()
+
+        before_time = datetime.now(tz=pytz.UTC)
+        after_time = before_time - timedelta(days=365)
+
+        msg = await ctx.send(
+            i18n["activity"]["getting_activity"].format(
+                user=get_initial_username(username, ctx)
+            )
+        )
+
+        utc_offset = extract_utc_offset(ctx.author.display_name)
+
+        from_str = after_time.isoformat() if after_time else None
+        until_str = before_time.isoformat() if before_time else None
+
+        user = get_user(username, ctx, self.blossom_api)
+
+        rate_response = self.blossom_api.get(
+            "submission/rate/",
+            params={
+                "completed_by": get_user_id(user),
+                "utc_offset": utc_offset,
+                "complete_time__gte": from_str,
+                "complete_time__lte": until_str,
+                "page_size": 365,
+                "time_frame": "day",
+            },
+        )
+        if rate_response.status_code != 200:
+            raise BlossomException(rate_response)
+
+        rate_data = rate_response.json()["results"]
+        rate_df = pd.DataFrame.from_records(rate_data, columns=["date", "count"])
+        # Convert date strings to datetime objects
+        rate_df["date"] = rate_df["date"].apply(lambda x: parser.parse(x))
+        rate_df = rate_df.set_index("date")
+
+        # Add the week number
+        rate_df["week"] = rate_df.index.to_series().apply(lambda x: x.isocalendar()[1])
+        # Add the week day
+        rate_df["day"] = rate_df.index.to_series().apply(lambda x: x.isocalendar()[2])
+
+        print(rate_df)
+
+        activity_df = (
+            # Create a data frame from the data
+            rate_df
+            # Convert it into a table with the days as rows and hours as columns
+            .pivot(index="day", columns="week", values="count")
+        )
+
+        activity_map = _create_file_from_activity_map(activity_df, user)
+
+        await msg.edit(
+            content=i18n["activity"]["response_message"].format(
+                user=get_username(user), duration=get_duration_str(start),
+            ),
+            file=activity_map,
         )
 
 
