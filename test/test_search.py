@@ -2,10 +2,7 @@ from datetime import datetime
 
 from pytest import mark
 
-from buttercup.cogs.search import (
-    SearchCache,
-    get_transcription_type,
-)
+from buttercup.cogs.search import SearchCache, get_transcription_type
 
 
 def get_sample_transcription_from_header(header: str) -> str:
@@ -27,7 +24,10 @@ Footer"""
 @mark.parametrize(
     "transcription,expected",
     [
-        (get_sample_transcription_from_header("*Image Transcription:*"), "Image",),
+        (
+            get_sample_transcription_from_header("*Image Transcription:*"),
+            "Image",
+        ),
         (get_sample_transcription_from_header("*Image Transcription*"), "Image"),
         (get_sample_transcription_from_header("*Image Transcription: GIF*"), "GIF"),
         (

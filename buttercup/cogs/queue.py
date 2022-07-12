@@ -91,7 +91,10 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
     author = user_cache.get(author_id, {"username": author_id})
 
     return i18n["queue"]["claimed_list_entry"].format(
-        author="u/" + author["username"], source=source, url=url, time=time,
+        author="u/" + author["username"],
+        source=source,
+        url=url,
+        time=time,
     )
 
 
@@ -227,7 +230,9 @@ class Queue(Cog):
                 break
 
         self.unclaimed = pd.DataFrame.from_records(
-            data=results, index="id", columns=submission_columns,
+            data=results,
+            index="id",
+            columns=submission_columns,
         )
 
     async def update_claimed_submissions(self) -> None:
@@ -265,7 +270,9 @@ class Queue(Cog):
                 break
 
         self.claimed = pd.DataFrame.from_records(
-            data=results, index="id", columns=submission_columns,
+            data=results,
+            index="id",
+            columns=submission_columns,
         )
 
     async def update_completed_submissions(self) -> None:
@@ -298,7 +305,8 @@ class Queue(Cog):
             for tr_url in submission["transcription_set"]:
                 tr_id = extract_blossom_id(tr_url)
                 tr_response = self.blossom_api.get(
-                    "transcription/", params={"page_size": 1, "page": 1, "id": tr_id},
+                    "transcription/",
+                    params={"page_size": 1, "page": 1, "id": tr_id},
                 )
                 if not tr_response.ok:
                     raise BlossomException(tr_response)
@@ -316,7 +324,9 @@ class Queue(Cog):
                 results.append(submission)
 
         self.completed = pd.DataFrame.from_records(
-            data=results, index="id", columns=submission_with_transcription_columns,
+            data=results,
+            index="id",
+            columns=submission_with_transcription_columns,
         )
 
     def update_user_cache(self) -> None:
@@ -367,7 +377,8 @@ class Queue(Cog):
         self.messages = self.messages[-(limit - 1) :] + [msg]
 
     @cog_ext.cog_slash(
-        name="queue", description="Display the current status of the queue.",
+        name="queue",
+        description="Display the current status of the queue.",
     )
     async def queue(self, ctx: SlashContext) -> None:
         """Display the current status of the queue."""
@@ -404,7 +415,8 @@ class Queue(Cog):
             i18n["queue"]["unclaimed_message_cleared"]
             if unclaimed_count == 0
             else i18n["queue"]["unclaimed_message"].format(
-                unclaimed_count=unclaimed_count, unclaimed_list=unclaimed_list,
+                unclaimed_count=unclaimed_count,
+                unclaimed_list=unclaimed_list,
             )
         )
 
