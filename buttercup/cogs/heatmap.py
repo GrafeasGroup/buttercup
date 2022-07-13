@@ -46,6 +46,7 @@ def create_file_from_heatmap(
     )
 
     fig, ax = plt.subplots()
+    fig: plt.Figure
     fig.set_size_inches(9, 3.44)
 
     sns.heatmap(
@@ -129,7 +130,10 @@ def _create_file_from_activity_map(
     )
 
     fig, ax = plt.subplots()
+    fig: plt.Figure
+    ax: plt.Axes
     fig.set_size_inches(9, 3.44)
+    fig.subplots_adjust(bottom=0.25, top=1, left=0.05, right=0.98, wspace=0, hspace=0)
 
     cbar_kws = {
         "orientation": "horizontal",
@@ -158,7 +162,6 @@ def _create_file_from_activity_map(
     ax.set_xlabel(None)
     ax.set_ylabel(None)
 
-    fig.tight_layout()
     activity_map = io.BytesIO()
     plt.savefig(activity_map, format="png")
     activity_map.seek(0)
