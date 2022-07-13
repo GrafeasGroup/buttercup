@@ -278,8 +278,6 @@ class Heatmap(Cog):
             )
         )
 
-        utc_offset = extract_utc_offset(ctx.author.display_name)
-
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
 
@@ -288,8 +286,8 @@ class Heatmap(Cog):
         rate_response = self.blossom_api.get(
             "submission/rate/",
             params={
+                "completed_by__isnull": False,
                 "completed_by": get_user_id(user),
-                "utc_offset": utc_offset,
                 "complete_time__gte": from_str,
                 "complete_time__lte": until_str,
                 "page_size": 365,
@@ -324,7 +322,7 @@ class Heatmap(Cog):
             .reindex(range(1, 8))
             .transpose()
             # Make sure all week numbers are present
-            .reindex(all_week_indexes)
+            .reindex(reversed(all_week_indexes))
             .transpose()
         )
 
