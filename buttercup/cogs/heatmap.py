@@ -1,6 +1,6 @@
 import io
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -74,6 +74,37 @@ def create_file_from_heatmap(
     return File(heatmap_table, "heatmap_table.png")
 
 
+def _get_month_annotations(activity_df: pd.DataFrame) -> List[str]:
+    """Get the month annotations for the activity map.
+
+    The first week that has a date of a new month will get the month
+    as annotation.
+    """
+    annotations = []
+
+    for col in activity_df.columns:
+        # Extract the year and week number from the column name
+        year = col // 100
+        week = col - year * 100
+
+        print(f"col: {col}, year: {year}, week: {week}")
+
+        # Reconstruct all dates in this week
+        dates = [datetime.fromisocalendar(year, week, day) for day in range(1, 8)]
+
+        new_month = ""
+
+        for date in dates:
+            if date.day == 1:
+                # New month, add the month name
+                new_month = date.strftime("%b")
+                break
+
+        annotations.append(new_month)
+
+    return annotations
+
+
 def _create_file_from_activity_map(
     activity_df: pd.DataFrame, user: Optional[BlossomUser]
 ) -> File:
@@ -94,9 +125,13 @@ def _create_file_from_activity_map(
         cbar=False,
         square=True,
         yticklabels=days,
+        xticklabels=_get_month_annotations(activity_df),
     )
 
     plt.title(i18n["activity"]["plot_title"].format(user=get_username(user)))
+    # Remove axis labels
+    plt.xlabel(None)
+    plt.ylabel(None)
 
     fig.tight_layout()
     activity_map = io.BytesIO()
