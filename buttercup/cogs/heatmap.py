@@ -61,7 +61,9 @@ def create_file_from_heatmap(
 
     timezone = utc_offset_to_str(utc_offset)
 
-    plt.title(i18n["heatmap"]["plot_title"].format(user=get_username(user)))
+    plt.title(
+        i18n["heatmap"]["plot_title"].format(user=get_username(user, escape=False))
+    )
     plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone=timezone))
     plt.ylabel(i18n["heatmap"]["plot_ylabel"])
 
@@ -129,12 +131,18 @@ def _create_file_from_activity_map(
     fig, ax = plt.subplots()
     fig.set_size_inches(9, 3.44)
 
-    cbar_kws = {"orientation": "horizontal", "fraction": 0.08, "aspect": 40, "shrink": 0.6}
+    cbar_kws = {
+        "orientation": "horizontal",
+        "fraction": 0.08,
+        "aspect": 40,
+        "shrink": 0.6,
+    }
 
     sns.heatmap(
         activity_df,
         ax=ax,
         annot=annotations,
+        annot_kws={"fontsize": "x-small"},
         fmt="s",
         cbar=True,
         cbar_kws=cbar_kws,
@@ -143,7 +151,9 @@ def _create_file_from_activity_map(
         xticklabels=_get_month_annotations(activity_df),
     )
 
-    ax.set_title(i18n["activity"]["plot_title"].format(user=get_username(user)))
+    ax.set_title(
+        i18n["activity"]["plot_title"].format(user=get_username(user, escape=False))
+    )
     # Remove axis labels
     ax.set_xlabel(None)
     ax.set_ylabel(None)
