@@ -256,11 +256,11 @@ class Heatmap(Cog):
         rate_df = rate_df.set_index("date")
 
         # Add the week number
-        rate_df["week"] = rate_df.index.to_series().apply(lambda x: x.isocalendar()[1])
+        rate_df["week"] = rate_df.index.to_series().apply(
+            lambda x: x.isocalendar()[0] * 100 + x.isocalendar()[1]
+        )
         # Add the week day
         rate_df["day"] = rate_df.index.to_series().apply(lambda x: x.isocalendar()[2])
-
-        print(rate_df)
 
         activity_df = (
             # Create a data frame from the data
