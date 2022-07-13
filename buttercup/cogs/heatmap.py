@@ -74,6 +74,15 @@ def create_file_from_heatmap(
     return File(heatmap_table, "heatmap_table.png")
 
 
+def _get_week_index(date: datetime) -> int:
+    """Get an identification number for the week.
+
+    year * 100 + week
+    """
+    calendar = date.isocalendar()
+    return calendar[0] * 100 + calendar[1]
+
+
 def _get_month_annotations(activity_df: pd.DataFrame) -> List[str]:
     """Get the month annotations for the activity map.
 
@@ -86,8 +95,6 @@ def _get_month_annotations(activity_df: pd.DataFrame) -> List[str]:
         # Extract the year and week number from the column name
         year = col // 100
         week = col - year * 100
-
-        print(f"col: {col}, year: {year}, week: {week}")
 
         # Reconstruct all dates in this week
         dates = [datetime.fromisocalendar(year, week, day) for day in range(1, 8)]
@@ -291,17 +298,26 @@ class Heatmap(Cog):
         rate_df = rate_df.set_index("date")
 
         # Add the week number
-        rate_df["week"] = rate_df.index.to_series().apply(
-            lambda x: x.isocalendar()[0] * 100 + x.isocalendar()[1]
-        )
+        rate_df["week"] = rate_df.index.to_series().apply(lambda x: _get_week_index(x))
         # Add the week day
         rate_df["day"] = rate_df.index.to_series().apply(lambda x: x.isocalendar()[2])
+
+        # All possible weeks, in case some are missing in the data
+        all_week_indexes = [
+            _get_week_index(before_time - timedelta(weeks=weeks)) for weeks in range(53)
+        ]
 
         activity_df = (
             # Create a data frame from the data
             rate_df
             # Convert it into a table with the days as rows and hours as columns
             .pivot(index="day", columns="week", values="count")
+            # Make sure all week days are present
+            .reindex(range(7))
+            .transpose()
+            # Make sure all week numbers are present
+            .reindex(all_week_indexes)
+            .transpose()
         )
 
         activity_map = _create_file_from_activity_map(activity_df, user)
