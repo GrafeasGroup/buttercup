@@ -118,27 +118,35 @@ def _create_file_from_activity_map(
     """Create a Discord file containing the activity map."""
     days = i18n["heatmap"]["days"]
 
-    # Don't annotate the data
-    annotations = activity_df.apply(lambda series: series.apply(lambda value: ""))
+    # Only annotate the maximum values
+    max_value = activity_df.max().max()
+    annotations = activity_df.apply(
+        lambda series: series.apply(
+            lambda value: f"{value:0.0f}" if value == max_value else ""
+        )
+    )
 
     fig, ax = plt.subplots()
     fig.set_size_inches(9, 3.44)
+
+    cbar_kws = {"orientation": "horizontal", "fraction": 0.08, "aspect": 40, "shrink": 0.6}
 
     sns.heatmap(
         activity_df,
         ax=ax,
         annot=annotations,
         fmt="s",
-        cbar=False,
+        cbar=True,
+        cbar_kws=cbar_kws,
         square=True,
         yticklabels=days,
         xticklabels=_get_month_annotations(activity_df),
     )
 
-    plt.title(i18n["activity"]["plot_title"].format(user=get_username(user)))
+    ax.set_title(i18n["activity"]["plot_title"].format(user=get_username(user)))
     # Remove axis labels
-    plt.xlabel(None)
-    plt.ylabel(None)
+    ax.set_xlabel(None)
+    ax.set_ylabel(None)
 
     fig.tight_layout()
     activity_map = io.BytesIO()
@@ -313,7 +321,7 @@ class Heatmap(Cog):
             # Convert it into a table with the days as rows and hours as columns
             .pivot(index="day", columns="week", values="count")
             # Make sure all week days are present
-            .reindex(range(7))
+            .reindex(range(1, 8))
             .transpose()
             # Make sure all week numbers are present
             .reindex(all_week_indexes)

@@ -377,7 +377,7 @@ class History(Cog):
             # Convert date strings to datetime objects
             new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
             # Add the data to the list
-            rate_data = rate_data.append(new_frame.set_index("date"))
+            rate_data = pd.concat(rate_data, new_frame.set_index("date"))
 
             # Continue with the next page
             page += 1
