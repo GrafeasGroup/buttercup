@@ -10,7 +10,7 @@ from discord import DiscordException, User
 from discord_slash import SlashContext
 from requests import Response
 
-from src.cogs import ranks
+from buttercup.cogs import ranks
 
 username_regex = re.compile(
     r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"

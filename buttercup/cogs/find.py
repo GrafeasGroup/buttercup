@@ -7,9 +7,9 @@ from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
-from src.bot import ButtercupBot
-from src.cogs.helpers import get_duration_str
-from src.strings import translation
+from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import get_duration_str
+from buttercup.strings import translation
 
 i18n = translation()
 

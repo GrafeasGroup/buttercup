@@ -11,9 +11,13 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
-from src.bot import ButtercupBot
-from src.cogs.helpers import extract_sub_name, get_duration_str, join_items_with_and
-from src.strings import translation
+from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import (
+    extract_sub_name,
+    get_duration_str,
+    join_items_with_and,
+)
+from buttercup.strings import translation
 
 i18n = translation()
 

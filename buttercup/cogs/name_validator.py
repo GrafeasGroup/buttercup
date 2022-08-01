@@ -4,10 +4,10 @@ from discord import Forbidden, TextChannel
 from discord.ext.commands import Cog
 from discord.member import Member
 
-from src import logger
-from src.bot import ButtercupBot
-from src.cogs.helpers import username_regex
-from src.strings import translation
+from buttercup import logger
+from buttercup.bot import ButtercupBot
+from buttercup.cogs.helpers import username_regex
+from buttercup.strings import translation
 
 i18n = translation()
 

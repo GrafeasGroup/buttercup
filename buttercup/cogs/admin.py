@@ -5,8 +5,8 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashCommandPermissionType
 from discord_slash.utils.manage_commands import create_option, create_permission
 
-from src.bot import ButtercupBot
-from src.cogs.config import config
+from buttercup.bot import ButtercupBot
+from buttercup.cogs.config import config
 
 
 def generate_admin_permissions() -> Dict:

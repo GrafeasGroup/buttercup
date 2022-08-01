@@ -17,7 +17,7 @@ class ButtercupBot(Bot):
         Along the arguments which can be provided to discord.py's Bot class,
         one can provide:
         - config_path (default: config.toml): The path to the configuration file
-        - cog_path (default: src.cogs): The path to the application cogs
+        - cog_path (default: buttercup.cogs): The path to the application cogs
         - extensions (default: list): list of extensions to load
         """
         intents = discord.Intents.default()
@@ -25,7 +25,7 @@ class ButtercupBot(Bot):
         super().__init__(command_prefix, intents=intents, **kwargs)
         self.slash = SlashCommand(self, sync_commands=True, sync_on_cog_reload=True)
         self.config_path = kwargs.get("config_path", "../config.toml")
-        self.cog_path = kwargs.get("cog_path", "src.cogs.")
+        self.cog_path = kwargs.get("cog_path", "buttercup.cogs.")
 
         for extension in kwargs.get("extensions", list()):
             logging.info(f"Loading extension {extension}...")

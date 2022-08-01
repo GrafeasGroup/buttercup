@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from src.bot import ButtercupBot
+from buttercup.bot import ButtercupBot
 
 config: Dict[str, Any] = {}
 
