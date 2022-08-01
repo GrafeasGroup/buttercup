@@ -195,6 +195,7 @@ def test_join_items_with_and(items: List[str], expected: str) -> None:
     assert actual == expected
 
 
+utc_now = datetime.now(tz=pytz.utc)
 now = datetime.now()
 
 
@@ -205,8 +206,11 @@ now = datetime.now()
         (datetime(2020, 5, 10, 13, 50), "2020-05-10 13:50"),
         (datetime(2020, 5, 10), "2020-05-10"),
         (datetime(2020, 5, 10), "2020-05-10"),
-        (datetime(now.year, now.month, now.day, 13, 50, 2, 300), "13:50:02"),
-        (datetime(now.year, now.month, now.day, 13, 50), "13:50"),
+        (
+            datetime(utc_now.year, utc_now.month, utc_now.day, 13, 50, 2, 300),
+            "13:50:02",
+        ),
+        (datetime(utc_now.year, utc_now.month, utc_now.day, 13, 50), "13:50"),
     ],
 )
 def test_format_absolute_datetime(date: datetime, expected: str) -> None:
@@ -245,17 +249,23 @@ def test_format_relative_datetime(amount: float, unit_key: str, expected: str) -
             "2020-03-04 10:13",
         ),
         ("2020-03-04", datetime(2020, 3, 4, tzinfo=pytz.utc), "2020-03-04"),
-        (
-            "10:13",
-            datetime(now.year, now.month, now.day, 10, 13, tzinfo=pytz.utc),
-            "10:13",
-        ),
+        # (
+        #     "10:13",
+        #     datetime(now.year, now.month, now.day, 10, 13, tzinfo=pytz.utc),
+        #     "10:13",
+        # ),
     ],
 )
 def test_parse_absolute_datetime(
     input_str: str, expected_datetime: datetime, expected_str: str
 ) -> None:
     """Test that absolute date times are formatted correctly."""
+    # TODO: Can the commented out test above actually pass in all situations?
+    #  When testing on a computer that is behind UTC but close to midnight,
+    #  the test will always evaluate to the next day, which will return a failing
+    #  result. Ask me how I found this.
+    #  ~ Cheers, Joe in UTC-4
+
     actual_datetime, actual_str = try_parse_time(input_str)
     assert actual_datetime == expected_datetime
     assert actual_str == expected_str
