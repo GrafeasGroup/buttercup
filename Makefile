@@ -7,4 +7,5 @@ clean:
 	rm setup.py
 
 shiv:
-	shiv -c utils -o utils .
+	mkdir -p build
+	shiv -c buttercup -o build/buttercup.pyz . --compressed

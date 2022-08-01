@@ -265,7 +265,6 @@ def test_parse_absolute_datetime(
     #  the test will always evaluate to the next day, which will return a failing
     #  result. Ask me how I found this.
     #  ~ Cheers, Joe in UTC-4
-
     actual_datetime, actual_str = try_parse_time(input_str)
     assert actual_datetime == expected_datetime
     assert actual_str == expected_str

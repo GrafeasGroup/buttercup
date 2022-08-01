@@ -103,5 +103,5 @@ static/
 */media/wiki/*
 
 # build artifacts
-buttercup
+buttercup.pyz
 setup.py
