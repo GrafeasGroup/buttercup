@@ -113,7 +113,11 @@ class Rules(Cog):
                 return
 
             await send_rules_message(
-                msg, filtered_rules, sub_name, start, localization_key,
+                msg,
+                filtered_rules,
+                sub_name,
+                start,
+                localization_key,
             )
             return
         except Redirect:

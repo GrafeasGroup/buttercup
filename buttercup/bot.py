@@ -9,6 +9,7 @@ from discord_slash import SlashCommand
 
 
 class ButtercupBot(Bot):
+    # flake8: noqa: ANN401
     def __init__(self, command_prefix: str, **kwargs: Any) -> None:
         """
         Initialize the ButtercupBot.

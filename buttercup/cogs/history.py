@@ -490,7 +490,8 @@ class History(Cog):
         # We'll later edit this message with the actual content
         msg = await ctx.send(
             i18n["history"]["getting_history"].format(
-                users=get_initial_username_list(usernames, ctx), time_str=time_str,
+                users=get_initial_username_list(usernames, ctx),
+                time_str=time_str,
             )
         )
 
@@ -547,11 +548,17 @@ class History(Cog):
 
             # Plot the graph
             ax.plot(
-                "date", "gamma", data=history_data.reset_index(), color=color,
+                "date",
+                "gamma",
+                data=history_data.reset_index(),
+                color=color,
             )
             # At a point for the last value
             ax.scatter(
-                last_point.name, last_point.at["gamma"], color=color, s=4,
+                last_point.name,
+                last_point.at["gamma"],
+                color=color,
+                s=4,
             )
             # Label the last value
             ax.annotate(
@@ -623,7 +630,8 @@ class History(Cog):
         # We'll later edit this message with the actual content
         msg = await ctx.send(
             i18n["rate"]["getting_rate"].format(
-                users=get_initial_username_list(usernames, ctx), time_str=time_str,
+                users=get_initial_username_list(usernames, ctx),
+                time_str=time_str,
             )
         )
 
@@ -676,11 +684,17 @@ class History(Cog):
 
             # Plot the graph
             ax.plot(
-                "date", "count", data=user_data.reset_index(), color=color,
+                "date",
+                "count",
+                data=user_data.reset_index(),
+                color=color,
             )
             # At a point for the max value
             ax.scatter(
-                max_rate_point.name, max_rate_point.at["count"], color=color, s=4,
+                max_rate_point.name,
+                max_rate_point.at["count"],
+                color=color,
+                s=4,
             )
             # Label the max value
             ax.annotate(
@@ -856,7 +870,8 @@ class History(Cog):
         # We will edit this message later with the actual content.
         msg = await ctx.send(
             i18n["until"]["getting_prediction"].format(
-                user=get_initial_username(username, ctx), time_str=time_str,
+                user=get_initial_username(username, ctx),
+                time_str=time_str,
             )
         )
 
@@ -874,7 +889,14 @@ class History(Cog):
 
                 # Try to treat the goal as a user
                 return await self._until_user_catch_up(
-                    ctx, msg, user, goal, start, after_time, before_time, time_str,
+                    ctx,
+                    msg,
+                    user,
+                    goal,
+                    start,
+                    after_time,
+                    before_time,
+                    time_str,
                 )
         elif user:
             # Take the next rank for the user
@@ -893,7 +915,9 @@ class History(Cog):
 
         await msg.edit(
             content=i18n["until"]["getting_prediction_to_goal"].format(
-                user=get_username(user), goal=goal_str, time_str=time_str,
+                user=get_username(user),
+                goal=goal_str,
+                time_str=time_str,
             )
         )
 

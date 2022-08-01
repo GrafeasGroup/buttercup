@@ -15,7 +15,8 @@ class Ping(Cog):
         self.blossom_api = blossom_api
 
     @cog_ext.cog_slash(
-        name="ping", description="Ping the bot to find out if it is responsive.",
+        name="ping",
+        description="Ping the bot to find out if it is responsive.",
     )
     async def _ping(self, ctx: SlashContext) -> None:
         """Ping the bot to find out if it is responsive."""

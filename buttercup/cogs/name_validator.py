@@ -13,7 +13,11 @@ i18n = translation()
 
 
 class NameValidator(Cog):
-    def __init__(self, bot: ButtercupBot, verified_role_id: str,) -> None:
+    def __init__(
+        self,
+        bot: ButtercupBot,
+        verified_role_id: str,
+    ) -> None:
         """Initialize the member's records and retrieve the roles and channels."""
         self.bot = bot
         self.verified_role_id = verified_role_id

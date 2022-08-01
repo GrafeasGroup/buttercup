@@ -110,7 +110,9 @@ def extract_username(display_name: str) -> str:
 
 
 def get_usernames_from_user_list(
-    user_list: Optional[str], author: Optional[User], limit: int = 5,
+    user_list: Optional[str],
+    author: Optional[User],
+    limit: int = 5,
 ) -> List[str]:
     """Get the individual usernames from a list of users.
 
@@ -277,7 +279,8 @@ def get_user_gamma(user: Optional[BlossomUser], blossom_api: BlossomAPI) -> int:
         return user["gamma"]
 
     gamma_response = blossom_api.get(
-        "submission/", params={"page_size": 1, "completed_by__isnull": False},
+        "submission/",
+        params={"page_size": 1, "completed_by__isnull": False},
     )
     if not gamma_response.ok:
         raise BlossomException(gamma_response)

@@ -265,14 +265,16 @@ class Stats(Cog):
             # a progress bar doesn't make sense
             await msg.edit(
                 content=i18n["progress"]["embed_message"].format(
-                    user=get_username(user), duration=get_duration_str(start),
+                    user=get_username(user),
+                    duration=get_duration_str(start),
                 ),
                 embed=Embed(
                     title=i18n["progress"]["embed_title"].format(
                         user=get_username(user)
                     ),
                     description=i18n["progress"]["embed_description_other"].format(
-                        count=progress_count, time_str=time_str,
+                        count=progress_count,
+                        time_str=time_str,
                     ),
                 ),
             )
@@ -282,7 +284,8 @@ class Stats(Cog):
 
         await msg.edit(
             content=i18n["progress"]["embed_message"].format(
-                user=get_username(user), duration=get_duration_str(start),
+                user=get_username(user),
+                duration=get_duration_str(start),
             ),
             embed=Embed(
                 title=i18n["progress"]["embed_title"].format(user=get_username(user)),
