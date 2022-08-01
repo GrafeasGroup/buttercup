@@ -1,7 +1,7 @@
 import sys
 
-from buttercup import logger
-from buttercup.bot import ButtercupBot
+from src import logger
+from src.bot import ButtercupBot
 
 EXTENSIONS = [
     # The config cog has to be first!

@@ -5,7 +5,7 @@ from discord import Color, Embed
 from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 
-from buttercup.bot import ButtercupBot
+from src.bot import ButtercupBot
 
 
 class Ping(Cog):

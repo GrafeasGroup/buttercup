@@ -13,15 +13,15 @@ from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 
-from buttercup.bot import ButtercupBot
-from buttercup.cogs.find import COMPLETED_COLOR, IN_PROGRESS_COLOR, UNCLAIMED_COLOR
-from buttercup.cogs.helpers import (
+from src.bot import ButtercupBot
+from src.cogs.find import COMPLETED_COLOR, IN_PROGRESS_COLOR, UNCLAIMED_COLOR
+from src.cogs.helpers import (
     BlossomException,
     get_discord_time_str,
     get_submission_source,
 )
-from buttercup.cogs.search import get_transcription_type
-from buttercup.strings import translation
+from src.cogs.search import get_transcription_type
+from src.strings import translation
 
 logger = logging.Logger("queue")
 

@@ -8,8 +8,8 @@ from discord.ext.commands import Cog
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
-from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import (
+from src.bot import ButtercupBot
+from src.cogs.helpers import (
     BlossomException,
     get_duration_str,
     get_initial_username,
@@ -21,7 +21,7 @@ from buttercup.cogs.helpers import (
     get_username,
     parse_time_constraints,
 )
-from buttercup.strings import translation
+from src.strings import translation
 
 i18n = translation()
 

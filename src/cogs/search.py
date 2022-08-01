@@ -14,8 +14,8 @@ from discord_slash import SlashContext, cog_ext
 from discord_slash.model import SlashMessage
 from discord_slash.utils.manage_commands import create_option
 
-from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import (
+from src.bot import ButtercupBot
+from src.cogs.helpers import (
     BlossomException,
     BlossomUser,
     get_discord_time_str,
@@ -26,7 +26,7 @@ from buttercup.cogs.helpers import (
     get_username,
     parse_time_constraints,
 )
-from buttercup.strings import translation
+from src.strings import translation
 
 i18n = translation()
 

@@ -4,8 +4,8 @@ from blossom_wrapper import BlossomAPI
 from discord import Member, TextChannel
 from discord.ext.commands import Cog
 
-from buttercup.bot import ButtercupBot
-from buttercup.strings import translation
+from src.bot import ButtercupBot
+from src.strings import translation
 
 i18n = translation()
 

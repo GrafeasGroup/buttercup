@@ -4,9 +4,9 @@ import uuid
 from discord.errors import DiscordException
 from discord.ext import commands
 
-from buttercup import logger
-from buttercup.bot import ButtercupBot
-from buttercup.cogs.helpers import (
+from src import logger
+from src.bot import ButtercupBot
+from src.cogs.helpers import (
     BlossomException,
     InvalidArgumentException,
     NewUserException,
@@ -14,7 +14,7 @@ from buttercup.cogs.helpers import (
     TimeParseError,
     UserNotFoundException,
 )
-from buttercup.strings import translation
+from src.strings import translation
 
 i18n = translation()
 

@@ -4,7 +4,7 @@ from typing import List, Optional
 import pytz
 from pytest import mark
 
-from buttercup.cogs.helpers import (
+from src.cogs.helpers import (
     BlossomUser,
     escape_formatting,
     extract_sub_name,
