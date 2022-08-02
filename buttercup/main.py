@@ -31,14 +31,20 @@ EXTENSIONS = [
     invoke_without_command=True,
 )
 @click.pass_context
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    default="config.toml",
+    help="Path to the config file to use. Default: config.toml",
+)
 @click.version_option(version=__version__, prog_name="buttercup")
-def main(ctx: Context) -> None:
+def main(ctx: Context, config_path: str) -> None:
     """Run Buttercup."""
     # If we didn't ask for a specific command, run the bot. Otherwise, ignore this
     # and fall through to the command we requested.
     if ctx.invoked_subcommand is None:
         logger.configure_logging()
-        config_path = sys.argv[1] if len(sys.argv) > 1 else "config.toml"
         bot = ButtercupBot(
             command_prefix="!", config_path=config_path, extensions=EXTENSIONS
         )
