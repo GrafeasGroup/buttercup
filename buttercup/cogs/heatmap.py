@@ -116,7 +116,7 @@ def _get_month_annotations(activity_df: pd.DataFrame) -> List[str]:
 
 
 def _create_file_from_activity_map(
-    activity_df: pd.DataFrame, user: Optional[BlossomUser]
+    activity_df: pd.DataFrame, user: Optional[BlossomUser], time_str: str
 ) -> File:
     """Create a Discord file containing the activity map."""
     days = i18n["heatmap"]["days"]
@@ -156,7 +156,7 @@ def _create_file_from_activity_map(
     )
 
     ax.set_title(
-        i18n["activity"]["plot_title"].format(user=get_username(user, escape=False))
+        i18n["activity"]["plot_title"].format(user=get_username(user, escape=False), time=time_str)
     )
     # Remove axis labels
     ax.set_xlabel(None)
@@ -272,18 +272,30 @@ class Heatmap(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="before",
+                description="The end time of the activity map, it will show one year before this date.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
     async def activity_map(
         self,
         ctx: SlashContext,
         username: Optional[str] = "me",
+        before: Optional[str] = None,
     ) -> None:
         """Generate a yearly activity heatmap for the given user."""
         start = datetime.now()
 
-        before_time = datetime.now(tz=pytz.UTC)
-        after_time = before_time - timedelta(days=365)
+        # First parse the end time for the activity map
+        _, before_time, _ = parse_time_constraints(None, before)
+
+        # Then calculate the start time (one year before the end)
+        after = "1 year" if before_time is None else (before_time - timedelta(days=365)).isoformat()
+        # and get the string representing the time span
+        after_time, _, time_str = parse_time_constraints(after, before)
 
         msg = await ctx.send(
             i18n["activity"]["getting_activity"].format(
@@ -323,7 +335,7 @@ class Heatmap(Cog):
 
         # All possible weeks, in case some are missing in the data
         all_week_indexes = [
-            _get_week_index(before_time - timedelta(weeks=weeks)) for weeks in range(53)
+            _get_week_index((before_time or start) - timedelta(weeks=weeks)) for weeks in range(53)
         ]
 
         activity_df = (
@@ -339,11 +351,12 @@ class Heatmap(Cog):
             .transpose()
         )
 
-        activity_map = _create_file_from_activity_map(activity_df, user)
+        activity_map = _create_file_from_activity_map(activity_df, user, time_str)
 
         await msg.edit(
             content=i18n["activity"]["response_message"].format(
                 user=get_username(user),
+                time=time_str,
                 duration=get_duration_str(start),
             ),
             file=activity_map,

@@ -163,11 +163,11 @@ activity:
     - Fri
     - Sat
     - Sun
-  plot_title: Yearly activity map for {user}
+  plot_title: Yearly activity map for {user} {time}
   plot_xlabel: Time ({timezone})
   plot_ylabel: Weekday
   response_message: |
-    Here is the yearly activity map for {user}! ({duration})
+    Here is the yearly activity map for {user} {time}! ({duration})
 rules:
   getting_rules: |
     Getting the rules for r/{0}...
