@@ -4,7 +4,6 @@ from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import pytz
 import seaborn as sns
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
@@ -276,7 +275,8 @@ class Heatmap(Cog):
             ),
             create_option(
                 name="before",
-                description="The end time of the activity map, it will show one year before this date.",
+                description="The end time of the activity map, "
+                "it will show one year before this date.",
                 option_type=3,
                 required=False,
             ),
