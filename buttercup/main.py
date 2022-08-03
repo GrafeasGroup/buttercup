@@ -80,12 +80,22 @@ def selfcheck(verbose: bool) -> None:
     sys.exit(pytest.main(args))
 
 
+BANNER = r"""
+__________        __    __
+\______   \__ ___/  |__/  |_  ___________   ____  __ ________
+ |    |  _/  |  \   __\   __\/ __ \_  __ \_/ ___\|  |  \____ \
+ |    |   \  |  /|  |  |  | \  ___/|  | \/\  \___|  |  /  |_> >
+ |______  /____/ |__|  |__|  \___  >__|    \___  >____/|   __/
+        \/                       \/            \/      |__|
+"""
+
+
 @main.command()
 def shell() -> None:
     """Create a Python REPL inside the environment."""
     import code
 
-    code.interact(local=globals())
+    code.interact(local=globals(), banner=BANNER)
 
 
 if __name__ == "__main__":
