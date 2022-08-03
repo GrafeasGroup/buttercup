@@ -377,7 +377,7 @@ class History(Cog):
             # Convert date strings to datetime objects
             new_frame["date"] = new_frame["date"].apply(lambda x: parser.parse(x))
             # Add the data to the list
-            rate_data = rate_data.append(new_frame.set_index("date"))
+            rate_data = pd.concat([rate_data, new_frame.set_index("date")])
 
             # Continue with the next page
             page += 1
@@ -475,7 +475,7 @@ class History(Cog):
     async def history(
         self,
         ctx: SlashContext,
-        usernames: str = "me",
+        users: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
@@ -490,12 +490,12 @@ class History(Cog):
         # We'll later edit this message with the actual content
         msg = await ctx.send(
             i18n["history"]["getting_history"].format(
-                users=get_initial_username_list(usernames, ctx),
+                users=get_initial_username_list(users, ctx),
                 time_str=time_str,
             )
         )
 
-        users = get_user_list(usernames, ctx, self.blossom_api)
+        users = get_user_list(users, ctx, self.blossom_api)
         if users:
             users.sort(key=lambda u: u["gamma"], reverse=True)
         colors = get_user_colors(users)
@@ -615,7 +615,7 @@ class History(Cog):
     async def rate(
         self,
         ctx: SlashContext,
-        usernames: str = "me",
+        users: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
     ) -> None:
@@ -630,12 +630,12 @@ class History(Cog):
         # We'll later edit this message with the actual content
         msg = await ctx.send(
             i18n["rate"]["getting_rate"].format(
-                users=get_initial_username_list(usernames, ctx),
+                users=get_initial_username_list(users, ctx),
                 time_str=time_str,
             )
         )
 
-        users = get_user_list(usernames, ctx, self.blossom_api)
+        users = get_user_list(users, ctx, self.blossom_api)
         if users:
             users.sort(key=lambda u: u["gamma"], reverse=True)
         colors = get_user_colors(users)
