@@ -156,7 +156,9 @@ def _create_file_from_activity_map(
     )
 
     ax.set_title(
-        i18n["activity"]["plot_title"].format(user=get_username(user, escape=False), time=time_str)
+        i18n["activity"]["plot_title"].format(
+            user=get_username(user, escape=False), time=time_str
+        )
     )
     # Remove axis labels
     ax.set_xlabel(None)
@@ -293,7 +295,11 @@ class Heatmap(Cog):
         _, before_time, _ = parse_time_constraints(None, before)
 
         # Then calculate the start time (one year before the end)
-        after = "1 year" if before_time is None else (before_time - timedelta(days=365)).isoformat()
+        after = (
+            "1 year"
+            if before_time is None
+            else (before_time - timedelta(days=365)).date().isoformat()
+        )
         # and get the string representing the time span
         after_time, _, time_str = parse_time_constraints(after, before)
 
@@ -335,7 +341,8 @@ class Heatmap(Cog):
 
         # All possible weeks, in case some are missing in the data
         all_week_indexes = [
-            _get_week_index((before_time or start) - timedelta(weeks=weeks)) for weeks in range(53)
+            _get_week_index((before_time or start) - timedelta(weeks=weeks))
+            for weeks in range(53)
         ]
 
         activity_df = (
