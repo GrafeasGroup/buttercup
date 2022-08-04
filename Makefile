@@ -1,5 +1,5 @@
 setup:
-	python buttercup/poetry2setup.py > setup.py
+	poetry2setup > setup.py
 
 build: setup shiv
 

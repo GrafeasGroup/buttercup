@@ -867,6 +867,17 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "poetry2setup"
+version = "1.0.0"
+description = "Convert python-poetry to setup.py"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[package.dependencies]
+poetry-core = ">=1.0.0,<2.0.0"
+
+[[package]]
 name = "pre-commit"
 version = "2.20.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
@@ -1271,7 +1282,7 @@ ci = ["pytest"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8.6"
-content-hash = "75513643088eb1391e37c11aea482a5d34c388b079f6f74580ed9d1ebfed131a"
+content-hash = "024c13b7d2e6f8c678574a7f3f78ba461357466b65dc83a882a644385f3b896e"
 
 [metadata.files]
 aiofiles = []
@@ -1458,6 +1469,7 @@ pluggy = [
 ]
 poetry = []
 poetry-core = []
+poetry2setup = []
 pre-commit = []
 ptyprocess = [
     {file = "ptyprocess-0.7.0-py2.py3-none-any.whl", hash = "sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35"},
