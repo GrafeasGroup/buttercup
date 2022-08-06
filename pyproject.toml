@@ -46,7 +46,7 @@ ci = ["pytest", "pytest-cov", "coveralls"]
 [tool.isort]
 profile = "black"
 known_first_party = "src"
-known_third_party = ["asyncpraw", "asyncprawcore", "blossom_wrapper", "click", "dateutil", "discord", "discord_slash", "matplotlib", "pandas", "pytest", "pytz", "requests", "seaborn", "toml", "yaml"]
+known_third_party = ["asyncpraw", "asyncprawcore", "blossom_wrapper", "click", "dateutil", "discord", "discord_slash", "matplotlib", "pandas", "pytest", "pytz", "requests", "seaborn", "shiv", "toml", "yaml"]
 
 [build-system]
 requires = ["poetry>=0.12"]

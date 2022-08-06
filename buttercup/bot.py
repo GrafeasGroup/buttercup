@@ -1,4 +1,5 @@
 import logging
+import pathlib
 from collections import defaultdict
 from typing import Any, Dict
 
@@ -6,6 +7,7 @@ import discord.utils
 import toml
 from discord.ext.commands import Bot
 from discord_slash import SlashCommand
+from shiv.bootstrap import current_zipfile
 
 
 class ButtercupBot(Bot):
@@ -24,7 +26,23 @@ class ButtercupBot(Bot):
         intents.members = True
         super().__init__(command_prefix, intents=intents, **kwargs)
         self.slash = SlashCommand(self, sync_commands=True, sync_on_cog_reload=True)
-        self.config_path = kwargs.get("config_path", "../config.toml")
+
+        if kwargs.get("config_path"):
+            # we've passed in a specific path that we want to use, so use it
+            self.config_path = kwargs["config_path"]
+        else:
+            # we don't have a specific path, so the path we construct depends on
+            # whether we're currently running as a packaged archive or not.
+            with current_zipfile() as archive:
+                if archive:
+                    # if archive is none, we're not in the zipfile and are probably
+                    # in development mode right now.
+                    self.config_path = str(
+                        pathlib.Path(archive.filename).parent / "config.toml"
+                    )
+                else:
+                    self.config_path = "../config.toml"
+
         self.cog_path = kwargs.get("cog_path", "buttercup.cogs.")
 
         for extension in kwargs.get("extensions", list()):
