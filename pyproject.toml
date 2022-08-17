@@ -41,9 +41,6 @@ flake8-isort = "^4.1.2"
 poetry = "^1.1.14"
 poetry2setup = "^1.0.0"
 
-[tool.poetry.extras]
-ci = ["pytest", "pytest-cov", "coveralls"]
-
 [tool.isort]
 profile = "black"
 known_first_party = "src"
