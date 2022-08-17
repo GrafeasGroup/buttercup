@@ -73,7 +73,7 @@ def selfcheck(verbose: bool) -> None:
     # We need to get the path because the file is actually inside the extracted
     # environment maintained by shiv, not physically inside the archive at the
     # time of running.
-    args = ["-x", pathlib.Path(buttercup.test.__file__).parent]
+    args = ["-x", str(pathlib.Path(buttercup.test.__file__).parent)]
     if not verbose:
         args.append("-qq")
     # pytest will return an exit code that we can check on the command line
