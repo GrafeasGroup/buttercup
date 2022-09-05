@@ -1,9 +1,6 @@
-name: Release
+name: Build buttercup.pyz and test
 
-on:
-  push:
-    branches:
-      - master
+on: [pull_request]
 
 jobs:
   build:
@@ -31,11 +28,7 @@ jobs:
       run: |
         sed -i -e "s/?????/${{ env.CURRENT_TIME_VERSION }}/g" buttercup/__init__.py
         make build
-    - uses: ncipollo/release-action@v1
-      with:
-        artifacts: "build/buttercup.pyz"
-        body: "It's releasin' time"
-        generateReleaseNotes: true
-        tag: ${{ env.CURRENT_TIME_VERSION }}
-        commit: master
-        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Remove source to make sure it doesn't interfere with the tests
+      run: rm -rf buttercup/
+    - name: Run selfcheck on compiled binary
+      run: ./build/buttercup.pyz selfcheck
