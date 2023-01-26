@@ -34,4 +34,5 @@ ranks = [
     {"name": "Topaz", "threshold": 5000, "color": "#ff7d4d"},
     {"name": "Jade", "threshold": 10000, "color": "#31c831"},
     {"name": "Sapphire", "threshold": 20000, "color": "#99afef"},
+    {"name": "Garnet", "threshold": 30000, "color": "#ff8f8f"},
 ]
