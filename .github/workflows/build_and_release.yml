@@ -18,6 +18,7 @@ jobs:
     - name: Install Env
       # shiv will download the dependencies it needs on its own
       run: |
+        sudo apt install cmake libopenblas-dev
         pip install --upgrade pip
         pip install shiv
         pip install poetry
