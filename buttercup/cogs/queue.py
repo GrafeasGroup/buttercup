@@ -101,16 +101,13 @@ def get_claimed_item(submission: pd.Series, user_cache: Dict) -> str:
 def get_claimed_list(claimed: pd.DataFrame, user_cache: Dict) -> str:
     """Get a list of claimed submissions."""
     items = [
-        get_claimed_item(submission, user_cache)
-        for idx, submission in claimed.head(5).iterrows()
+        get_claimed_item(submission, user_cache) for idx, submission in claimed.head(5).iterrows()
     ]
     result = "\n".join(items)
 
     if len(claimed) > 5:
         rest = claimed[5:]
-        result += "\n" + i18n["queue"]["claimed_list_others"].format(
-            other_count=len(rest)
-        )
+        result += "\n" + i18n["queue"]["claimed_list_others"].format(other_count=len(rest))
 
     return result
 
@@ -141,10 +138,7 @@ def get_completed_item(submission: pd.Series, user_cache: Dict) -> str:
 
 def get_completed_list(completed: pd.DataFrame, user_cache: Dict) -> str:
     """Get a list of completed submissions."""
-    items = [
-        get_completed_item(submission, user_cache)
-        for idx, submission in completed.iterrows()
-    ]
+    items = [get_completed_item(submission, user_cache) for idx, submission in completed.iterrows()]
     result = "\n".join(items)
 
     return result
@@ -404,10 +398,7 @@ class Queue(Cog):
         claimed_count = len(claimed.index)
 
         sources = (
-            unclaimed.reset_index()
-            .groupby(["source"])["id"]
-            .count()
-            .sort_values(ascending=False)
+            unclaimed.reset_index().groupby(["source"])["id"].count().sort_values(ascending=False)
         )
         unclaimed_list = get_unclaimed_list(sources)
 
@@ -435,9 +426,7 @@ class Queue(Cog):
         completed_message = (
             i18n["queue"]["completed_message_cleared"]
             if len(self.completed) == 0
-            else i18n["queue"]["completed_message"].format(
-                completed_list=completed_list
-            )
+            else i18n["queue"]["completed_message"].format(completed_list=completed_list)
         )
 
         color = (

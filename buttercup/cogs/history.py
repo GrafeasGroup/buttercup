@@ -121,9 +121,7 @@ def add_zero_rates(
         missing_time_frames = missing_delta.total_seconds() // delta.total_seconds()
         if missing_time_frames > 0:
             # We need to add a new entry at the beginning
-            missing_delta = timedelta(
-                seconds=missing_time_frames * delta.total_seconds()
-            )
+            missing_delta = timedelta(seconds=missing_time_frames * delta.total_seconds())
             missing_date = first_date - missing_delta
             new_index.add(missing_date)
 
@@ -169,9 +167,7 @@ def get_user_colors(users: Optional[List[BlossomUser]]) -> List[str]:
         # Give the user their rank color if possible
         if user_rank in available_ranks:
             color_mapping[user["username"]] = user_rank["color"]
-            available_ranks = [
-                r for r in available_ranks if r["name"] != user_rank["name"]
-            ]
+            available_ranks = [r for r in available_ranks if r["name"] != user_rank["name"]]
         else:
             left_over_users.append(user)
 
@@ -214,9 +210,7 @@ def create_file_from_figure(fig: plt.Figure, file_name: str) -> File:
     return File(history_plot, file_name)
 
 
-def get_history_data_from_rate_data(
-    rate_data: pd.DataFrame, offset: int
-) -> pd.DataFrame:
+def get_history_data_from_rate_data(rate_data: pd.DataFrame, offset: int) -> pd.DataFrame:
     """Aggregate the rate data to history data.
 
     :param rate_data: The rate data to calculate the history data from.
@@ -435,9 +429,7 @@ class History(Cog):
         """
         # Get all rate data
         time_frame = get_data_granularity(user, after_time, before_time)
-        rate_data = self.get_all_rate_data(
-            user, time_frame, after_time, before_time, utc_offset
-        )
+        rate_data = self.get_all_rate_data(user, time_frame, after_time, before_time, utc_offset)
 
         # Calculate the offset for all data points
         offset = self.calculate_history_offset(user, rate_data, after_time, before_time)
@@ -507,11 +499,7 @@ class History(Cog):
         ax: plt.Axes = fig.gca()
 
         fig.subplots_adjust(bottom=0.2)
-        ax.set_xlabel(
-            i18n["history"]["plot_xlabel"].format(
-                timezone=utc_offset_to_str(utc_offset)
-            )
-        )
+        ax.set_xlabel(i18n["history"]["plot_xlabel"].format(timezone=utc_offset_to_str(utc_offset)))
         ax.set_ylabel(i18n["history"]["plot_ylabel"])
 
         for label in ax.get_xticklabels():
@@ -519,9 +507,7 @@ class History(Cog):
             label.set_ha("right")
 
         ax.set_title(
-            i18n["history"]["plot_title"].format(
-                users=get_usernames(users, 2, escape=False)
-            )
+            i18n["history"]["plot_title"].format(users=get_usernames(users, 2, escape=False))
         )
 
         for index, user in enumerate(users or [None]):
@@ -535,9 +521,7 @@ class History(Cog):
                     )
                 )
 
-            history_data = self.get_user_history(
-                user, after_time, before_time, utc_offset
-            )
+            history_data = self.get_user_history(user, after_time, before_time, utc_offset)
 
             color = colors[index]
             first_point = history_data.iloc[0]
@@ -646,20 +630,14 @@ class History(Cog):
         ax: plt.Axes = fig.gca()
 
         fig.subplots_adjust(bottom=0.2)
-        ax.set_xlabel(
-            i18n["rate"]["plot_xlabel"].format(timezone=utc_offset_to_str(utc_offset))
-        )
+        ax.set_xlabel(i18n["rate"]["plot_xlabel"].format(timezone=utc_offset_to_str(utc_offset)))
         ax.set_ylabel(i18n["rate"]["plot_ylabel"])
 
         for label in ax.get_xticklabels():
             label.set_rotation(32)
             label.set_ha("right")
 
-        ax.set_title(
-            i18n["rate"]["plot_title"].format(
-                users=get_usernames(users, 2, escape=False)
-            )
-        )
+        ax.set_title(i18n["rate"]["plot_title"].format(users=get_usernames(users, 2, escape=False)))
 
         for index, user in enumerate(users or [None]):
             if users and len(users) > 1:
@@ -672,9 +650,7 @@ class History(Cog):
                     )
                 )
 
-            user_data = self.get_all_rate_data(
-                user, "day", after_time, before_time, utc_offset
-            )
+            user_data = self.get_all_rate_data(user, "day", after_time, before_time, utc_offset)
 
             max_rate = user_data["count"].max()
             max_rates.append(max_rate)
@@ -705,10 +681,7 @@ class History(Cog):
 
         if users:
             # A milestone at every 100 rate
-            milestones = [
-                dict(threshold=i * 100, color=ranks[i + 2]["color"])
-                for i in range(1, 8)
-            ]
+            milestones = [dict(threshold=i * 100, color=ranks[i + 2]["color"]) for i in range(1, 8)]
             ax = add_milestone_lines(ax, milestones, 0, max(max_rates), 40)
 
         if users and len(users) > 1:
@@ -784,8 +757,7 @@ class History(Cog):
             absolute_time = start + relative_time
 
             intersection_gamma = user["gamma"] + math.ceil(
-                (user_progress / time_frame.total_seconds())
-                * relative_time.total_seconds()
+                (user_progress / time_frame.total_seconds()) * relative_time.total_seconds()
             )
 
             description = i18n["until"]["embed_description_user_prediction"].format(
@@ -823,8 +795,7 @@ class History(Cog):
         options=[
             create_option(
                 name="goal",
-                description="The gamma, flair rank or user to reach. "
-                "Defaults to the next rank.",
+                description="The gamma, flair rank or user to reach. " "Defaults to the next rank.",
                 option_type=3,
                 required=False,
             ),

@@ -35,17 +35,13 @@ def format_leaderboard_user(user: Dict[str, Any]) -> str:
     return f"{rank}. {username} ({gamma:,})"
 
 
-def format_leaderboard_timeframe(
-    after: Optional[datetime], before: Optional[datetime]
-) -> str:
+def format_leaderboard_timeframe(after: Optional[datetime], before: Optional[datetime]) -> str:
     """Format the time frame that the leaderboard is calculated on."""
     if not after and not before:
         return "all time"
 
     # 2017-04-01 is the start of the project
-    delta = (before or datetime.now(tz=pytz.utc)) - (
-        after or datetime(2017, 4, 1, tzinfo=pytz.utc)
-    )
+    delta = (before or datetime.now(tz=pytz.utc)) - (after or datetime(2017, 4, 1, tzinfo=pytz.utc))
 
     return get_timedelta_str(delta)
 

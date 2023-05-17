@@ -40,9 +40,7 @@ def create_file_from_heatmap(
     # The built in formatting for the heatmap doesn't allow displaying floats as ints
     # And we have to use floats because empty entries are NaN
     # So we have to manually provide the annotations
-    annotations = heatmap.apply(
-        lambda series: series.apply(lambda value: f"{value:0.0f}")
-    )
+    annotations = heatmap.apply(lambda series: series.apply(lambda value: f"{value:0.0f}"))
 
     fig, ax = plt.subplots()
     fig: plt.Figure
@@ -61,9 +59,7 @@ def create_file_from_heatmap(
 
     timezone = utc_offset_to_str(utc_offset)
 
-    plt.title(
-        i18n["heatmap"]["plot_title"].format(user=get_username(user, escape=False))
-    )
+    plt.title(i18n["heatmap"]["plot_title"].format(user=get_username(user, escape=False)))
     plt.xlabel(i18n["heatmap"]["plot_xlabel"].format(timezone=timezone))
     plt.ylabel(i18n["heatmap"]["plot_ylabel"])
 
@@ -123,9 +119,7 @@ def _create_file_from_activity_map(
     # Only annotate the maximum values
     max_value = activity_df.max().max()
     annotations = activity_df.apply(
-        lambda series: series.apply(
-            lambda value: f"{value:0.0f}" if value == max_value else ""
-        )
+        lambda series: series.apply(lambda value: f"{value:0.0f}" if value == max_value else "")
     )
 
     fig, ax = plt.subplots()
@@ -155,9 +149,7 @@ def _create_file_from_activity_map(
     )
 
     ax.set_title(
-        i18n["activity"]["plot_title"].format(
-            user=get_username(user, escape=False), time=time_str
-        )
+        i18n["activity"]["plot_title"].format(user=get_username(user, escape=False), time=time_str)
     )
     # Remove axis labels
     ax.set_xlabel(None)
@@ -304,9 +296,7 @@ class Heatmap(Cog):
         after_time, _, time_str = parse_time_constraints(after, before)
 
         msg = await ctx.send(
-            i18n["activity"]["getting_activity"].format(
-                user=get_initial_username(username, ctx)
-            )
+            i18n["activity"]["getting_activity"].format(user=get_initial_username(username, ctx))
         )
 
         from_str = after_time.isoformat() if after_time else None
@@ -341,8 +331,7 @@ class Heatmap(Cog):
 
         # All possible weeks, in case some are missing in the data
         all_week_indexes = [
-            _get_week_index((before_time or start) - timedelta(weeks=weeks))
-            for weeks in range(53)
+            _get_week_index((before_time or start) - timedelta(weeks=weeks)) for weeks in range(53)
         ]
 
         activity_df = (

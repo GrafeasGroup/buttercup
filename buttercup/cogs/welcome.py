@@ -30,9 +30,7 @@ class Welcome(Cog):
         if not welcome_channel:
             return
 
-        await welcome_channel.send(
-            content=i18n["welcome"]["new_member"].format(user_id=member.id)
-        )
+        await welcome_channel.send(content=i18n["welcome"]["new_member"].format(user_id=member.id))
 
 
 def setup(bot: ButtercupBot) -> None:

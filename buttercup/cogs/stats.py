@@ -72,9 +72,7 @@ class Stats(Cog):
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
-        msg = await ctx.send(
-            i18n["stats"]["getting_stats"].format(user=initial_username)
-        )
+        msg = await ctx.send(i18n["stats"]["getting_stats"].format(user=initial_username))
 
         if initial_username == get_username(None):
             # Global stats
@@ -109,9 +107,7 @@ class Stats(Cog):
             ),
         )
 
-    async def _user_stats(
-        self, ctx: SlashContext, msg: SlashMessage, username: str
-    ) -> None:
+    async def _user_stats(self, ctx: SlashContext, msg: SlashMessage, username: str) -> None:
         """Get stats about a single user."""
         start = datetime.now(tz=pytz.utc)
 
@@ -192,15 +188,13 @@ class Stats(Cog):
             ),
             create_option(
                 name="after",
-                description="The start time for the progress."
-                "Defaults to 24 hours ago.",
+                description="The start time for the progress." "Defaults to 24 hours ago.",
                 option_type=3,
                 required=False,
             ),
             create_option(
                 name="before",
-                description="The end date for the progress."
-                "Defaults to the current time.",
+                description="The end date for the progress." "Defaults to the current time.",
                 option_type=3,
                 required=False,
             ),
@@ -217,9 +211,7 @@ class Stats(Cog):
         start = datetime.now()
 
         # Parse time frame. Defaults to 24 hours ago
-        after_time, before_time, time_str = parse_time_constraints(
-            after or "24", before
-        )
+        after_time, before_time, time_str = parse_time_constraints(after or "24", before)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
@@ -253,9 +245,7 @@ class Stats(Cog):
         # The progress bar only makes sense for a 24 hour time frame
         is_24_hours = (
             after_time is not None
-            and (
-                (before_time or datetime.now(tz=pytz.utc)) - after_time
-            ).total_seconds()
+            and ((before_time or datetime.now(tz=pytz.utc)) - after_time).total_seconds()
             # Up to 2 seconds difference are allowed
             <= 60 * 60 * 24 + 2
         )
@@ -269,9 +259,7 @@ class Stats(Cog):
                     duration=get_duration_str(start),
                 ),
                 embed=Embed(
-                    title=i18n["progress"]["embed_title"].format(
-                        user=get_username(user)
-                    ),
+                    title=i18n["progress"]["embed_title"].format(user=get_username(user)),
                     description=i18n["progress"]["embed_description_other"].format(
                         count=progress_count,
                         time_str=time_str,

@@ -7,8 +7,7 @@ _logger = logging.getLogger("Buttercup Logger")
 
 
 def configure_logging() -> None:
-    """
-    Set the configuration for logging.
+    """Set the configuration for logging.
 
     Note that a custom set of methods is provided, where the Context is provided. This is
     used to retrieve the command and user for the logging message. This file should be

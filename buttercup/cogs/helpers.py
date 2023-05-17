@@ -12,17 +12,13 @@ from requests import Response
 
 from buttercup.cogs import ranks
 
-username_regex = re.compile(
-    r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$"
-)
+username_regex = re.compile(r"^(?P<prefix>(?P<leading_slash>/)?u/)?(?P<username>\S+)(?P<rest>.*)$")
 timezone_regex = re.compile(
     r"UTC(?:(?P<hours>[+-]\d+(?:\.\d+)?)(?::(?P<minutes>\d+))?)?", re.RegexFlag.I
 )
 
 # First an amount and then a unit
-relative_time_regex = re.compile(
-    r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*(?:ago\s*)?$"
-)
+relative_time_regex = re.compile(r"^(?P<amount>\d+(?:\.\d+)?)\s*(?P<unit>\w*)\s*(?:ago\s*)?$")
 # The different time units
 unit_regexes: Dict[str, re.Pattern] = {
     "seconds": re.compile(r"^s(?:ec(?:ond)?s?)?$"),
@@ -120,9 +116,7 @@ def get_usernames_from_user_list(
     :param author: The author of the message, taken as the default user.
     :param limit: The maximum number of users to handle.
     """
-    raw_names = (
-        [user.strip() for user in user_list.split(" ")] if user_list is not None else []
-    )
+    raw_names = [user.strip() for user in user_list.split(" ")] if user_list is not None else []
 
     if len(raw_names) == 0:
         # No users provided, fall back to the author of the message
@@ -176,9 +170,7 @@ def get_initial_username_list(usernames: str, ctx: SlashContext) -> str:
     return join_items_with_and(username_list)
 
 
-def get_user(
-    username: str, ctx: SlashContext, blossom_api: BlossomAPI
-) -> Optional[BlossomUser]:
+def get_user(username: str, ctx: SlashContext, blossom_api: BlossomAPI) -> Optional[BlossomUser]:
     """Get the given user from Blossom.
 
     Special keywords:
@@ -377,9 +369,7 @@ def get_progress_bar(
     inner_space_count = width - inner_bar_count
     outer_bar_count = bar_count - inner_bar_count
 
-    bar_str = (
-        f"[{'#' * inner_bar_count}{' ' * inner_space_count}]{'#' * outer_bar_count}"
-    )
+    bar_str = f"[{'#' * inner_bar_count}{' ' * inner_space_count}]{'#' * outer_bar_count}"
     if as_code:
         bar_str = f"`{bar_str}`"
     count_str = f" ({count:,d}/{total:,d})" if display_count else ""

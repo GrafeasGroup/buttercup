@@ -199,9 +199,7 @@ class SearchCache:
         """Ensure that the cache capacity isn't exceeded."""
         if len(self.cache) > self.capacity:
             # Delete the oldest entry
-            sorted_entries = sorted(
-                self.cache.items(), key=lambda x: x[1]["last_modified"]
-            )
+            sorted_entries = sorted(self.cache.items(), key=lambda x: x[1]["last_modified"])
             self.cache.pop(sorted_entries[0][0])
 
     def set(
@@ -272,10 +270,7 @@ class Search(Cog):
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
-        if (
-            not cache_item["response_data"]
-            or request_page != cache_item["request_page"]
-        ):
+        if not cache_item["response_data"] or request_page != cache_item["request_page"]:
             # A new request has to be made
             data = {
                 "text__icontains": cache_item["query"],
@@ -346,9 +341,7 @@ class Search(Cog):
                 duration_str=get_duration_str(start),
             ),
             embed=Embed(
-                title=i18n["search"]["embed_title"].format(
-                    query=query, user=get_username(user)
-                ),
+                title=i18n["search"]["embed_title"].format(query=query, user=get_username(user)),
                 description=description,
             ).set_footer(
                 text=i18n["search"]["embed_footer"].format(

@@ -32,15 +32,11 @@ class Ping(Cog):
         response = self.blossom_api.get(path="ping/")
         server_delay = datetime.now() - start
         if response.status_code == 200:
-            embed.add_field(
-                name="Server", value=f"{server_delay.microseconds / 1000} ms"
-            )
+            embed.add_field(name="Server", value=f"{server_delay.microseconds / 1000} ms")
         else:
             # For some reason, the color is read-only, so we need to make a new embed
             embed = Embed(color=failure_color, title="Pong!")
-            embed.add_field(
-                name="Server", value=f"Error: Status code {response.status_code}"
-            )
+            embed.add_field(name="Server", value=f"Error: Status code {response.status_code}")
 
         await msg.edit(embed=embed)
 

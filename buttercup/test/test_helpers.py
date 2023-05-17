@@ -327,9 +327,7 @@ def test_parse_absolute_time_constraints(
     expected_str: str,
 ) -> None:
     """Test that absolute time constraints are parsed correctly."""
-    actual_after, actual_before, actual_str = parse_time_constraints(
-        after_str, before_str
-    )
+    actual_after, actual_before, actual_str = parse_time_constraints(after_str, before_str)
     assert actual_after == expected_after
     assert actual_before == expected_before
     assert actual_str == expected_str
@@ -366,15 +364,9 @@ def test_parse_relative_time_constraints(
 ) -> None:
     """Test that relative time constraints are parsed correctly."""
     start = datetime.now(tz=pytz.utc)
-    expected_after = (
-        start - expected_after_delta if expected_after_delta is not None else None
-    )
-    expected_before = (
-        start - expected_before_delta if expected_before_delta is not None else None
-    )
-    actual_after, actual_before, actual_str = parse_time_constraints(
-        after_str, before_str
-    )
+    expected_after = start - expected_after_delta if expected_after_delta is not None else None
+    expected_before = start - expected_before_delta if expected_before_delta is not None else None
+    actual_after, actual_before, actual_str = parse_time_constraints(after_str, before_str)
     duration = datetime.now(tz=pytz.utc) - start
 
     # We can't check for equality because the result depends on the current time

@@ -28,8 +28,7 @@ def limit_str(text: str, limit: Optional[int] = None) -> str:
 
 
 def get_clean_transcription(data: Dict) -> Optional[str]:
-    """
-    Get the content of the transcription, without header and footer.
+    """Get the content of the transcription, without header and footer.
 
     Because there can be an OCR transcription as well, then we'll
     try and return the human one but will fall through to the OCR
@@ -53,9 +52,7 @@ def get_clean_transcription(data: Dict) -> Optional[str]:
 def get_color_and_status(data: Dict) -> Tuple[str, str]:
     """Get the color and status for the embed."""
     author = data.get("author", None)
-    author_link = (
-        i18n["reddit"]["user_named_link"].format(author["username"]) if author else None
-    )
+    author_link = i18n["reddit"]["user_named_link"].format(author["username"]) if author else None
 
     if data["submission"].get("completed_by"):
         # The post has been completed
@@ -170,9 +167,7 @@ class Find(Cog):
         data = find_response.json()
 
         await msg.edit(
-            content=i18n["find"]["embed_message"].format(
-                duration=get_duration_str(start)
-            ),
+            content=i18n["find"]["embed_message"].format(duration=get_duration_str(start)),
             embed=to_embed(data),
         )
 
