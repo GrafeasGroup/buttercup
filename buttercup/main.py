@@ -45,9 +45,7 @@ def main(ctx: Context, config_path: str) -> None:
     # and fall through to the command we requested.
     if ctx.invoked_subcommand is None:
         logger.configure_logging()
-        bot = ButtercupBot(
-            command_prefix="!", config_path=config_path, extensions=EXTENSIONS
-        )
+        bot = ButtercupBot(command_prefix="!", config_path=config_path, extensions=EXTENSIONS)
         bot.run(bot.config["Discord"]["token"])
 
 
@@ -60,8 +58,7 @@ def main(ctx: Context, config_path: str) -> None:
     help="Show Pytest output instead of running quietly.",
 )
 def selfcheck(verbose: bool) -> None:
-    """
-    Verify the binary passes all tests internally.
+    """Verify the binary passes all tests internally.
 
     Add any other self-check related code here.
     """

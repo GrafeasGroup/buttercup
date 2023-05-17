@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytz
 from blossom_wrapper import BlossomAPI
 from discord import Color, Embed
 from discord.ext.commands import Cog
@@ -28,19 +29,15 @@ class Ping(Cog):
         msg = await ctx.send(embed=embed)
 
         # Also ping the blossom server
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
         response = self.blossom_api.get(path="ping/")
-        server_delay = datetime.now() - start
+        server_delay = datetime.now(tz=pytz.UTC) - start
         if response.status_code == 200:
-            embed.add_field(
-                name="Server", value=f"{server_delay.microseconds / 1000} ms"
-            )
+            embed.add_field(name="Server", value=f"{server_delay.microseconds / 1000} ms")
         else:
             # For some reason, the color is read-only, so we need to make a new embed
             embed = Embed(color=failure_color, title="Pong!")
-            embed.add_field(
-                name="Server", value=f"Error: Status code {response.status_code}"
-            )
+            embed.add_field(name="Server", value=f"Error: Status code {response.status_code}")
 
         await msg.edit(embed=embed)
 

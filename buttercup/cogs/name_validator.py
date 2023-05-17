@@ -34,9 +34,7 @@ class NameValidator(Cog):
 
         welcome_channel: Optional[TextChannel] = after.guild.system_channel
         verified_role = (
-            after.guild.get_role(int(self.verified_role_id))
-            if self.verified_role_id
-            else None
+            after.guild.get_role(int(self.verified_role_id)) if self.verified_role_id else None
         )
 
         if verified_role is None:
@@ -68,9 +66,9 @@ class NameValidator(Cog):
             except Forbidden:
                 # The user is a mod, can't fix the nickname
                 await welcome_channel.send(
-                    content=i18n["name_validator"][
-                        "missing_slash_missing_permissions"
-                    ].format(user_id=after.id, username=username)
+                    content=i18n["name_validator"]["missing_slash_missing_permissions"].format(
+                        user_id=after.id, username=username
+                    )
                 )
             # The edit will trigger another event.
             # To avoid duplicate messages we don't do anything here
@@ -78,11 +76,7 @@ class NameValidator(Cog):
 
         before_match = username_regex.search(before_name)
 
-        if (
-            before_match
-            and before_match.group("prefix")
-            and before_match.group("leading_slash")
-        ):
+        if before_match and before_match.group("prefix") and before_match.group("leading_slash"):
             # The username was correct already and is still correct
             # For example timezone change, we don't have to send a message
             # Still set the role, just to be safe
@@ -92,9 +86,7 @@ class NameValidator(Cog):
         # The username was wrong, but is correct now
         await after.add_roles(verified_role, reason="Correct nickname")
         await welcome_channel.send(
-            content=i18n["name_validator"]["valid_name"].format(
-                user_id=after.id, username=username
-            )
+            content=i18n["name_validator"]["valid_name"].format(user_id=after.id, username=username)
         )
 
 

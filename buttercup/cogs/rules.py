@@ -3,6 +3,7 @@ from typing import Callable, List, Optional
 from xmlrpc.client import Boolean
 
 import asyncpraw
+import pytz
 from asyncpraw.models import Rule
 from asyncprawcore import Forbidden, NotFound, Redirect
 from discord import Color, Embed
@@ -37,18 +38,12 @@ PI_KEYWORDS = [
 
 def contains_any(text: Optional[str], keywords: List[str]) -> bool:
     """Determine if the text contains any of the keywords."""
-    return (
-        False
-        if text is None
-        else any(word.casefold() in text.casefold() for word in keywords)
-    )
+    return False if text is None else any(word.casefold() in text.casefold() for word in keywords)
 
 
 def is_pi_rule(rule: Rule) -> bool:
     """Determine if the given rule is regarding personal information."""
-    return contains_any(rule.short_name, PI_KEYWORDS) or contains_any(
-        rule.description, PI_KEYWORDS
-    )
+    return contains_any(rule.short_name, PI_KEYWORDS) or contains_any(rule.description, PI_KEYWORDS)
 
 
 async def send_rules_message(
@@ -90,7 +85,7 @@ class Rules(Cog):
         filter_function: Callable[[Rule], Boolean],
     ) -> None:
         """Send the rules filtered by the given function to the user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
         sub_name = extract_sub_name(subreddit)
         # Send a quick response
         # We will edit this later with the actual content
@@ -100,16 +95,12 @@ class Rules(Cog):
             sub = await self.reddit_api.subreddit(subreddit)
             rules = [rule async for rule in sub.rules]
             if len(rules) == 0:
-                await msg.edit(
-                    content=i18n[localization_key]["no_rules"].format(subreddit)
-                )
+                await msg.edit(content=i18n[localization_key]["no_rules"].format(subreddit))
                 return
             # Filter out relevant rules
             filtered_rules = [rule for rule in rules if filter_function(rule)]
             if len(filtered_rules) == 0:
-                await msg.edit(
-                    content=i18n[localization_key]["no_filter_rules"].format(subreddit)
-                )
+                await msg.edit(content=i18n[localization_key]["no_filter_rules"].format(subreddit))
                 return
 
             await send_rules_message(
@@ -122,19 +113,13 @@ class Rules(Cog):
             return
         except Redirect:
             # The subreddit does not exist
-            await msg.edit(
-                content=i18n[localization_key]["sub_not_found"].format(subreddit)
-            )
+            await msg.edit(content=i18n[localization_key]["sub_not_found"].format(subreddit))
         except NotFound:
             # A character in the sub name is not allowed
-            await msg.edit(
-                content=i18n[localization_key]["sub_not_found"].format(subreddit)
-            )
+            await msg.edit(content=i18n[localization_key]["sub_not_found"].format(subreddit))
         except Forbidden:
             # The subreddit is private
-            await msg.edit(
-                content=i18n[localization_key]["sub_private"].format(subreddit)
-            )
+            await msg.edit(content=i18n[localization_key]["sub_private"].format(subreddit))
 
     @cog_ext.cog_slash(
         name="rules",
@@ -154,8 +139,7 @@ class Rules(Cog):
 
     @cog_ext.cog_slash(
         name="pirules",
-        description="Get the rules of the specified subreddit "
-        "regarding personal information.",
+        description="Get the rules of the specified subreddit " "regarding personal information.",
         options=[
             create_option(
                 name="subreddit",
@@ -191,11 +175,9 @@ class Rules(Cog):
             )
         ],
     )
-    async def _partner(
-        self, ctx: SlashContext, subreddit: Optional[str] = None
-    ) -> None:
+    async def _partner(self, ctx: SlashContext, subreddit: Optional[str] = None) -> None:
         """Get the list of all our partner subreddits."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         if subreddit is None:
             msg = await ctx.send(i18n["partner"]["getting_partner_list"])
@@ -214,9 +196,9 @@ class Rules(Cog):
                 ),
                 embed=Embed(
                     title=i18n["partner"]["embed_partner_list_title"],
-                    description=i18n["partner"][
-                        "embed_partner_list_description"
-                    ].format(count=len(partners), partner_list=partner_str),
+                    description=i18n["partner"]["embed_partner_list_description"].format(
+                        count=len(partners), partner_list=partner_str
+                    ),
                 ),
             )
         else:
@@ -227,23 +209,17 @@ class Rules(Cog):
                 await sub.load()
             except Redirect:
                 # The subreddit does not exist
-                await msg.edit(
-                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
-                )
+                await msg.edit(content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit))
                 return
             except NotFound:
                 # A character in the sub name is not allowed
-                await msg.edit(
-                    content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit)
-                )
+                await msg.edit(content=i18n["partner"]["sub_not_found"].format(subreddit=subreddit))
                 return
             except Forbidden:
                 # The subreddit is private
                 is_private = True
 
-            is_partner = subreddit.casefold() in [
-                partner.casefold() for partner in partners
-            ]
+            is_partner = subreddit.casefold() in [partner.casefold() for partner in partners]
             message = i18n["partner"]["embed_partner_status_message"].format(
                 subreddit=subreddit, duration=get_duration_str(start)
             )
@@ -262,22 +238,16 @@ class Rules(Cog):
                 )
 
             color = (
-                Color.red()
-                if not is_partner
-                else Color.orange()
-                if is_private
-                else Color.green()
+                Color.red() if not is_partner else Color.orange() if is_private else Color.green()
             )
 
             await msg.edit(
                 content=message,
                 embed=Embed(
-                    title=i18n["partner"]["embed_partner_status_title"].format(
-                        subreddit=subreddit
+                    title=i18n["partner"]["embed_partner_status_title"].format(subreddit=subreddit),
+                    description=i18n["partner"]["embed_partner_status_description"].format(
+                        status=status_message
                     ),
-                    description=i18n["partner"][
-                        "embed_partner_status_description"
-                    ].format(status=status_message),
                     color=color,
                 ),
             )

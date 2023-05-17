@@ -37,9 +37,7 @@ class ButtercupBot(Bot):
                 if archive:
                     # if archive is none, we're not in the zipfile and are probably
                     # in development mode right now.
-                    self.config_path = str(
-                        pathlib.Path(archive.filename).parent / "config.toml"
-                    )
+                    self.config_path = str(pathlib.Path(archive.filename).parent / "config.toml")
                 else:
                     self.config_path = "../config.toml"
 
