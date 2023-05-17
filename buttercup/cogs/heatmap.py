@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import pytz
 import seaborn as sns
 from blossom_wrapper import BlossomAPI
 from dateutil import parser
@@ -201,7 +202,7 @@ class Heatmap(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Generate a heatmap for the given user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         after_time, before_time, time_str = parse_time_constraints(after, before)
 
@@ -281,7 +282,7 @@ class Heatmap(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Generate a yearly activity heatmap for the given user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         # First parse the end time for the activity map
         _, before_time, _ = parse_time_constraints(None, before)

@@ -3,6 +3,7 @@ from typing import Callable, List, Optional
 from xmlrpc.client import Boolean
 
 import asyncpraw
+import pytz
 from asyncpraw.models import Rule
 from asyncprawcore import Forbidden, NotFound, Redirect
 from discord import Color, Embed
@@ -84,7 +85,7 @@ class Rules(Cog):
         filter_function: Callable[[Rule], Boolean],
     ) -> None:
         """Send the rules filtered by the given function to the user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
         sub_name = extract_sub_name(subreddit)
         # Send a quick response
         # We will edit this later with the actual content
@@ -176,7 +177,7 @@ class Rules(Cog):
     )
     async def _partner(self, ctx: SlashContext, subreddit: Optional[str] = None) -> None:
         """Get the list of all our partner subreddits."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         if subreddit is None:
             msg = await ctx.send(i18n["partner"]["getting_partner_list"])

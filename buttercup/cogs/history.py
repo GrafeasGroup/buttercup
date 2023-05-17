@@ -472,7 +472,7 @@ class History(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Get the transcription history of the user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         after_time, before_time, time_str = parse_time_constraints(after, before)
 
@@ -604,7 +604,7 @@ class History(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Get the transcription rate of the user."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         after_time, before_time, time_str = parse_time_constraints(after, before)
 

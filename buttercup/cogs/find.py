@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 
+import pytz
 from blossom_wrapper import BlossomAPI
 from discord import Color, Embed
 from discord.ext.commands import Cog
@@ -154,7 +155,7 @@ class Find(Cog):
     )
     async def _find(self, ctx: SlashContext, reddit_url: str) -> None:
         """Find the post with the given URL."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.

@@ -208,7 +208,7 @@ class Stats(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Get the transcribing progress of a user in the given time frame."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
 
         # Parse time frame. Defaults to 24 hours ago
         after_time, before_time, time_str = parse_time_constraints(after or "24", before)

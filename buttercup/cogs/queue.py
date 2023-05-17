@@ -150,7 +150,7 @@ class Queue(Cog):
         self.bot = bot
         self.blossom_api = blossom_api
 
-        self.last_update = datetime.now()
+        self.last_update = datetime.now(tz=pytz.UTC)
         self.unclaimed = None
         self.claimed = None
         self.completed = None
@@ -185,7 +185,7 @@ class Queue(Cog):
         # The other steps have to be completed before the user cache can be updated
         self.update_user_cache()
 
-        self.last_update = datetime.now()
+        self.last_update = datetime.now(tz=pytz.UTC)
 
     async def update_messages(self) -> None:
         """Update all messages with the latest queue stats."""

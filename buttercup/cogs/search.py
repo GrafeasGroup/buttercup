@@ -405,7 +405,7 @@ class Search(Cog):
         before: Optional[str] = None,
     ) -> None:
         """Search for transcriptions containing the given text."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
         after_time, before_time, time_str = parse_time_constraints(after, before)
 
         # Send a first message to show that the bot is responsive.
@@ -437,7 +437,7 @@ class Search(Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, user: User) -> None:
         """Process reactions to go through the result pages."""
-        start = datetime.now()
+        start = datetime.now(tz=pytz.UTC)
         msg: SlashMessage = reaction.message
         cache_item = self.cache.get(msg.id)
         if cache_item is None:
