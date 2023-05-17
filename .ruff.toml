@@ -29,3 +29,23 @@ line-length = 100  # Same as black
     "D",  # Disable documentation lints for test files
     "DTZ",  # Disable timezone lints for test files
 ]
+
+[isort]
+known-third-party = [
+    "asyncpraw",
+    "asyncprawcore",
+    "blossom_wrapper",
+    "click",
+    "dateutil",
+    "discord",
+    "discord_slash",
+    "matplotlib",
+    "pandas",
+    "pytest",
+    "pytz",
+    "requests",
+    "seaborn",
+    "shiv",
+    "toml",
+    "yaml"
+]
