@@ -281,9 +281,9 @@ leaderboard:
     Leaderboard for {user} ({time_frame})
 search:
   getting_search: |-
-    Searching for `{query}` in transcriptions by {user} {time_str}...
+    Searching for `{query}` in transcriptions by {user} {time_str} in {feed_str}...
   no_results: |-
-    No results found for `{query}` by {user} {time_str}. ({duration_str})
+    No results found for `{query}` by {user} {time_str} in {feed_str}. ({duration_str})
   description:
     item: |-
       {num}. [{tr_type} on {tr_source}]({url}) {timestamp}

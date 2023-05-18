@@ -173,6 +173,7 @@ class SearchCacheItem(TypedDict):
     # The time restriction for the search
     after_time: Optional[datetime]
     before_time: Optional[datetime]
+    feed: Optional[str]
     time_str: str
     # The current Discord page for the query
     cur_page: int
@@ -263,10 +264,12 @@ class Search(Cog):
         user_id = user["id"] if user else None
         after_time = cache_item["after_time"]
         before_time = cache_item["before_time"]
+        feed = cache_item["feed"]
         time_str = cache_item["time_str"]
 
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
+        feed = feed if feed else None
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
@@ -277,6 +280,7 @@ class Search(Cog):
                 "author": user_id,
                 "create_time__gte": from_str,
                 "create_time__lte": until_str,
+                "feed": feed,
                 "url__isnull": False,
                 "ordering": "-create_time",
                 "page_size": self.request_page_size,
@@ -295,6 +299,7 @@ class Search(Cog):
                     query=query,
                     user=get_username(user),
                     time_str=time_str,
+                    feed_str=feed if feed else "all feeds",
                     duration_str=get_duration_str(start),
                 )
             )
@@ -310,6 +315,7 @@ class Search(Cog):
                     "user": cache_item["user"],
                     "after_time": after_time,
                     "before_time": before_time,
+                    "feed": feed,
                     "time_str": time_str,
                     "cur_page": discord_page,
                     "discord_user_id": cache_item["discord_user_id"],
@@ -394,6 +400,12 @@ class Search(Cog):
                 option_type=3,
                 required=False,
             ),
+            create_option(
+                name="feed",
+                description="Only show transcriptions from this feed.",
+                option_type=3,
+                required=False,
+            ),
         ],
     )
     async def search(
@@ -403,16 +415,21 @@ class Search(Cog):
         username: str = "me",
         after: Optional[str] = None,
         before: Optional[str] = None,
+        feed: Optional[str] = None,
     ) -> None:
         """Search for transcriptions containing the given text."""
         start = datetime.now(tz=pytz.UTC)
         after_time, before_time, time_str = parse_time_constraints(after, before)
+        feed_str = feed if feed else "all feeds"
 
         # Send a first message to show that the bot is responsive.
         # We will edit this message later with the actual content.
         msg = await ctx.send(
             i18n["search"]["getting_search"].format(
-                query=query, user=get_initial_username(username, ctx), time_str=time_str
+                query=query,
+                user=get_initial_username(username, ctx),
+                time_str=time_str,
+                feed_str=feed_str,
             )
         )
 
@@ -424,6 +441,7 @@ class Search(Cog):
             "user": user,
             "after_time": after_time,
             "before_time": before_time,
+            "feed": feed,
             "time_str": time_str,
             "cur_page": 0,
             "discord_user_id": ctx.author_id,
