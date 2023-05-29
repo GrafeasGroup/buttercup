@@ -18,13 +18,14 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
+    extract_sub_name,
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
     get_transcription_source,
     get_user,
     get_username,
-    parse_time_constraints, extract_sub_name,
+    parse_time_constraints,
 )
 from buttercup.strings import translation
 
