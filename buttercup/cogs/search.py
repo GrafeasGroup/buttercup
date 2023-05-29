@@ -24,7 +24,7 @@ from buttercup.cogs.helpers import (
     get_transcription_source,
     get_user,
     get_username,
-    parse_time_constraints,
+    parse_time_constraints, extract_sub_name,
 )
 from buttercup.strings import translation
 
@@ -269,7 +269,8 @@ class Search(Cog):
 
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
-        feed = feed if feed else None
+        feed = "/r/" + extract_sub_name(feed) if feed else None
+        feed_str = feed if feed else "all feeds"
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
@@ -299,7 +300,7 @@ class Search(Cog):
                     query=query,
                     user=get_username(user),
                     time_str=time_str,
-                    feed_str=feed if feed else "all feeds",
+                    feed_str=feed_str,
                     duration_str=get_duration_str(start),
                 )
             )
@@ -344,6 +345,7 @@ class Search(Cog):
                 query=query,
                 user=get_username(user),
                 time_str=time_str,
+                feed_str=feed_str,
                 duration_str=get_duration_str(start),
             ),
             embed=Embed(
