@@ -290,7 +290,7 @@ search:
     more_occurrences: |-
       ... and {count} more occurrence(s).
   embed_message: |-
-    Here are your results for `{query}` in transcriptions by {user} {time_str}! ({duration_str})
+    Here are your results for `{query}` in transcriptions by {user} {time_str} in {feed_str}! ({duration_str})
   embed_title: |-
     Results for `{query}` by {user}
   embed_footer: |-

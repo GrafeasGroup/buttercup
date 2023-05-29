@@ -18,6 +18,7 @@ from buttercup.bot import ButtercupBot
 from buttercup.cogs.helpers import (
     BlossomException,
     BlossomUser,
+    extract_sub_name,
     get_discord_time_str,
     get_duration_str,
     get_initial_username,
@@ -269,7 +270,8 @@ class Search(Cog):
 
         from_str = after_time.isoformat() if after_time else None
         until_str = before_time.isoformat() if before_time else None
-        feed = feed if feed else None
+        feed = "/r/" + extract_sub_name(feed) if feed else None
+        feed_str = feed if feed else "all feeds"
 
         request_page = (discord_page * self.discord_page_size) // self.request_page_size
 
@@ -280,7 +282,7 @@ class Search(Cog):
                 "author": user_id,
                 "create_time__gte": from_str,
                 "create_time__lte": until_str,
-                "feed": feed,
+                "submission__feed__iexact": feed,
                 "url__isnull": False,
                 "ordering": "-create_time",
                 "page_size": self.request_page_size,
@@ -299,7 +301,7 @@ class Search(Cog):
                     query=query,
                     user=get_username(user),
                     time_str=time_str,
-                    feed_str=feed if feed else "all feeds",
+                    feed_str=feed_str,
                     duration_str=get_duration_str(start),
                 )
             )
@@ -344,6 +346,7 @@ class Search(Cog):
                 query=query,
                 user=get_username(user),
                 time_str=time_str,
+                feed_str=feed_str,
                 duration_str=get_duration_str(start),
             ),
             embed=Embed(
