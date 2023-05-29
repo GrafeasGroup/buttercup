@@ -280,7 +280,7 @@ class Search(Cog):
                 "author": user_id,
                 "create_time__gte": from_str,
                 "create_time__lte": until_str,
-                "feed": feed,
+                "submission__feed__iexact": feed,
                 "url__isnull": False,
                 "ordering": "-create_time",
                 "page_size": self.request_page_size,
