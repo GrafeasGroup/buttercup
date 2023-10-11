@@ -12,7 +12,7 @@ python = ">=3.10,<3.12"
 toml = "^0.10.1"
 blossom-wrapper = { git = "https://github.com/GrafeasGroup/blossom-wrapper.git", branch = "master" }
 requests = "^2.25.1"
-PyYAML = "^5.3.1"
+PyYAML = "^6.0"
 python-dateutil = "^2.8.1"
 asyncpraw = "^7.2.0"
 matplotlib = "^3.4.2"
